@@ -1,0 +1,2792 @@
+{
+  "cloud_additional_restrictions": [],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "agent_circuit_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "agent_remote_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "allow_telnet",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "always_update_dns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootfile",
+      "overridden_by": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootserver",
+      "overridden_by": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "cli_credentials",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "user",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "SSH",
+              "TELNET",
+              "ENABLE_SSH",
+              "ENABLE_TELNET"
+            ],
+            "is_array": false,
+            "name": "credential_type",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "id",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:clicredential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "client_identifier_prepend_zero",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "cloud_info",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "delegated_member",
+            "schema": {
+              "fields": [
+                {
+                  "is_array": false,
+                  "name": "ipv4addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "ipv6addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "name",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "dhcpmember"
+            ],
+            "wapi_primitive": "struct"
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ROOT",
+              "SUBTREE",
+              "RECLAIMING"
+            ],
+            "is_array": false,
+            "name": "delegated_scope",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "delegated_root",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "owned_by_adaptor",
+            "supports": "r",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ADAPTER",
+              "USED_BY",
+              "DELEGATED"
+            ],
+            "is_array": false,
+            "name": "usage",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "tenant",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "mgmt_platform",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "GM",
+              "CP"
+            ],
+            "is_array": false,
+            "name": "authority_type",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "grid:cloudapi:info"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_domainname",
+      "overridden_by": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "deny_bootp",
+      "overridden_by": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_description",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_location",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_type",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_vendor",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "dhcp_client_identifier",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable_discovery",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "NONE",
+        "PENDING",
+        "RUNNING",
+        "COMPLETE",
+        "FAILED"
+      ],
+      "is_array": false,
+      "name": "discover_now_status",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "device_model",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_port_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_port_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_vendor",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "discovered_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "discoverer",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "duid",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "first_discovered",
+            "supports": "r",
+            "type": [
+              "timestamp"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "iprg_no",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "enum_values": [
+              "VIP",
+              "ACTIVE",
+              "STANDBY",
+              "NEGOTIATION"
+            ],
+            "is_array": false,
+            "name": "iprg_state",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "enum_values": [
+              "HSRP",
+              "VRRP"
+            ],
+            "is_array": false,
+            "name": "iprg_type",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "last_discovered",
+            "supports": "r",
+            "type": [
+              "timestamp"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "mac_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "mgmt_ip_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "netbios_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_description",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_ip",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_model",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_port_description",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_port_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_port_number",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_vendor",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "open_ports",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "os",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_duplex",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_link_status",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_speed",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_status",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_vlan_description",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_vlan_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "port_vlan_number",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_adapter",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_cluster",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_datacenter",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_entity_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_entity_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_host",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "v_switch",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_id",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vlan_port_group",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_id",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Unknown",
+              "Standard",
+              "Distributed"
+            ],
+            "is_array": false,
+            "name": "vswitch_type",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_ipv6_enabled",
+            "supports": "r",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vport_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vport_mac_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vport_link_status",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vport_conf_speed",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Unknown",
+              "Full-duplex",
+              "Half-duplex"
+            ],
+            "is_array": false,
+            "name": "vport_conf_mode",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vport_speed",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Unknown",
+              "Full-duplex",
+              "Half-duplex"
+            ],
+            "is_array": false,
+            "name": "vport_mode",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_segment_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_segment_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_segment_id",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_segment_port_group",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_available_ports_count",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_ip",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_port_group",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_vlan",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_dhcp_server",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vswitch_tep_multicast",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmhost_ip_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmhost_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmhost_mac_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmhost_subnet_cidr",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmhost_nic_names",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_tenant_id",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "cmp_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_ip_type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_private_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vmi_is_public_address",
+            "supports": "r",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "cisco_ise_ssid",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "cisco_ise_endpoint_profile",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "AUTHENTICATED",
+              "AUTHENTICATING",
+              "DISCONNECTED",
+              "POSTURED",
+              "STARTED"
+            ],
+            "is_array": false,
+            "name": "cisco_ise_session_state",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "cisco_ise_security_group",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "task_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_location",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "network_component_contact",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_location",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_contact",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "ap_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "ap_ip_address",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "ap_ssid",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "bridge_domain",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "endpoint_groups",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "tenant",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vrf_name",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vrf_description",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vrf_rd",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "bgp_as",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "discoverydata"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.ap_ip_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.ap_name",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.ap_ssid",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.bgp_as",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.bridge_domain",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.cisco_ise_endpoint_profile",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.cisco_ise_security_group",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "AUTHENTICATED",
+        "AUTHENTICATING",
+        "DISCONNECTED",
+        "POSTURED",
+        "STARTED"
+      ],
+      "is_array": false,
+      "name": "discovered_data.cisco_ise_session_state",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.cisco_ise_ssid",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.cmp_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_contact",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_location",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_model",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_port_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_port_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.device_vendor",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.discovered_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.discoverer",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.endpoint_groups",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.first_discovered",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "timestamp"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.iprg_no",
+      "searchable_by": "=<>!",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.iprg_state",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.iprg_type",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.last_discovered",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "timestamp"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.mac_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.mgmt_ip_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.netbios_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_contact",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_description",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_ip",
+      "searchable_by": "=~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_location",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_model",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_port_description",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_port_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_port_number",
+      "searchable_by": "=<>!",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.network_component_vendor",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.open_ports",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.os",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_duplex",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_link_status",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_speed",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_status",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_vlan_description",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_vlan_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.port_vlan_number",
+      "searchable_by": "=<>!",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.task_name",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.tenant",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_adapter",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_cluster",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_datacenter",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_entity_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_entity_type",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_host",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.v_switch",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vlan_port_group",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmhost_ip_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmhost_mac_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmhost_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmhost_nic_names",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmhost_subnet_cidr",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_id",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_ip_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_is_public_address",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_private_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vmi_tenant_id",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "Unknown",
+        "Full-duplex",
+        "Half-duplex"
+      ],
+      "is_array": false,
+      "name": "discovered_data.vport_conf_mode",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vport_conf_speed",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vport_link_status",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vport_mac_address",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "Unknown",
+        "Full-duplex",
+        "Half-duplex"
+      ],
+      "is_array": false,
+      "name": "discovered_data.vport_mode",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vport_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vport_speed",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vrf_description",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vrf_name",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vrf_rd",
+      "searchable_by": "=~",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_available_ports_count",
+      "searchable_by": "=!<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_id",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_ipv6_enabled",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_segment_id",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_segment_name",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_segment_port_group",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_segment_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_dhcp_server",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_ip",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_multicast",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_port_group",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_type",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovered_data.vswitch_tep_vlan",
+      "searchable_by": "=~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "Unknown",
+        "Standard",
+        "Distributed"
+      ],
+      "is_array": false,
+      "name": "discovered_data.vswitch_type",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_ddns",
+      "overridden_by": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_immediate_discovery",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ignore_dhcp_option_list_request",
+      "overridden_by": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv4addr",
+      "searchable_by": "=~",
+      "standard_field": true,
+      "supports": "rwus",
+      "supports_inline_funccall": true,
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "is_invalid_mac",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "logic_filter_rules",
+      "overridden_by": "use_logic_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "type",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "logicfilterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "mac",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "MAC_ADDRESS",
+        "CLIENT_ID",
+        "RESERVED",
+        "CIRCUIT_ID",
+        "REMOTE_ID"
+      ],
+      "is_array": false,
+      "name": "match_client",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_ad_user_data",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "active_users_count",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "msserver:aduser:data"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": true,
+      "name": "ms_options",
+      "overridden_by": "use_ms_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "user_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "msdhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "ms_server",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "ipv4addr",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "msdhcpserver"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network",
+      "searchable_by": "=~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network_view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "nextserver",
+      "overridden_by": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "options",
+      "overridden_by": "use_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_option",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "dhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "pxe_lease_time",
+      "overridden_by": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "reserved_interface",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "restart_if_needed",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "snmp3_credential",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "user",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "MD5",
+              "SHA",
+              "SHA-224",
+              "SHA-256",
+              "SHA-384",
+              "SHA-512"
+            ],
+            "is_array": false,
+            "name": "authentication_protocol",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "authentication_password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "DES",
+              "3DES",
+              "AES",
+              "AES-192",
+              "AES-192C",
+              "AES-256",
+              "AES-256C"
+            ],
+            "is_array": false,
+            "name": "privacy_protocol",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "privacy_password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:snmp3credential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "snmp_credential",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "community_string",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:snmpcredential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "template",
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_cli_credentials",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_logic_filter_rules",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ms_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_snmp3_credential",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_snmp_credential",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    }
+  ],
+  "restrictions": [],
+  "schema_version": "2",
+  "type": "fixedaddress",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

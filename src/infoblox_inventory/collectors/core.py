@@ -8,6 +8,9 @@ from ..models import ASSESSMENT_AREAS, CollectionResult
 from ..schema import SchemaCache, index_fields, override_relationships
 from ..storage import RawStore, page_records
 from .topology import TOPOLOGY_OBJECTS
+from .reservations import (FILTER_TYPES, RESERVATION_FILTERS, RESERVATION_OBJECTS,
+                           RESERVATION_RELATIONSHIP_FIELDS, RESERVATION_TYPES,
+                           collect_superhost_children)
 
 
 LOG = logging.getLogger(__name__)
@@ -26,24 +29,23 @@ OBJECTS: dict[str, tuple[str, str, list[str]]] = {
     "member:dhcpproperties": ("DHCP options and inheritance", "Member DHCP", ["name", "host_name", "enable_dhcp", *DHCP_FIELDS]),
     "network": ("Networks", "Networks", ["network", "network_view", "comment", "extattrs", "members", *DHCP_FIELDS]),
     "range": ("Ranges", "Ranges", ["start_addr", "end_addr", "network", "network_view", "name", "comment", "extattrs", "server_association_type", "member", "failover_association", *DHCP_FIELDS]),
-    "fixedaddress": ("Fixed addresses and reservations", "Fixed Addresses", ["ipv4addr", "mac", "match_client", "network_view", "name", "comment", "extattrs", *DHCP_FIELDS]),
     "member": ("DHCP failover associations and/or Grid Members", "Members", ["name", "node_info", "host_name", "service_status"]),
-    "filtermac": ("DHCP filters and MAC filters", "Filters", ["name", "pattern", "comment", "extattrs"]),
-    "filteroption": ("DHCP filters and MAC filters", "Filters", ["name", "match", "comment", "extattrs"]),
     "extensibleattributedef": ("Extensible Attributes", "EA Definitions", ["name", "type", "flags", "list_values"]),
     **TOPOLOGY_OBJECTS,
+    **RESERVATION_OBJECTS,
 }
 
 INHERITANCE_OBJECTS = {"member:dhcpproperties", "network", "range", "fixedaddress"}
 COLLECTOR_ALIASES = {
     "topology": set(TOPOLOGY_OBJECTS),
+    "reservations_filters": set(RESERVATION_OBJECTS),
     "core": {"networkview", "grid:dhcpproperties", "member", "member:dhcpproperties", "network", "range"},
     "views": {"networkview"}, "network_views": {"networkview"}, "networks": {"network"},
-    "ranges": {"range"}, "fixed_addresses": {"fixedaddress"}, "reservations": {"fixedaddress"},
+    "ranges": {"range"}, "fixed_addresses": {"fixedaddress"}, "reservations": RESERVATION_TYPES,
     "members": {"member", "member:dhcpproperties"}, "failover": {"dhcpfailover"},
     "templates": {"networktemplate", "rangetemplate", "fixedaddresstemplate"},
     "options": {"grid:dhcpproperties", "member:dhcpproperties", "network", "range", "fixedaddress"},
-    "filters": {"filtermac", "filteroption"}, "eas": {"extensibleattributedef"},
+    "filters": FILTER_TYPES, "eas": {"extensibleattributedef"},
 }
 
 
@@ -58,6 +60,8 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
     selected = COLLECTOR_ALIASES.get(only, {only}) if only else set(OBJECTS)
     if not selected.issubset(OBJECTS):
         raise ValueError("Unknown collector; choose a documented alias or WAPI object")
+    if "superhostchild" in selected:
+        selected = selected | {"superhost"}
     result = CollectionResult(client.grid.name, grid_url=client.grid.url,
                               wapi_version=client.wapi_version or "")
     store = RawStore(raw_dir, result) if raw_dir else None
@@ -83,6 +87,11 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
             if store:
                 store.save_schema(object_type, schema)
             fields = index_fields(schema)
+            for name in RESERVATION_RELATIONSHIP_FIELDS.get(object_type, ()):
+                if name not in fields or "r" not in fields[name].get("supports", "r"):
+                    _coverage(result, area, object_type, "schema", "NOT_EXPOSED_BY_WAPI",
+                              note="Template relationship is absent or not readable; origin is not reconstructed",
+                              field=name)
             readable = {name for name, metadata in fields.items()
                         if "supports" not in metadata or "r" in metadata["supports"]}
             relationships = override_relationships(schema)
@@ -95,8 +104,22 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
             if not selected_fields:
                 _coverage(result, area, object_type, "raw", "PARTIAL", note="No requested readable fields; query skipped")
                 continue
+            required_filters = RESERVATION_FILTERS.get(object_type, {})
+            if any(name not in fields or "=" not in fields[name].get("searchable_by", "")
+                   or ("enum_values" in fields[name] and value not in fields[name]["enum_values"])
+                   for name, value in required_filters.items()):
+                _coverage(result, area, object_type, "raw", "PARTIAL",
+                          note="Required DHCP scope filter is unavailable in runtime schema; query skipped")
+                continue
+            if object_type == "superhostchild" and "=" not in fields.get("parent", {}).get("searchable_by", ""):
+                _coverage(result, area, object_type, "raw", "PARTIAL",
+                          note="Required parent search is unavailable in runtime schema; query skipped")
+                continue
         except Exception as exc:
             result.fail(area, object_type, exc)
+            continue
+        if object_type == "superhostchild":
+            collect_superhost_children(client, result, store, selected_fields, bool(missing))
             continue
         modes = ["raw"]
         if object_type in INHERITANCE_OBJECTS:
@@ -106,7 +129,7 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
                 _coverage(result, area, object_type, "effective", "PARTIAL",
                           note="Schema exposes no override metadata for selected fields; effective query not attempted")
         for mode in modes:
-            filters = {"_inheritance": "True"} if mode == "effective" else None
+            filters = {**required_filters, **({"_inheritance": "True"} if mode == "effective" else {})} or None
             params = {"_return_fields": ",".join(selected_fields), "_paging": "1",
                       "_return_as_object": "1", "_max_results": 1000, **(filters or {})}
             query = store.start_query(object_type, mode, params) if store else None

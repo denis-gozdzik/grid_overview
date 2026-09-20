@@ -14,6 +14,9 @@ from .models import CollectionResult
 from .normalize import normalize_options, normalize_scalars
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
+from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
+                           reservation_excel_rows, reservation_headers, reservation_option_rows,
+                           reservation_relationship_rows)
 
 
 def _json_value(value: Any) -> Any:
@@ -31,21 +34,33 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
     all_scalars: list[dict[str, Any]] = []
     naming: list[dict[str, Any]] = []
     topology_records = []
+    reservation_records = []
+    stored_only = set(TOPOLOGY_SHEETS) | (set(RESERVATION_SHEETS) - {"fixedaddress"})
     results = sorted(results, key=lambda result: result.grid)
     for result in results:
         # Stored reusable configuration has its own rows, without effective-value claims.
         arguments = (result.grid, result.grid_url, result.wapi_version,
-                     {key: rows for key, rows in result.records.items() if key not in TOPOLOGY_SHEETS},
-                     {key: rows for key, rows in result.effective_records.items() if key not in TOPOLOGY_SHEETS},
+                     {key: rows for key, rows in result.records.items() if key not in stored_only},
+                     {key: rows for key, rows in result.effective_records.items() if key not in stored_only},
                      result.schemas)
         all_options.extend(normalize_options(*arguments))
         all_scalars.extend(normalize_scalars(*arguments))
         naming.extend({**row, "grid": result.grid} for row in naming_analysis(result.records))
         topology_records.extend(normalize_topology(result))
-    coverage = [row for result in results for row in result.coverage] + topology_coverage(topology_records)
+        reservation_records.extend(normalize_reservations(result))
+    coverage = ([row for result in results for row in result.coverage]
+                + topology_coverage(topology_records) + reservation_coverage(reservation_records))
+    for result in results:
+        filter_count = sum(len(rows) for key, rows in result.records.items()
+                           if key in RESERVATION_SHEETS and (key.startswith("filter") or key == "macfilteraddress"))
+        if filter_count:
+            coverage.append({"Grid": result.grid, "Area": "DHCP filters and MAC filters", "Object": "",
+                             "Query": "policy_interpretation", "Collection Status": "MANUAL_REVIEW_REQUIRED",
+                             "Objects Found": filter_count,
+                             "Notes": "Configured names, expressions and references do not establish deployed permit/deny policy; "
+                                      "consumer assignments outside this increment are not assessed."})
     differences = compare_options(all_options)
-    manual_rows = [row for result in results for row in result.coverage
-                   if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
+    manual_rows = [row for row in coverage if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
     sheets = {
         "Grid_Summary": [{"Grid": result.grid, "URL": result.grid_url, "WAPI Version": result.wapi_version,
                           "Collected At": result.collected_at, "Object": key,
@@ -70,6 +85,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
             if object_type in TOPOLOGY_SHEETS:
                 sheets.setdefault(TOPOLOGY_SHEETS[object_type], [])
                 continue
+            if object_type in RESERVATION_SHEETS:
+                sheets.setdefault(RESERVATION_SHEETS[object_type], [])
+                continue
             sheets.setdefault(_sheet_name(object_type), []).extend(
                 {"grid": result.grid, **{key: _json_value(value) for key, value in row.items()}}
                 for row in rows)
@@ -79,6 +97,24 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
         if name in sheets:
             sheets[name].extend(topology_rows[object_type])
             sheet_headers[name] = topology_headers(object_type)
+    reservation_rows = reservation_excel_rows(reservation_records)
+    for object_type, name in RESERVATION_SHEETS.items():
+        if name in sheets:
+            sheets[name].extend(reservation_rows[object_type])
+            sheet_headers[name] = reservation_headers(object_type)
+    if any(key in RESERVATION_SHEETS for result in results for key in result.records):
+        sheets["Reservation_Options"] = reservation_option_rows(reservation_records)
+        sheet_headers["Reservation_Options"] = [
+            "grid", "object_type", "object_ref", "name", "data_representation", "normalization_status",
+            "issues", "option_field", "option_index", "option_name", "code", "vendor", "user_class",
+            "option_type", "stored_value", "use_option", "use_options", "extra_fields",
+        ]
+        sheets["Reservation_Links"] = reservation_relationship_rows(reservation_records)
+        sheet_headers["Reservation_Links"] = [
+            "grid", "object_type", "object_ref", "name", "data_representation", "normalization_status",
+            "issues", "relationship_field", "relationship_index", "target", "configured_rule_type",
+            "use_logic_filter_rules", "relationship_data", "interpretation",
+        ]
     if any(object_type.endswith("template") for result in results for object_type in result.records
            if object_type in TOPOLOGY_SHEETS):
         sheets["Template_Options"] = topology_option_rows(topology_records)
@@ -146,6 +182,18 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                         "Normalization coverage describes parsed records only; raw-query coverage "
                         "remains authoritative for collection completeness. Unknown fields remain in "
                         "extra_fields and complete responses remain in the raw archive."])
+    if any(key in RESERVATION_SHEETS for result in results for key in result.records):
+        summary.extend(["", "## DHCP reservations and filters", "",
+                        "Reservation/filter sheets contain typed RAW_CONFIGURATION evidence. "
+                        "Reservation_Options and Reservation_Links retain nested values, use flags and source indexes. "
+                        "Fixed-address effective evidence continues through the existing DHCP sheets. "
+                        "Host DHCP configuration status concerns explicit IPv4 configure_for_dhcp flags only; "
+                        "it does not assess IPv6, service activation or lease availability. Roaming hosts are not "
+                        "classified as fixed-IP reservations. Template origin is unavailable when WAPI exposes "
+                        "only a write-only template field. Filter names, including Corporate or Allowed, imply "
+                        "no policy meaning. Consumers outside this collection are not assessed. "
+                        "DDNS/EA fields are retained solely as reservation metadata. For superhostchild, "
+                        "an empty complete parent inventory means no child request; Coverage records that dependency."])
     changed = [row for row in differences if row["classification"] in {"DIFFERENT", "SOURCE_DIFFERENCE"}]
     summary.extend(["", "## Key differences", "",
                     "Comparison currently covers confirmed DHCP options matched by queried object and Network View. "
@@ -183,6 +231,6 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
 def _sheet_name(object_type: str) -> str:
     return {"networkview": "Network_Views", "network": "Networks", "range": "Ranges",
             "grid:dhcpproperties": "Grid_DHCP", "member:dhcpproperties": "Member_DHCP",
-            "fixedaddress": "Fixed_Reservations", "member": "Members_Failover", **TOPOLOGY_SHEETS,
-            "filtermac": "Filters", "filteroption": "Filters", "extensibleattributedef": "Extensible_Attributes"}.get(
+            "member": "Members_Failover", **TOPOLOGY_SHEETS, **RESERVATION_SHEETS,
+            "extensibleattributedef": "Extensible_Attributes"}.get(
                 object_type, re.sub(r"[\\/*?:\[\]]", "_", object_type)[:31])

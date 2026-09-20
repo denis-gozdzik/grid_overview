@@ -1,0 +1,8 @@
+{
+  "status": 400,
+  "body": {
+    "Error": "AdmConDataError: None (IBDataError: IB.Data:Search fields must contain 'parent')",
+    "code": "Client.Ibap.Data",
+    "text": "Search fields must contain 'parent'"
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "associated_object",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "creation_timestamp",
+      "searchable_by": "<=>",
+      "standard_field": false,
+      "supports": "rs",
+      "type": [
+        "timestamp"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "data",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disabled",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network_view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "parent",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "record_parent",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "ARecord",
+        "AaaaRecord",
+        "FixedAddress",
+        "HostRecord",
+        "IPv6FixedAddress",
+        "PtrRecord"
+      ],
+      "is_array": false,
+      "name": "type",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    }
+  ],
+  "restrictions": [
+    "create",
+    "update",
+    "delete",
+    "permissions",
+    "global search",
+    "scheduling",
+    "csv"
+  ],
+  "schema_version": "2",
+  "type": "superhostchild",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

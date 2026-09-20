@@ -1,0 +1,52 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "fingerprint",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    }
+  ],
+  "restrictions": [
+    "permissions"
+  ],
+  "schema_version": "2",
+  "type": "filterfingerprint",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

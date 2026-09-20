@@ -1,0 +1,620 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "enum_values": [
+        "IPV4",
+        "IPV6",
+        "BOTH"
+      ],
+      "is_array": false,
+      "name": "address_type",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootfile",
+      "overridden_by": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootserver",
+      "overridden_by": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "client_identifier_prepend_zero",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_domainname",
+      "overridden_by": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "deny_bootp",
+      "overridden_by": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "dhcp_client_identifier",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_ddns",
+      "overridden_by": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "force_roaming_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ignore_dhcp_option_list_request",
+      "overridden_by": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_client_hostname",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_ddns_domainname",
+      "overridden_by": "use_ipv6_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_ddns_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_domain_name",
+      "overridden_by": "use_ipv6_domain_name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "ipv6_domain_name_servers",
+      "overridden_by": "use_ipv6_domain_name_servers",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_duid",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_enable_ddns",
+      "overridden_by": "use_ipv6_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_force_roaming_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_mac_address",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "DUID",
+        "V6_MAC_ADDRESS"
+      ],
+      "is_array": false,
+      "name": "ipv6_match_option",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "ipv6_options",
+      "overridden_by": "use_ipv6_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_option",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "dhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "ipv6_template",
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "mac",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "MAC_ADDRESS",
+        "CLIENT_ID"
+      ],
+      "is_array": false,
+      "name": "match_client",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network_view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "nextserver",
+      "overridden_by": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "options",
+      "overridden_by": "use_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_option",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "dhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "preferred_lifetime",
+      "overridden_by": "use_preferred_lifetime",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "pxe_lease_time",
+      "overridden_by": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "template",
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ipv6_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ipv6_domain_name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ipv6_domain_name_servers",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ipv6_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ipv6_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_preferred_lifetime",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_valid_lifetime",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "valid_lifetime",
+      "overridden_by": "use_valid_lifetime",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    }
+  ],
+  "restrictions": [
+    "csv"
+  ],
+  "schema_version": "2",
+  "type": "roaminghost",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

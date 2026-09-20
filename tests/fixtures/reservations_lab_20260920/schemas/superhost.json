@@ -1,0 +1,85 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "delete_associated_objects",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "dhcp_associated_objects",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "fixedaddress",
+        "ipv6fixedaddress",
+        "record:host"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disabled",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "dns_associated_objects",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "record:a",
+        "record:aaaa",
+        "record:ptr",
+        "record:host"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    }
+  ],
+  "restrictions": [
+    "csv"
+  ],
+  "schema_version": "2",
+  "type": "superhost",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

@@ -1,0 +1,143 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "circuit_id_name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "circuit_id_substring_length",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "circuit_id_substring_offset",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "~:=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "enum_values": [
+        "MATCHES_VALUE",
+        "NOT_SET",
+        "ANY"
+      ],
+      "is_array": false,
+      "name": "is_circuit_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "is_circuit_id_substring",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "MATCHES_VALUE",
+        "NOT_SET",
+        "ANY"
+      ],
+      "is_array": false,
+      "name": "is_remote_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "is_remote_id_substring",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "~:=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "remote_id_name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "remote_id_substring_length",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "remote_id_substring_offset",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    }
+  ],
+  "restrictions": [
+    "csv"
+  ],
+  "schema_version": "2",
+  "type": "filterrelayagent",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

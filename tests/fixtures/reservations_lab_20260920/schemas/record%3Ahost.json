@@ -1,0 +1,692 @@
+{
+  "cloud_additional_restrictions": [
+    "function call"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "alias",
+      "searchable_by": "!~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "aliases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "allow_telnet",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "cli_credentials",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "user",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "SSH",
+              "TELNET",
+              "ENABLE_SSH",
+              "ENABLE_TELNET"
+            ],
+            "is_array": false,
+            "name": "credential_type",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "id",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:clicredential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "cloud_info",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "delegated_member",
+            "schema": {
+              "fields": [
+                {
+                  "is_array": false,
+                  "name": "ipv4addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "ipv6addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "name",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "dhcpmember"
+            ],
+            "wapi_primitive": "struct"
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ROOT",
+              "SUBTREE",
+              "RECLAIMING"
+            ],
+            "is_array": false,
+            "name": "delegated_scope",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "delegated_root",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "owned_by_adaptor",
+            "supports": "r",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ADAPTER",
+              "USED_BY",
+              "DELEGATED"
+            ],
+            "is_array": false,
+            "name": "usage",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "tenant",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "mgmt_platform",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "GM",
+              "CP"
+            ],
+            "is_array": false,
+            "name": "authority_type",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "grid:cloudapi:info"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "configure_for_dns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "creation_time",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "timestamp"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_protected",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_description",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_location",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_type",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "device_vendor",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable_discovery",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "dns_aliases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "dns_name",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_immediate_discovery",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv4addr",
+      "searchable_by": "!~:<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "ipv4addrs",
+      "standard_field": true,
+      "supports": "rwu",
+      "type": [
+        "record:host_ipv4addr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ipv6addr",
+      "searchable_by": "!~:<>",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "ipv6addrs",
+      "standard_field": true,
+      "supports": "rwu",
+      "type": [
+        "record:host_ipv6addr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "last_queried",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "timestamp"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "mac",
+      "searchable_by": "!~:",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_ad_user_data",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "active_users_count",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "msserver:aduser:data"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "s",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network_view",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rws",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "restart_if_needed",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "rrset_order",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "snmp3_credential",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "user",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "MD5",
+              "SHA",
+              "SHA-224",
+              "SHA-256",
+              "SHA-384",
+              "SHA-512"
+            ],
+            "is_array": false,
+            "name": "authentication_protocol",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "authentication_password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "DES",
+              "3DES",
+              "AES",
+              "AES-192",
+              "AES-192C",
+              "AES-256",
+              "AES-256C"
+            ],
+            "is_array": false,
+            "name": "privacy_protocol",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "privacy_password",
+            "supports": "wu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:snmp3credential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "snmp_credential",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "community_string",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:snmpcredential"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "ttl",
+      "overridden_by": "use_ttl",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_cli_credentials",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_dns_ea_inheritance",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_snmp3_credential",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_snmp_credential",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ttl",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "zone",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rs",
+      "type": [
+        "string"
+      ]
+    }
+  ],
+  "restrictions": [],
+  "schema_version": "2",
+  "type": "record:host",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}
