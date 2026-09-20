@@ -1,14 +1,29 @@
 {
-  "kind": "actual_live_WAPI_schema_capture",
+  "kind": "actual_live_lab_topology_capture",
   "wapi_version": "2.13.7",
   "source_run": "output/topology-20260920T062102Z",
   "notes": "Full schemas copied byte-for-byte from GET discovery. Populated examples, if used in tests, are separately labeled synthetic. No authentication data is included.",
   "sha256": {
     "schemas/dhcpfailover.json": "4b2be13b23ed4eb80d0dd6cd1651fdd071221af6ebde33389716b00aa2ae3984",
+    "schemas/dhcpoptiondefinition.json": "7850675cdd7cdb9d868a1d1be73a5727a5a0dd5d19cfd7f86d86a8e49020adcf",
+    "schemas/dhcpoptionspace.json": "37645994c774980e3feee34e3d2216ba61ecd314469ce9a0eb21c1999c90270f",
+    "schemas/fixedaddresstemplate.json": "8440b8285c66460ef4ab247cb5d3672ddf3753e1fae6f3991d7c35f3f0a828b8",
     "schemas/networktemplate.json": "e994f582efd0790623978102922eb6d9070876503203fd3ad0354cc0b0f5265d",
     "schemas/rangetemplate.json": "982a624fc2412f58b7a713d23b026dffdb13e0d152b9c00b48151dcfe167364e",
-    "schemas/fixedaddresstemplate.json": "8440b8285c66460ef4ab247cb5d3672ddf3753e1fae6f3991d7c35f3f0a828b8",
-    "schemas/dhcpoptionspace.json": "37645994c774980e3feee34e3d2216ba61ecd314469ce9a0eb21c1999c90270f",
-    "schemas/dhcpoptiondefinition.json": "7850675cdd7cdb9d868a1d1be73a5727a5a0dd5d19cfd7f86d86a8e49020adcf"
+    "responses/dhcpfailover.json": "eb89e29383fef512bb8294da77c1899cc3f1eab6711a560cc28d8f9045db7012",
+    "responses/dhcpoptiondefinition.json": "56f2fae3375f788c0ce59e1570a50e77e3db1ce8be0f6912efe3ebea5c578ae8",
+    "responses/dhcpoptionspace.json": "1af93da784eb1bdca58d7da341e7e24cd83efd844d8ce4d805a28969b9a7f25c",
+    "responses/fixedaddresstemplate.json": "eb89e29383fef512bb8294da77c1899cc3f1eab6711a560cc28d8f9045db7012",
+    "responses/networktemplate.json": "eb89e29383fef512bb8294da77c1899cc3f1eab6711a560cc28d8f9045db7012",
+    "responses/rangetemplate.json": "eb89e29383fef512bb8294da77c1899cc3f1eab6711a560cc28d8f9045db7012"
+  },
+  "note": "Actual runtime schemas and decoded JSON response pages; no credentials. Four empty inventories are real. Populated template/failover tests are explicitly synthetic.",
+  "live_counts": {
+    "dhcpfailover": 0,
+    "networktemplate": 0,
+    "rangetemplate": 0,
+    "fixedaddresstemplate": 0,
+    "dhcpoptionspace": 1,
+    "dhcpoptiondefinition": 95
   }
 }

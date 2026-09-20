@@ -12,6 +12,8 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 from .analysis import compare_options, naming_analysis
 from .models import CollectionResult
 from .normalize import normalize_options, normalize_scalars
+from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
+                       topology_excel_rows, topology_headers, topology_option_rows)
 
 
 def _json_value(value: Any) -> Any:
@@ -28,13 +30,19 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
     all_options: list[dict[str, Any]] = []
     all_scalars: list[dict[str, Any]] = []
     naming: list[dict[str, Any]] = []
+    topology_records = []
     results = sorted(results, key=lambda result: result.grid)
     for result in results:
-        arguments = (result.grid, result.grid_url, result.wapi_version, result.records,
-                     result.effective_records, result.schemas)
+        # Stored reusable configuration has its own rows, without effective-value claims.
+        arguments = (result.grid, result.grid_url, result.wapi_version,
+                     {key: rows for key, rows in result.records.items() if key not in TOPOLOGY_SHEETS},
+                     {key: rows for key, rows in result.effective_records.items() if key not in TOPOLOGY_SHEETS},
+                     result.schemas)
         all_options.extend(normalize_options(*arguments))
         all_scalars.extend(normalize_scalars(*arguments))
         naming.extend({**row, "grid": result.grid} for row in naming_analysis(result.records))
+        topology_records.extend(normalize_topology(result))
+    coverage = [row for result in results for row in result.coverage] + topology_coverage(topology_records)
     differences = compare_options(all_options)
     manual_rows = [row for result in results for row in result.coverage
                    if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
@@ -45,7 +53,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                           "Effective Count": len(result.effective_records.get(key, [])), "Errors": len(result.errors)}
                          for result in results
                          for key in (sorted(set(result.records) | set(result.effective_records)) or [""])],
-        "Coverage": [row for result in results for row in result.coverage],
+        "Coverage": coverage,
         "Errors": [row for result in results for row in result.errors],
         "DHCP_Effective": all_scalars,
         "DHCP_Options": all_options,
@@ -59,14 +67,30 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
     }
     for result in results:
         for object_type, rows in sorted(result.records.items()):
+            if object_type in TOPOLOGY_SHEETS:
+                sheets.setdefault(TOPOLOGY_SHEETS[object_type], [])
+                continue
             sheets.setdefault(_sheet_name(object_type), []).extend(
                 {"grid": result.grid, **{key: _json_value(value) for key, value in row.items()}}
                 for row in rows)
+    topology_rows = topology_excel_rows(topology_records)
+    sheet_headers = {}
+    for object_type, name in TOPOLOGY_SHEETS.items():
+        if name in sheets:
+            sheets[name].extend(topology_rows[object_type])
+            sheet_headers[name] = topology_headers(object_type)
+    if any(object_type.endswith("template") for result in results for object_type in result.records
+           if object_type in TOPOLOGY_SHEETS):
+        sheets["Template_Options"] = topology_option_rows(topology_records)
+        sheet_headers["Template_Options"] = [
+            "grid", "object_type", "object_ref", "name", "data_representation", "normalization_status",
+            "issues", "option_name", "code", "vendor", "stored_value", "use_option", "use_options", "extra_fields",
+        ]
     workbook = Workbook()
     workbook.remove(workbook.active)
     for index, (name, rows) in enumerate(sheets.items(), start=1):
         sheet = workbook.create_sheet(name[:31])
-        headers = sorted({key for row in rows for key in row}) or ["Status"]
+        headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
         sheet.append(headers)
         for row in sorted(rows, key=lambda row: json.dumps(row, sort_keys=True, default=str)):
             values = [_json_value(row.get(header, "")) for header in headers]
@@ -108,12 +132,20 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                     "The workbook Coverage sheet contains object/query/field details and notes.", "",
                     "| Grid | Area | Status counts |", "| --- | --- | --- |"])
     coverage_counts: dict[tuple[str, str], Counter[str]] = defaultdict(Counter)
-    for result in results:
-        for row in result.coverage:
-            coverage_counts[(result.grid, str(row.get("Area", "")))][str(row.get("Collection Status", ""))] += 1
+    for row in coverage:
+        coverage_counts[(str(row.get("Grid", "")), str(row.get("Area", "")))][str(row.get("Collection Status", ""))] += 1
     for (grid, area), counts in sorted(coverage_counts.items()):
         summary.append(f"| {_markdown_value(grid)} | {_markdown_value(area)} | "
                        + ", ".join(f"{_markdown_value(status)}: {count}" for status, count in sorted(counts.items())) + " |")
+    if any(object_type in TOPOLOGY_SHEETS for result in results for object_type in result.records):
+        summary.extend(["", "## Reusable DHCP configuration", "",
+                        "Topology sheets show typed RAW_CONFIGURATION values and observed use flags, "
+                        "not effective values for objects created from templates. Template_Options exposes "
+                        "stored option values separately. Empty inventories retain column headers; "
+                        "consult Coverage to distinguish EMPTY, unavailable, and failed queries. "
+                        "Normalization coverage describes parsed records only; raw-query coverage "
+                        "remains authoritative for collection completeness. Unknown fields remain in "
+                        "extra_fields and complete responses remain in the raw archive."])
     changed = [row for row in differences if row["classification"] in {"DIFFERENT", "SOURCE_DIFFERENCE"}]
     summary.extend(["", "## Key differences", "",
                     "Comparison currently covers confirmed DHCP options matched by queried object and Network View. "
@@ -151,8 +183,6 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
 def _sheet_name(object_type: str) -> str:
     return {"networkview": "Network_Views", "network": "Networks", "range": "Ranges",
             "grid:dhcpproperties": "Grid_DHCP", "member:dhcpproperties": "Member_DHCP",
-            "fixedaddress": "Fixed_Reservations", "networktemplate": "Network_Templates",
-            "rangetemplate": "Range_Templates", "member": "Members_Failover",
-            "dhcpfailover": "Members_Failover", "dhcpoptiondefinition": "Option_Definitions",
+            "fixedaddress": "Fixed_Reservations", "member": "Members_Failover", **TOPOLOGY_SHEETS,
             "filtermac": "Filters", "filteroption": "Filters", "extensibleattributedef": "Extensible_Attributes"}.get(
                 object_type, re.sub(r"[\\/*?:\[\]]", "_", object_type)[:31])

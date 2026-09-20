@@ -32,9 +32,18 @@ python -m infoblox_inventory --config config/grids.yaml --all --output-dir outpu
 
 `--fixture` is an alias for `--offline`. Replay accepts a run directory, its `raw` directory, or a single Grid archive directory; `--grid` can narrow it. Connection testing does not prove object-level read permissions. Live collection errors return exit code 1, retain completed pages, and appear in coverage/errors. An existing raw Grid directory is refused: choose a fresh run output directory so evidence from separate runs cannot be mixed or overwritten.
 
-Focused collectors include `--collector networks`, `ranges`, `members`, `options`, `templates`, `filters`, and any object name listed by `--help`. The `options` alias collects Grid DHCP, Member DHCP, Networks, Ranges, and Fixed Addresses. The `members`, `templates`, and `filters` aliases include both related registered object types.
+Focused collectors include `--collector networks`, `ranges`, `members`, `options`, `templates`, `topology`, `filters`, and any object name listed by `--help`. The `options` alias collects Grid DHCP, Member DHCP, Networks, Ranges, and Fixed Addresses. The `members` and `filters` aliases include both related registered object types; `templates` selects network, range and fixed-address templates.
 
 For controlled lab validation, `--collector core` selects only Network Views, Grid DHCP, Members, Member DHCP, Networks, and Ranges. `config/grids.lab.yaml` pins the existing lab to WAPI 2.13.7 and stores no password; use `--insecure` only for this lab. `--log-level DEBUG` records GET methods and object paths without credentials, query tokens, or response bodies.
+
+`--collector topology` selects only `dhcpfailover`, `networktemplate`, `rangetemplate`, `fixedaddresstemplate`, `dhcpoptionspace`, and `dhcpoptiondefinition`. Their readable fields were verified against runtime LAB WAPI 2.13.7 schemas. They use the existing paginated RAW archive and offline workflow:
+
+```powershell
+python -m infoblox_inventory --config config/grids.lab.yaml --grid LAB-GRID --collector topology --collect-raw-only --insecure --output-dir output/topology-001
+python -m infoblox_inventory --offline output/topology-001/raw --output-dir output/topology-report-001
+```
+
+Six typed inventory sheets and `Template_Options` expose stored configuration, observed use flags, associations and unknown fields. These rows are labeled `RAW_CONFIGURATION`; they do not resolve template inheritance. See [the topology increment](docs/topology-increment.md) for exact fields, live GETs, counts and limitations. The captured LAB contains one option space and 95 definitions; failover and template inventories are genuinely empty. Populated examples for those types are explicitly synthetic tests.
 
 ## Evidence and inheritance
 
@@ -77,4 +86,4 @@ To validate a fresh saved lab run without any network access, run `python script
 
 No live lab or production access is required for these tests. NIOS 9.1 lab evidence remains an approximation for NIOS 9.0.7; verify the saved response formats and read-only service-account permissions with a controlled integration run before production rollout. Raw and effective collection are separate GETs, not an atomic appliance snapshot.
 
-The next increment should validate sanitized real captures against this pipeline, then extend assessment coverage: DHCP option spaces, additional filter types/MAC entries, fixed-address templates, DNS/host/reservation details, richer failover/member associations, and explicit per-area completeness. Cross-Grid analysis is currently a limited descriptive comparison of comparable resolved options; it does not yet establish object correspondence across differing site structures or exhaustively compare scalars, filters, templates, and EAs. Add verified objects/fields to `collectors/core.py`, preserve schema/raw evidence, and add regression fixtures as coverage grows.
+The topology increment adds reusable DHCP objects only. Fixed-address objects, filters, DNS, DDNS and Extensible Attributes are not extended by it. Cross-Grid analysis remains a limited descriptive comparison of comparable resolved options; it does not establish object correspondence across differing site structures or exhaustively compare scalars, filters, templates and EAs. Further scope requires a separate increment backed by runtime schemas and response evidence.

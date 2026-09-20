@@ -1,0 +1,669 @@
+{
+  "result": [
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE:subnet-mask",
+      "code": 1,
+      "name": "subnet-mask",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI:time-offset",
+      "code": 2,
+      "name": "time-offset",
+      "space": "DHCP",
+      "type": "32-bit signed integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM:routers",
+      "code": 3,
+      "name": "routers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ:time-servers",
+      "code": 4,
+      "name": "time-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU:ien116-name-servers",
+      "code": 5,
+      "name": "ien116-name-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY:domain-name-servers",
+      "code": 6,
+      "name": "domain-name-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc:log-servers",
+      "code": 7,
+      "name": "log-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjg:cookie-servers",
+      "code": 8,
+      "name": "cookie-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjk:lpr-servers",
+      "code": 9,
+      "name": "lpr-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEw:impress-servers",
+      "code": 10,
+      "name": "impress-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEx:resource-location-servers",
+      "code": 11,
+      "name": "resource-location-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEy:host-name",
+      "code": 12,
+      "name": "host-name",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEz:boot-size",
+      "code": 13,
+      "name": "boot-size",
+      "space": "DHCP",
+      "type": "16-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE0:merit-dump",
+      "code": 14,
+      "name": "merit-dump",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE1:domain-name",
+      "code": 15,
+      "name": "domain-name",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE2:swap-server",
+      "code": 16,
+      "name": "swap-server",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE3:root-path",
+      "code": 17,
+      "name": "root-path",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE4:extensions-path",
+      "code": 18,
+      "name": "extensions-path",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjE5:ip-forwarding",
+      "code": 19,
+      "name": "ip-forwarding",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjIw:non-local-source-routing",
+      "code": 20,
+      "name": "non-local-source-routing",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjIx:policy-filter",
+      "code": 21,
+      "name": "policy-filter",
+      "space": "DHCP",
+      "type": "array of ip-address pair"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjIy:max-dgram-reassembly",
+      "code": 22,
+      "name": "max-dgram-reassembly",
+      "space": "DHCP",
+      "type": "16-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjIz:default-ip-ttl",
+      "code": 23,
+      "name": "default-ip-ttl",
+      "space": "DHCP",
+      "type": "8-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI0:path-mtu-aging-timeout",
+      "code": 24,
+      "name": "path-mtu-aging-timeout",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI1:path-mtu-plateau-table",
+      "code": 25,
+      "name": "path-mtu-plateau-table",
+      "space": "DHCP",
+      "type": "array of 16-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI2:interface-mtu",
+      "code": 26,
+      "name": "interface-mtu",
+      "space": "DHCP",
+      "type": "16-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI3:all-subnets-local",
+      "code": 27,
+      "name": "all-subnets-local",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI4:broadcast-address",
+      "code": 28,
+      "name": "broadcast-address",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjI5:perform-mask-discovery",
+      "code": 29,
+      "name": "perform-mask-discovery",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjMw:mask-supplier",
+      "code": 30,
+      "name": "mask-supplier",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjMx:router-discovery",
+      "code": 31,
+      "name": "router-discovery",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjMy:router-solicitation-address",
+      "code": 32,
+      "name": "router-solicitation-address",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjMz:static-routes",
+      "code": 33,
+      "name": "static-routes",
+      "space": "DHCP",
+      "type": "array of ip-address pair"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM0:trailer-encapsulation",
+      "code": 34,
+      "name": "trailer-encapsulation",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM1:arp-cache-timeout",
+      "code": 35,
+      "name": "arp-cache-timeout",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM2:ieee802-3-encapsulation",
+      "code": 36,
+      "name": "ieee802-3-encapsulation",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM3:default-tcp-ttl",
+      "code": 37,
+      "name": "default-tcp-ttl",
+      "space": "DHCP",
+      "type": "8-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM4:tcp-keepalive-interval",
+      "code": 38,
+      "name": "tcp-keepalive-interval",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjM5:tcp-keepalive-garbage",
+      "code": 39,
+      "name": "tcp-keepalive-garbage",
+      "space": "DHCP",
+      "type": "boolean"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQw:nis-domain",
+      "code": 40,
+      "name": "nis-domain",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQx:nis-servers",
+      "code": 41,
+      "name": "nis-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQy:ntp-servers",
+      "code": 42,
+      "name": "ntp-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQz:vendor-encapsulated-options",
+      "code": 43,
+      "name": "vendor-encapsulated-options",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ0:netbios-name-servers",
+      "code": 44,
+      "name": "netbios-name-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ1:netbios-dd-server",
+      "code": 45,
+      "name": "netbios-dd-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ2:netbios-node-type",
+      "code": 46,
+      "name": "netbios-node-type",
+      "space": "DHCP",
+      "type": "8-bit unsigned integer (1,2,4,8)"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ3:netbios-scope",
+      "code": 47,
+      "name": "netbios-scope",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ4:font-servers",
+      "code": 48,
+      "name": "font-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjQ5:x-display-manager",
+      "code": 49,
+      "name": "x-display-manager",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjUw:dhcp-requested-address",
+      "code": 50,
+      "name": "dhcp-requested-address",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjUx:dhcp-lease-time",
+      "code": 51,
+      "name": "dhcp-lease-time",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjUy:dhcp-option-overload",
+      "code": 52,
+      "name": "dhcp-option-overload",
+      "space": "DHCP",
+      "type": "8-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjUz:dhcp-message-type",
+      "code": 53,
+      "name": "dhcp-message-type",
+      "space": "DHCP",
+      "type": "8-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU0:dhcp-server-identifier",
+      "code": 54,
+      "name": "dhcp-server-identifier",
+      "space": "DHCP",
+      "type": "ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU1:dhcp-parameter-request-list",
+      "code": 55,
+      "name": "dhcp-parameter-request-list",
+      "space": "DHCP",
+      "type": "array of 8-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU2:dhcp-message",
+      "code": 56,
+      "name": "dhcp-message",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU3:dhcp-max-message-size",
+      "code": 57,
+      "name": "dhcp-max-message-size",
+      "space": "DHCP",
+      "type": "16-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU4:dhcp-renewal-time",
+      "code": 58,
+      "name": "dhcp-renewal-time",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjU5:dhcp-rebinding-time",
+      "code": 59,
+      "name": "dhcp-rebinding-time",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjYw:vendor-class-identifier",
+      "code": 60,
+      "name": "vendor-class-identifier",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjYx:dhcp-client-identifier",
+      "code": 61,
+      "name": "dhcp-client-identifier",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjYy:nwip-domain",
+      "code": 62,
+      "name": "nwip-domain",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjYz:nwip-suboptions",
+      "code": 63,
+      "name": "nwip-suboptions",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY0:nisplus-domain",
+      "code": 64,
+      "name": "nisplus-domain",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY1:nisplus-servers",
+      "code": 65,
+      "name": "nisplus-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY2:tftp-server-name",
+      "code": 66,
+      "name": "tftp-server-name",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY3:bootfile-name",
+      "code": 67,
+      "name": "bootfile-name",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY4:mobile-ip-home-agent",
+      "code": 68,
+      "name": "mobile-ip-home-agent",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjY5:smtp-server",
+      "code": 69,
+      "name": "smtp-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjcw:pop-server",
+      "code": 70,
+      "name": "pop-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjcx:nntp-server",
+      "code": 71,
+      "name": "nntp-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjcy:www-server",
+      "code": 72,
+      "name": "www-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjcz:finger-server",
+      "code": 73,
+      "name": "finger-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc0:irc-server",
+      "code": 74,
+      "name": "irc-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc1:streettalk-server",
+      "code": 75,
+      "name": "streettalk-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc2:streettalk-directory-assistance-server",
+      "code": 76,
+      "name": "streettalk-directory-assistance-server",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc3:user-class",
+      "code": 77,
+      "name": "user-class",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc4:slp-directory-agent",
+      "code": 78,
+      "name": "slp-directory-agent",
+      "space": "DHCP",
+      "type": "boolean array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjc5:slp-service-scope",
+      "code": 79,
+      "name": "slp-service-scope",
+      "space": "DHCP",
+      "type": "boolean-text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjgx:fqdn",
+      "code": 81,
+      "name": "fqdn",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjgy:relay-agent-information",
+      "code": 82,
+      "name": "relay-agent-information",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjg1:nds-servers",
+      "code": 85,
+      "name": "nds-servers",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjg2:nds-tree-name",
+      "code": 86,
+      "name": "nds-tree-name",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjg3:nds-context",
+      "code": 87,
+      "name": "nds-context",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjg5:bcms-controller-address",
+      "code": 89,
+      "name": "bcms-controller-address",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjkx:client-last-transaction-time",
+      "code": 91,
+      "name": "client-last-transaction-time",
+      "space": "DHCP",
+      "type": "32-bit unsigned integer"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjky:associated-ip",
+      "code": 92,
+      "name": "associated-ip",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjk4:uap-servers",
+      "code": 98,
+      "name": "uap-servers",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjExMg:netinfo-server-address",
+      "code": 112,
+      "name": "netinfo-server-address",
+      "space": "DHCP",
+      "type": "array of ip-address"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjExMw:netinfo-server-tag",
+      "code": 113,
+      "name": "netinfo-server-tag",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjExNA:default-url",
+      "code": 114,
+      "name": "default-url",
+      "space": "DHCP",
+      "type": "text"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjExOA:subnet-selection",
+      "code": 118,
+      "name": "subnet-selection",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjExOQ:domain-search",
+      "code": 119,
+      "name": "domain-search",
+      "space": "DHCP",
+      "type": "domain-list"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEyNA:vivco",
+      "code": 124,
+      "name": "vivco",
+      "space": "DHCP",
+      "type": "string"
+    },
+    {
+      "_ref": "dhcpoptiondefinition/ZG5zLm9wdGlvbl9kZWZpbml0aW9uJERIQ1AuLmZhbHNlLjEyNQ:vivso",
+      "code": 125,
+      "name": "vivso",
+      "space": "DHCP",
+      "type": "string"
+    }
+  ]
+}

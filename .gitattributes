@@ -1,0 +1,3 @@
+# Preserve captured WAPI JSON bytes and their SHA-256 provenance across platforms.
+tests/fixtures/topology_lab_20260920/**/*.json -text whitespace=cr-at-eol
+tests/fixtures/topology_lab_20260920/provenance.json -text whitespace=cr-at-eol

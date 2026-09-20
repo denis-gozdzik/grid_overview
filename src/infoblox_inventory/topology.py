@@ -12,6 +12,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field, fields, is_dataclass
 from typing import Any, ClassVar
 
+from .collectors.topology import TOPOLOGY_OBJECTS
 from .models import CollectionResult
 
 
@@ -366,8 +367,8 @@ def topology_coverage(records: list[TypedTopologyRecord]) -> list[dict[str, Any]
         notes = [f"{record.object_ref or record.name or '(unnamed)'}: {issue}"
                  for record in group for issue in record.issues]
         rows.append({
-            "Grid": grid, "Area": TOPOLOGY_SHEETS[object_type].replace("_", " "),
-            "Object Type": object_type, "Query": "normalization",
+            "Grid": grid, "Area": TOPOLOGY_OBJECTS[object_type][0],
+            "Object": object_type, "Query": "normalization",
             "Collection Status": "PARTIAL" if partial else "COMPLETE",
             "Objects Found": len(group), "Partial Objects": partial,
             "Notes": "; ".join(notes) if notes else "Stored configuration; no inheritance resolution.",
