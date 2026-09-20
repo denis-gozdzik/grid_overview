@@ -1,0 +1,57 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "~:=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "~:=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "option_definitions",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "PREDEFINED_DHCP",
+        "VENDOR_SPACE"
+      ],
+      "is_array": false,
+      "name": "space_type",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    }
+  ],
+  "restrictions": [
+    "scheduling",
+    "csv"
+  ],
+  "schema_version": "2",
+  "type": "dhcpoptionspace",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

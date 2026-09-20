@@ -1,0 +1,48 @@
+{
+  "result": [
+    {
+      "_ref": "range/ZG5zLmRoY3BfcmFuZ2UkMTAuNzcuMTAuMTAwLzEwLjc3LjEwLjE5OS8vLzAv:10.77.10.100/10.77.10.199/default",
+      "comment": "TEST-INHERITANCE-GRID-RANGE",
+      "ddns_generate_hostname": false,
+      "deny_bootp": false,
+      "enable_ddns": false,
+      "end_addr": "10.77.10.199",
+      "extattrs": {},
+      "lease_scavenge_time": -1,
+      "member": {
+        "_struct": "dhcpmember",
+        "ipv4addr": "10.77.0.2",
+        "ipv6addr": null,
+        "name": "infobloxlab.local"
+      },
+      "network": "10.77.10.0/24",
+      "network_view": "default",
+      "nextserver": "10.77.0.40",
+      "options": [
+        {
+          "name": "dhcp-lease-time",
+          "num": 51,
+          "use_option": true,
+          "value": "3600",
+          "vendor_class": "DHCP"
+        }
+      ],
+      "recycle_leases": true,
+      "server_association_type": "MEMBER",
+      "start_addr": "10.77.10.100",
+      "update_dns_on_lease_renewal": false,
+      "use_bootfile": false,
+      "use_bootserver": false,
+      "use_ddns_domainname": false,
+      "use_ddns_generate_hostname": false,
+      "use_deny_bootp": false,
+      "use_enable_ddns": false,
+      "use_lease_scavenge_time": false,
+      "use_nextserver": true,
+      "use_options": true,
+      "use_pxe_lease_time": false,
+      "use_recycle_leases": false,
+      "use_update_dns_on_lease_renewal": false
+    }
+  ]
+}

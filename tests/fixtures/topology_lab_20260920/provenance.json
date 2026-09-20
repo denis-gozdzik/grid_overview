@@ -1,0 +1,14 @@
+{
+  "kind": "actual_live_WAPI_schema_capture",
+  "wapi_version": "2.13.7",
+  "source_run": "output/topology-20260920T062102Z",
+  "notes": "Full schemas copied byte-for-byte from GET discovery. Populated examples, if used in tests, are separately labeled synthetic. No authentication data is included.",
+  "sha256": {
+    "schemas/dhcpfailover.json": "4b2be13b23ed4eb80d0dd6cd1651fdd071221af6ebde33389716b00aa2ae3984",
+    "schemas/networktemplate.json": "e994f582efd0790623978102922eb6d9070876503203fd3ad0354cc0b0f5265d",
+    "schemas/rangetemplate.json": "982a624fc2412f58b7a713d23b026dffdb13e0d152b9c00b48151dcfe167364e",
+    "schemas/fixedaddresstemplate.json": "8440b8285c66460ef4ab247cb5d3672ddf3753e1fae6f3991d7c35f3f0a828b8",
+    "schemas/dhcpoptionspace.json": "37645994c774980e3feee34e3d2216ba61ecd314469ce9a0eb21c1999c90270f",
+    "schemas/dhcpoptiondefinition.json": "7850675cdd7cdb9d868a1d1be73a5727a5a0dd5d19cfd7f86d86a8e49020adcf"
+  }
+}

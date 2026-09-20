@@ -1,0 +1,169 @@
+{
+  "result": [
+    {
+      "_ref": "network/ZG5zLm5ldHdvcmskMTAuNzcuMTAuMC8yNC8w:10.77.10.0/24/default",
+      "authority": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "bootfile": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID"
+      },
+      "bootserver": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID"
+      },
+      "comment": "TEST-INHERITANCE-GRID",
+      "ddns_domainname": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID"
+      },
+      "ddns_generate_hostname": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "ddns_ttl": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": 0
+      },
+      "ddns_update_fixed_addresses": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "ddns_use_option81": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "deny_bootp": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "enable_ddns": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "extattrs": {},
+      "lease_scavenge_time": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": -1
+      },
+      "members": [
+        {
+          "_struct": "dhcpmember",
+          "ipv4addr": "10.77.0.2",
+          "ipv6addr": null,
+          "name": "infobloxlab.local"
+        }
+      ],
+      "network": "10.77.10.0/24",
+      "network_view": "default",
+      "nextserver": {
+        "inherited": false,
+        "multisource": false,
+        "source": "",
+        "value": "10.77.0.30"
+      },
+      "options": [
+        {
+          "inherited": false,
+          "source": "",
+          "values": [
+            {
+              "name": "routers",
+              "num": 3,
+              "use_option": true,
+              "value": "10.77.10.1",
+              "vendor_class": "DHCP"
+            }
+          ]
+        },
+        {
+          "inherited": true,
+          "source": "member:dhcpproperties/ZG5zLm1lbWJlcl9kaGNwX3Byb3BlcnRpZXMkMA:infobloxlab.local",
+          "values": [
+            {
+              "name": "domain-name-servers",
+              "num": 6,
+              "use_option": false,
+              "value": "10.77.0.60,10.77.0.61",
+              "vendor_class": "DHCP"
+            }
+          ]
+        },
+        {
+          "inherited": true,
+          "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+          "values": [
+            {
+              "name": "domain-name",
+              "num": 15,
+              "use_option": false,
+              "value": "lab.local",
+              "vendor_class": "DHCP"
+            },
+            {
+              "name": "dhcp-lease-time",
+              "num": 51,
+              "use_option": false,
+              "value": "28800",
+              "vendor_class": "DHCP"
+            }
+          ]
+        }
+      ],
+      "pxe_lease_time": {
+        "inherited": true,
+        "multisource": false,
+        "source": "NOT_DEFINED"
+      },
+      "recycle_leases": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": true
+      },
+      "update_dns_on_lease_renewal": {
+        "inherited": true,
+        "multisource": false,
+        "source": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+        "value": false
+      },
+      "use_authority": false,
+      "use_bootfile": false,
+      "use_bootserver": false,
+      "use_ddns_domainname": false,
+      "use_ddns_generate_hostname": false,
+      "use_ddns_ttl": false,
+      "use_ddns_update_fixed_addresses": false,
+      "use_ddns_use_option81": false,
+      "use_deny_bootp": false,
+      "use_enable_ddns": false,
+      "use_lease_scavenge_time": false,
+      "use_nextserver": true,
+      "use_options": true,
+      "use_pxe_lease_time": false,
+      "use_recycle_leases": false,
+      "use_update_dns_on_lease_renewal": false
+    }
+  ]
+}

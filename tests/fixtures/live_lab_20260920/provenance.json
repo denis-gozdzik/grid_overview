@@ -1,0 +1,22 @@
+{
+  "kind": "actual_live_lab_capture",
+  "collected_at": "2026-09-20T06:07:20.877123+00:00",
+  "wapi_version": "2.13.7",
+  "nios_version": "9.1.0 (user-supplied lab version)",
+  "source_archive": "output/lab-live-20260920T060623Z/raw/LAB-GRID",
+  "notes": "Selected response files copied byte-for-byte from the authorized GET-only lab run. No raw edits or sanitization were applied; these files retain the supplied lab addresses and names. No credentials or HTTP headers are included.",
+  "sha256": {
+    "grid%3Adhcpproperties/raw/page-000001.json": "29cbc146dd2bc37a669e62269de8e3447b7989b635c226d787ddcf1b54e14f74",
+    "member/raw/page-000001.json": "88c7e4df2a3234a120efdcd656404118e3295fcd905bcf8348f158eb270e77f6",
+    "member%3Adhcpproperties/effective/page-000001.json": "255314aef455962fd879c85d003efb8b47585b9351b1b77a1189ec20c6e4bd36",
+    "member%3Adhcpproperties/raw/page-000001.json": "255314aef455962fd879c85d003efb8b47585b9351b1b77a1189ec20c6e4bd36",
+    "network/effective/page-000001.json": "b28e9579b9768ab94ef50fbbdcc2a5960feffe7d72324304c629e57187bcafe4",
+    "network/raw/page-000001.json": "56c744cf6c03937eb697ec54c3784b90c1436aae817fe9ad2a88a922f23b0d99",
+    "networkview/raw/page-000001.json": "006305be08f9e9a9c1f157b31fcc53a83f079717cc3eee7aca87ac6eca7d2754",
+    "range/effective/page-000001.json": "dfbec681e201677bd591efe09e0c30d17a5f25f54fb9b34fdfcd58ca08cd8555",
+    "range/raw/page-000001.json": "374e41adb12a8bec179335d0df364535b3e316bc9850acbbdf48988eb5d5c00d",
+    "schema/member%3Adhcpproperties.json": "5451a46beaadf7a270c4c5142fa38c2493ef4cd6b55ce1d98a05e103ccfa007c",
+    "schema/network.json": "82c52972178e6ce64713be0aabc10a6b0575ca653cf97f2213d4cc5c2183b797",
+    "schema/range.json": "5e8b4430588d70b5bd8f344386b50492f2861ef39cf26b88bf67a6cdf82b3c81"
+  }
+}

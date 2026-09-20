@@ -1,0 +1,88 @@
+{
+  "fixture_note": "Reconstructed from the empirical examples supplied by the user; this is not an unmodified capture downloaded from a lab appliance. Scalar cases represent separate experimental stages, not one simultaneous configuration.",
+  "records": {
+    "member:dhcpproperties": [
+      {
+        "_ref": "member:dhcpproperties/example:infobloxlab.local",
+        "use_options": false,
+        "options": [{"name": "dhcp-lease-time", "num": 51, "use_option": false, "value": "43200", "vendor_class": "DHCP"}]
+      }
+    ],
+    "range": [
+      {
+        "_ref": "range/example:10.77.10.100-10.77.10.199/default",
+        "network": "10.77.10.0/24",
+        "network_view": "default",
+        "start_addr": "10.77.10.100",
+        "end_addr": "10.77.10.199",
+        "use_options": true,
+        "options": [{"name": "dhcp-lease-time", "num": 51, "use_option": true, "value": "3600", "vendor_class": "DHCP"}]
+      }
+    ]
+  },
+  "effective_records": {
+    "member:dhcpproperties": [
+      {
+        "_ref": "member:dhcpproperties/example:infobloxlab.local",
+        "options": [
+          {"inherited": true, "source": "grid:dhcpproperties/example:LAB-GRID", "values": [{"name": "dhcp-lease-time", "num": 51, "use_option": false, "value": "28800", "vendor_class": "DHCP"}]}
+        ]
+      }
+    ],
+    "range": [
+      {
+        "_ref": "range/example:10.77.10.100-10.77.10.199/default",
+        "options": [
+          {"inherited": false, "source": "", "values": [{"name": "dhcp-lease-time", "num": 51, "use_option": true, "value": "3600", "vendor_class": "DHCP"}]},
+          {"inherited": true, "source": "network/example:10.77.10.0/24/default", "values": [{"name": "routers", "num": 3, "use_option": false, "value": "10.77.10.1", "vendor_class": "DHCP"}]},
+          {"inherited": true, "source": "member:dhcpproperties/example:infobloxlab.local", "values": [{"name": "domain-name-servers", "num": 6, "use_option": false, "value": "10.77.0.60,10.77.0.61", "vendor_class": "DHCP"}]},
+          {"inherited": true, "source": "grid:dhcpproperties/example:LAB-GRID", "values": [{"name": "domain-name", "num": 15, "use_option": false, "value": "lab.local", "vendor_class": "DHCP"}]}
+        ]
+      }
+    ]
+  },
+  "schemas": {
+    "member:dhcpproperties": {"fields": [{"name": "options", "overridden_by": "use_options"}]},
+    "range": {"fields": [{"name": "options", "overridden_by": "use_options"}]}
+  },
+  "scalar_cases": [
+    {
+      "description": "Member inherits Grid nextserver",
+      "object_type": "member:dhcpproperties",
+      "ref": "member:dhcpproperties/example:infobloxlab.local",
+      "field": "nextserver",
+      "wrapper": {"inherited": true, "multisource": false, "source": "grid:dhcpproperties/example:LAB-GRID", "value": "10.77.0.10"},
+      "expected_level": "Grid", "expected_object": "LAB-GRID", "expected_value": "10.77.0.10", "expected_status": "COMPLETE"
+    },
+    {
+      "description": "Network inherits Member override",
+      "object_type": "network", "ref": "network/example:10.77.10.0/24/default", "field": "nextserver",
+      "wrapper": {"inherited": true, "multisource": false, "source": "member:dhcpproperties/example:infobloxlab.local", "value": "10.77.0.20"},
+      "expected_level": "Member", "expected_object": "infobloxlab.local", "expected_value": "10.77.0.20", "expected_status": "COMPLETE"
+    },
+    {
+      "description": "Range inherits Network override",
+      "object_type": "range", "ref": "range/example:10.77.10.100-10.77.10.199/default", "field": "nextserver",
+      "wrapper": {"inherited": true, "multisource": false, "source": "network/example:10.77.10.0/24/default", "value": "10.77.0.30"},
+      "expected_level": "Network", "expected_object": "10.77.10.0/24", "expected_value": "10.77.0.30", "expected_status": "COMPLETE"
+    },
+    {
+      "description": "Network has a local override",
+      "object_type": "network", "ref": "network/example:10.77.10.0/24/default", "field": "nextserver",
+      "wrapper": {"inherited": false, "multisource": false, "source": "", "value": "10.77.0.30"},
+      "expected_level": "Network", "expected_object": "10.77.10.0/24", "expected_value": "10.77.0.30", "expected_status": "COMPLETE"
+    },
+    {
+      "description": "Range has a local override",
+      "object_type": "range", "ref": "range/example:10.77.10.100-10.77.10.199/default", "field": "nextserver",
+      "wrapper": {"inherited": false, "multisource": false, "source": "", "value": "10.77.0.40"},
+      "expected_level": "Range", "expected_object": "10.77.10.100-10.77.10.199", "expected_value": "10.77.0.40", "expected_status": "COMPLETE"
+    },
+    {
+      "description": "Supported PXE lease time has no effective configuration",
+      "object_type": "range", "ref": "range/example:10.77.10.100-10.77.10.199/default", "field": "pxe_lease_time",
+      "wrapper": {"inherited": true, "multisource": false, "source": "NOT_DEFINED"},
+      "expected_level": "NOT_DEFINED", "expected_object": "", "expected_value": null, "expected_status": "NOT_CONFIGURED"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "result": [
+    {
+      "_ref": "member:dhcpproperties/ZG5zLm1lbWJlcl9kaGNwX3Byb3BlcnRpZXMkMA:infobloxlab.local",
+      "authority": false,
+      "ddns_generate_hostname": false,
+      "ddns_ttl": 0,
+      "ddns_update_fixed_addresses": false,
+      "ddns_use_option81": false,
+      "deny_bootp": false,
+      "enable_ddns": false,
+      "enable_dhcp": false,
+      "host_name": "infobloxlab.local",
+      "lease_scavenge_time": -1,
+      "nextserver": "10.77.0.20",
+      "options": [
+        {
+          "name": "domain-name-servers",
+          "num": 6,
+          "use_option": true,
+          "value": "10.77.0.60,10.77.0.61",
+          "vendor_class": "DHCP"
+        },
+        {
+          "name": "dhcp-lease-time",
+          "num": 51,
+          "use_option": false,
+          "value": "43200",
+          "vendor_class": "DHCP"
+        }
+      ],
+      "recycle_leases": true,
+      "update_dns_on_lease_renewal": false,
+      "use_authority": false,
+      "use_bootfile": false,
+      "use_bootserver": false,
+      "use_ddns_domainname": false,
+      "use_ddns_generate_hostname": false,
+      "use_ddns_ttl": false,
+      "use_ddns_update_fixed_addresses": false,
+      "use_ddns_use_option81": false,
+      "use_deny_bootp": false,
+      "use_enable_ddns": false,
+      "use_lease_scavenge_time": false,
+      "use_nextserver": true,
+      "use_options": true,
+      "use_pxe_lease_time": false,
+      "use_recycle_leases": false,
+      "use_update_dns_on_lease_renewal": false
+    }
+  ]
+}

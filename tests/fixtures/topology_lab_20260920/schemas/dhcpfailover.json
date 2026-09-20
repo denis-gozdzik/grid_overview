@@ -1,0 +1,432 @@
+{
+  "cloud_additional_restrictions": [
+    "all"
+  ],
+  "fields": [
+    {
+      "enum_values": [
+        "GRID",
+        "MS"
+      ],
+      "is_array": false,
+      "name": "association_type",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "failover_port",
+      "overridden_by": "use_failover_port",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "load_balance_split",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "max_client_lead_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "max_load_balance_delay",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "max_response_delay",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "max_unacked_updates",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "enum_values": [
+        "RO",
+        "RW"
+      ],
+      "is_array": false,
+      "name": "ms_association_mode",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_enable_authentication",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_enable_switchover_interval",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "HOTSTANDBY",
+        "LOADBALANCE"
+      ],
+      "is_array": false,
+      "name": "ms_failover_mode",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_failover_partner",
+      "standard_field": false,
+      "supports": "wr",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "ACTIVE",
+        "PASSIVE"
+      ],
+      "is_array": false,
+      "name": "ms_hotstandby_partner_role",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_is_conflict",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "INIT",
+        "STARTUP",
+        "RECOVER",
+        "POTENTIAL_CONFLICT",
+        "COMMUNICATION_INT",
+        "NO_STATE",
+        "NORMAL",
+        "PARTNER_DOWN",
+        "RESOLUTION_INIT",
+        "RECOVER_DONE",
+        "CONFLICT_DONE",
+        "RECOVER_WAIT"
+      ],
+      "is_array": false,
+      "name": "ms_previous_state",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_server",
+      "standard_field": false,
+      "supports": "wr",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_shared_secret",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "INIT",
+        "STARTUP",
+        "RECOVER",
+        "POTENTIAL_CONFLICT",
+        "COMMUNICATION_INT",
+        "NO_STATE",
+        "NORMAL",
+        "PARTNER_DOWN",
+        "RESOLUTION_INIT",
+        "RECOVER_DONE",
+        "CONFLICT_DONE",
+        "RECOVER_WAIT"
+      ],
+      "is_array": false,
+      "name": "ms_state",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ms_switchover_interval",
+      "overridden_by": "use_ms_switchover_interval",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "searchable_by": "=~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "primary",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "GRID",
+        "EXTERNAL"
+      ],
+      "is_array": false,
+      "name": "primary_server_type",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "enum_values": [
+        "COMMUNICATIONS_INTERRUPTED",
+        "RECOVER_WAIT",
+        "RECOVER",
+        "SHUTDOWN",
+        "UNKNOWN",
+        "POTENTIAL_CONFLICT",
+        "NORMAL",
+        "RESOLUTION_INTERRUPTED",
+        "PARTNER_DOWN",
+        "PAUSED",
+        "RECOVER_DONE",
+        "CONFLICT_DONE",
+        "START"
+      ],
+      "is_array": false,
+      "name": "primary_state",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "recycle_leases",
+      "overridden_by": "use_recycle_leases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "secondary",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "enum_values": [
+        "GRID",
+        "EXTERNAL"
+      ],
+      "is_array": false,
+      "name": "secondary_server_type",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "enum_values": [
+        "COMMUNICATIONS_INTERRUPTED",
+        "RECOVER_WAIT",
+        "RECOVER",
+        "SHUTDOWN",
+        "UNKNOWN",
+        "POTENTIAL_CONFLICT",
+        "NORMAL",
+        "RESOLUTION_INTERRUPTED",
+        "PARTNER_DOWN",
+        "PAUSED",
+        "RECOVER_DONE",
+        "CONFLICT_DONE",
+        "START"
+      ],
+      "is_array": false,
+      "name": "secondary_state",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "set_dhcp_failover_partner_down",
+      "schema": {
+        "input_fields": [
+          {
+            "enum_values": [
+              "PRIMARY",
+              "SECONDARY"
+            ],
+            "is_array": false,
+            "name": "peer_type",
+            "supports": "w",
+            "type": [
+              "enum"
+            ]
+          }
+        ],
+        "output_fields": []
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "setdhcpfailoverpartnerdown"
+      ],
+      "uses_data_ref": true,
+      "wapi_primitive": "funccall"
+    },
+    {
+      "is_array": false,
+      "name": "set_dhcp_failover_secondary_recovery",
+      "schema": {
+        "input_fields": [],
+        "output_fields": []
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "emptyparams"
+      ],
+      "uses_data_ref": true,
+      "wapi_primitive": "funccall"
+    },
+    {
+      "is_array": false,
+      "name": "use_failover_port",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ms_switchover_interval",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_recycle_leases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    }
+  ],
+  "restrictions": [
+    "scheduling"
+  ],
+  "schema_version": "2",
+  "type": "dhcpfailover",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

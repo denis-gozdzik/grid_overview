@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "infoblox-current-state"
+version = "0.1.0"
+description = "Read-only Infoblox NIOS DHCP current-state inventory"
+requires-python = ">=3.11"
+dependencies = [
+    "openpyxl>=3.1",
+    "PyYAML>=6.0",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0", "responses>=0.25"]
+
+[project.scripts]
+infoblox-inventory = "infoblox_inventory.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

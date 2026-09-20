@@ -1,0 +1,15 @@
+grids:
+  - name: JB
+    url: https://jb-grid-master.example.com
+    username: readonly_user
+    password_env: INFOBLOX_JB_PASSWORD
+    wapi_version: 2.13.7
+    verify_tls: true
+
+  - name: GRID2
+    url: https://grid2-grid-master.example.com
+    username: readonly_user
+    password_env: INFOBLOX_GRID2_PASSWORD
+    wapi_version: 2.13.7
+    verify_tls: true
+    ca_bundle: C:/path/to/corporate-ca.pem

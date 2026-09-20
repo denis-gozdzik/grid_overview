@@ -1,0 +1,2043 @@
+{
+  "cloud_additional_restrictions": [],
+  "fields": [
+    {
+      "is_array": false,
+      "name": "always_update_dns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootfile",
+      "overridden_by": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "bootserver",
+      "overridden_by": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "cloud_info",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "delegated_member",
+            "schema": {
+              "fields": [
+                {
+                  "is_array": false,
+                  "name": "ipv4addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "ipv6addr",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "name",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "dhcpmember"
+            ],
+            "wapi_primitive": "struct"
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ROOT",
+              "SUBTREE",
+              "RECLAIMING"
+            ],
+            "is_array": false,
+            "name": "delegated_scope",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "delegated_root",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "owned_by_adaptor",
+            "supports": "r",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "ADAPTER",
+              "USED_BY",
+              "DELEGATED"
+            ],
+            "is_array": false,
+            "name": "usage",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "tenant",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "mgmt_platform",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "NONE",
+              "GM",
+              "CP"
+            ],
+            "is_array": false,
+            "name": "authority_type",
+            "supports": "r",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "grid:cloudapi:info"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "comment",
+      "searchable_by": "=:~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_domainname",
+      "overridden_by": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ddns_generate_hostname",
+      "overridden_by": "use_ddns_generate_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "deny_all_clients",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "deny_bootp",
+      "overridden_by": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "dhcp_utilization",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "enum_values": [
+        "FULL",
+        "HIGH",
+        "LOW",
+        "NORMAL"
+      ],
+      "is_array": false,
+      "name": "dhcp_utilization_status",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "disable",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "NONE",
+        "PENDING",
+        "RUNNING",
+        "COMPLETE",
+        "FAILED"
+      ],
+      "is_array": false,
+      "name": "discover_now_status",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "discovery_basic_poll_settings",
+      "overridden_by": "use_discovery_basic_polling_settings",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "port_scanning",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "device_profile",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "snmp_collection",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "cli_collection",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "netbios_scanning",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "complete_ping_sweep",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "smart_subnet_ping_sweep",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "auto_arp_refresh_before_switch_port_polling",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "enum_values": [
+              "DISABLED",
+              "PERIODIC",
+              "SCHEDULED"
+            ],
+            "is_array": false,
+            "name": "switch_port_data_collection_polling",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "switch_port_data_collection_polling_schedule",
+            "schema": {
+              "fields": [
+                {
+                  "enum_values": [
+                    "SATURDAY",
+                    "SUNDAY",
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY"
+                  ],
+                  "is_array": true,
+                  "name": "weekdays",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "time_zone",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "recurring_time",
+                  "supports": "rwu",
+                  "type": [
+                    "timestamp"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "DAILY",
+                    "HOURLY",
+                    "MONTHLY",
+                    "WEEKLY"
+                  ],
+                  "is_array": false,
+                  "name": "frequency",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "every",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "minutes_past_hour",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "hour_of_day",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "year",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "day_of_month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "ONCE",
+                    "RECUR"
+                  ],
+                  "is_array": false,
+                  "name": "repeat",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "disable",
+                  "supports": "rwu",
+                  "type": [
+                    "bool"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "setting:schedule"
+            ],
+            "wapi_primitive": "struct"
+          },
+          {
+            "is_array": false,
+            "name": "switch_port_data_collection_polling_interval",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "credential_group",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "polling_frequency_modifier",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_global_polling_frequency_modifier",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_arp_data_for_discovery",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "discovery:basicpollsettings"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "discovery_blackout_setting",
+      "overridden_by": "use_blackout_setting",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "enable_blackout",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "blackout_duration",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "blackout_schedule",
+            "schema": {
+              "fields": [
+                {
+                  "enum_values": [
+                    "SATURDAY",
+                    "SUNDAY",
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY"
+                  ],
+                  "is_array": true,
+                  "name": "weekdays",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "time_zone",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "recurring_time",
+                  "supports": "rwu",
+                  "type": [
+                    "timestamp"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "DAILY",
+                    "HOURLY",
+                    "MONTHLY",
+                    "WEEKLY"
+                  ],
+                  "is_array": false,
+                  "name": "frequency",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "every",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "minutes_past_hour",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "hour_of_day",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "year",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "day_of_month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "ONCE",
+                    "RECUR"
+                  ],
+                  "is_array": false,
+                  "name": "repeat",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "disable",
+                  "supports": "rwu",
+                  "type": [
+                    "bool"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "setting:schedule"
+            ],
+            "wapi_primitive": "struct"
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "properties:blackoutsetting"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "discovery_member",
+      "overridden_by": "use_enable_discovery",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "dynamic_hosts",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "email_list",
+      "overridden_by": "use_email_list",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_ddns",
+      "overridden_by": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_dhcp_thresholds",
+      "overridden_by": "use_enable_dhcp_thresholds",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_discovery",
+      "overridden_by": "use_enable_discovery",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_email_warnings",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_ifmap_publishing",
+      "overridden_by": "use_enable_ifmap_publishing",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_immediate_discovery",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "enable_snmp_warnings",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "end_addr",
+      "searchable_by": "=~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "endpoint_sources",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "pxgrid:endpoint"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "exclude",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "start_address",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "end_address",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "comment",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "exclusionrange"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "extattrs",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "extattr"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "failover_association",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "fingerprint_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Allow",
+              "Deny"
+            ],
+            "is_array": false,
+            "name": "permission",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "filterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "high_water_mark",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "high_water_mark_reset",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "ignore_dhcp_option_list_request",
+      "overridden_by": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "NONE",
+        "CLIENT",
+        "MACADDR"
+      ],
+      "is_array": false,
+      "name": "ignore_id",
+      "overridden_by": "use_ignore_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "ignore_mac_addresses",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "is_split_scope",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "known_clients",
+      "overridden_by": "use_known_clients",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "lease_scavenge_time",
+      "overridden_by": "use_lease_scavenge_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "int"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "logic_filter_rules",
+      "overridden_by": "use_logic_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "type",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "logicfilterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "low_water_mark",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "low_water_mark_reset",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "mac_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Allow",
+              "Deny"
+            ],
+            "is_array": false,
+            "name": "permission",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "filterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "member",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "ipv4addr",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "ipv6addr",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "dhcpmember"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "ms_ad_user_data",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "active_users_count",
+            "supports": "r",
+            "type": [
+              "uint"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "msserver:aduser:data"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": true,
+      "name": "ms_options",
+      "overridden_by": "use_ms_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "user_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "type",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "msdhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "ms_server",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "ipv4addr",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "msdhcpserver"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": true,
+      "name": "nac_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Allow",
+              "Deny"
+            ],
+            "is_array": false,
+            "name": "permission",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "filterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "name",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network",
+      "searchable_by": "=~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "network_view",
+      "searchable_by": "=",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "next_available_ip",
+      "schema": {
+        "input_fields": [
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "w",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": true,
+            "name": "exclude",
+            "supports": "w",
+            "type": [
+              "string"
+            ]
+          }
+        ],
+        "output_fields": [
+          {
+            "is_array": true,
+            "name": "ips",
+            "supports": "r",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "nextavailableip"
+      ],
+      "uses_data_ref": true,
+      "wapi_primitive": "funccall"
+    },
+    {
+      "is_array": false,
+      "name": "nextserver",
+      "overridden_by": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "option_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Allow",
+              "Deny"
+            ],
+            "is_array": false,
+            "name": "permission",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "filterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": true,
+      "name": "options",
+      "overridden_by": "use_options",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "name",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "num",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "vendor_class",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "value",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "use_option",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "dhcpoption"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "port_control_blackout_setting",
+      "overridden_by": "use_blackout_setting",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "enable_blackout",
+            "supports": "rwu",
+            "type": [
+              "bool"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "blackout_duration",
+            "supports": "rwu",
+            "type": [
+              "uint"
+            ]
+          },
+          {
+            "is_array": false,
+            "name": "blackout_schedule",
+            "schema": {
+              "fields": [
+                {
+                  "enum_values": [
+                    "SATURDAY",
+                    "SUNDAY",
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY",
+                    "FRIDAY"
+                  ],
+                  "is_array": true,
+                  "name": "weekdays",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "time_zone",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "recurring_time",
+                  "supports": "rwu",
+                  "type": [
+                    "timestamp"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "DAILY",
+                    "HOURLY",
+                    "MONTHLY",
+                    "WEEKLY"
+                  ],
+                  "is_array": false,
+                  "name": "frequency",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "every",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "minutes_past_hour",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "hour_of_day",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "year",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "day_of_month",
+                  "supports": "rwu",
+                  "type": [
+                    "uint"
+                  ]
+                },
+                {
+                  "enum_values": [
+                    "ONCE",
+                    "RECUR"
+                  ],
+                  "is_array": false,
+                  "name": "repeat",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "disable",
+                  "supports": "rwu",
+                  "type": [
+                    "bool"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "setting:schedule"
+            ],
+            "wapi_primitive": "struct"
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "properties:blackoutsetting"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "pxe_lease_time",
+      "overridden_by": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "recycle_leases",
+      "overridden_by": "use_recycle_leases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": true,
+      "name": "relay_agent_filter_rules",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "filter",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          },
+          {
+            "enum_values": [
+              "Allow",
+              "Deny"
+            ],
+            "is_array": false,
+            "name": "permission",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "filterrule"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "restart_if_needed",
+      "standard_field": false,
+      "supports": "wu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "same_port_control_discovery_blackout",
+      "overridden_by": "use_blackout_setting",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "enum_values": [
+        "NONE",
+        "MEMBER",
+        "FAILOVER",
+        "MS_SERVER",
+        "MS_FAILOVER"
+      ],
+      "is_array": false,
+      "name": "server_association_type",
+      "searchable_by": "=",
+      "standard_field": false,
+      "supports": "rwus",
+      "type": [
+        "enum"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "split_member",
+      "schema": {
+        "fields": [
+          {
+            "is_array": false,
+            "name": "ipv4addr",
+            "supports": "rwu",
+            "type": [
+              "string"
+            ]
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "msdhcpserver"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "split_scope_exclusion_percent",
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "start_addr",
+      "searchable_by": "=~",
+      "standard_field": true,
+      "supports": "rwus",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "static_hosts",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "subscribe_settings",
+      "overridden_by": "use_subscribe_settings",
+      "schema": {
+        "fields": [
+          {
+            "enum_values": [
+              "DOMAINNAME",
+              "ENDPOINT_PROFILE",
+              "SECURITY_GROUP",
+              "SESSION_STATE",
+              "SSID",
+              "USERNAME",
+              "VLAN"
+            ],
+            "is_array": true,
+            "name": "enabled_attributes",
+            "supports": "rwu",
+            "type": [
+              "enum"
+            ]
+          },
+          {
+            "is_array": true,
+            "name": "mapped_ea_attributes",
+            "schema": {
+              "fields": [
+                {
+                  "enum_values": [
+                    "ACCOUNT_SESSION_ID",
+                    "AUDIT_SESSION_ID",
+                    "EPS_STATUS",
+                    "IP_ADDRESS",
+                    "MAC",
+                    "NAS_IP_ADDRESS",
+                    "NAS_PORT_ID",
+                    "POSTURE_STATUS",
+                    "POSTURE_TIMESTAMP"
+                  ],
+                  "is_array": false,
+                  "name": "name",
+                  "supports": "rwu",
+                  "type": [
+                    "enum"
+                  ]
+                },
+                {
+                  "is_array": false,
+                  "name": "mapped_ea",
+                  "supports": "rwu",
+                  "type": [
+                    "string"
+                  ]
+                }
+              ]
+            },
+            "supports": "rwu",
+            "type": [
+              "ciscoise:eaassociation"
+            ],
+            "wapi_primitive": "struct"
+          }
+        ]
+      },
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "ciscoise:subscribesetting"
+      ],
+      "wapi_primitive": "struct"
+    },
+    {
+      "is_array": false,
+      "name": "template",
+      "standard_field": false,
+      "supports": "w",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "total_hosts",
+      "standard_field": false,
+      "supports": "r",
+      "type": [
+        "uint"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "unknown_clients",
+      "overridden_by": "use_unknown_clients",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "string"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "update_dns_on_lease_renewal",
+      "overridden_by": "use_update_dns_on_lease_renewal",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_blackout_setting",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootfile",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_bootserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ddns_domainname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ddns_generate_hostname",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_deny_bootp",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_discovery_basic_polling_settings",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_email_list",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_ddns",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_dhcp_thresholds",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_discovery",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_enable_ifmap_publishing",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ignore_dhcp_option_list_request",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ignore_id",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_known_clients",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_lease_scavenge_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_logic_filter_rules",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_ms_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_nextserver",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_options",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_pxe_lease_time",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_recycle_leases",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_subscribe_settings",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_unknown_clients",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    },
+    {
+      "is_array": false,
+      "name": "use_update_dns_on_lease_renewal",
+      "standard_field": false,
+      "supports": "rwu",
+      "type": [
+        "bool"
+      ]
+    }
+  ],
+  "restrictions": [],
+  "schema_version": "2",
+  "type": "range",
+  "version": "2.13.7",
+  "wapi_primitive": "object"
+}

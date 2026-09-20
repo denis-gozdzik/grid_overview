@@ -1,0 +1,26 @@
+# Local credentials, appliance configuration, and captured inventory
+.env
+.env.*
+!.env.example
+/config/*
+!/config/grids.example.yaml
+/output/
+*.log
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python environments and generated artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+/build/
+/dist/
+*.xlsx
+~$*

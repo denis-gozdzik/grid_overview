@@ -1,0 +1,206 @@
+{
+  "result": [
+    {
+      "_ref": "member/b25lLnZpcnR1YWxfbm9kZSQw:infobloxlab.local",
+      "host_name": "infobloxlab.local",
+      "node_info": [
+        {
+          "ha_status": "NOT_CONFIGURED",
+          "host_platform": "QEMU",
+          "hwid": "C10A9E64141C4AE9AE6D567A0FC59D7D",
+          "hwmodel": "",
+          "hwtype": "IB-V825",
+          "hypervisor": "KVM",
+          "lan2_physical_setting": {
+            "auto_port_setting_enabled": true
+          },
+          "lan_ha_port_setting": {
+            "ha_cloud_attribute": "UNK",
+            "ha_port_setting": {
+              "auto_port_setting_enabled": true,
+              "speed": "10"
+            },
+            "lan_port_setting": {
+              "auto_port_setting_enabled": true
+            }
+          },
+          "mgmt_network_setting": {
+            "address": "192.168.88.243",
+            "gateway": "192.168.88.1",
+            "subnet_mask": "255.255.255.0"
+          },
+          "mgmt_physical_setting": {
+            "auto_port_setting_enabled": true
+          },
+          "paid_nios": false,
+          "physical_oid": "0",
+          "service_status": [
+            {
+              "description": "Running",
+              "service": "NODE_STATUS",
+              "status": "WORKING"
+            },
+            {
+              "description": "33% - Primary drive usage is OK.",
+              "service": "DISK_USAGE",
+              "status": "WORKING"
+            },
+            {
+              "description": "10.77.0.2",
+              "service": "ENET_LAN",
+              "status": "WORKING"
+            },
+            {
+              "description": "192.168.88.243",
+              "service": "ENET_MGMT",
+              "status": "WORKING"
+            },
+            {
+              "description": "Online",
+              "service": "REPLICATION",
+              "status": "WORKING"
+            },
+            {
+              "description": "3% - Database capacity usage is OK.",
+              "service": "DB_OBJECT",
+              "status": "WORKING"
+            },
+            {
+              "service": "NTP_SYNC",
+              "status": "INACTIVE"
+            },
+            {
+              "description": "CPU Usage: 6%",
+              "service": "CPU_USAGE",
+              "status": "WORKING"
+            },
+            {
+              "description": "An OSPF routing daemon failure has occurred.",
+              "service": "OSPF",
+              "status": "INACTIVE"
+            },
+            {
+              "service": "OSPF6",
+              "status": "INACTIVE"
+            },
+            {
+              "service": "BGP",
+              "status": "INACTIVE"
+            },
+            {
+              "service": "BFD",
+              "status": "INACTIVE"
+            },
+            {
+              "description": "No Core Files",
+              "service": "CORE_FILES",
+              "status": "WORKING"
+            },
+            {
+              "description": "DNS queries and responses disabled or CLI command was run to disable warnings",
+              "service": "QUERY_LOGGING_ENABLED",
+              "status": "INACTIVE"
+            },
+            {
+              "description": "52% - System memory usage is OK.",
+              "service": "MEMORY",
+              "status": "WORKING"
+            },
+            {
+              "description": "1% - System swap space usage is OK.",
+              "service": "SWAP_USAGE",
+              "status": "WORKING"
+            },
+            {
+              "description": "0% - Discovery capacity usage is OK.",
+              "service": "DISCOVERY_CAPACITY",
+              "status": "WORKING"
+            },
+            {
+              "service": "VPN_CERT",
+              "status": "WORKING"
+            },
+            {
+              "description": "Database write activity is OK.",
+              "service": "DB_WRITES",
+              "status": "WORKING"
+            }
+          ],
+          "v6_mgmt_network_setting": {
+            "auto_router_config_enabled": false,
+            "enabled": false
+          }
+        }
+      ],
+      "service_status": [
+        {
+          "description": "DHCP Service is inactive",
+          "service": "DHCP",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "DNS Service is inactive",
+          "service": "DNS",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "NIOS/DFP Service is not running. Cloud/DFP is not running.",
+          "service": "DFP",
+          "status": "INACTIVE"
+        },
+        {
+          "service": "DOT_DOH",
+          "status": "UNKNOWN"
+        },
+        {
+          "description": "NTP Service is inactive",
+          "service": "NTP",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "Hard Disk: 0% - TFTP Service is inactive",
+          "service": "TFTP",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "Hard Disk: 0% - HTTP File Dist Service is inactive",
+          "service": "HTTP_FILE_DIST",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "Hard Disk: 0% - FTP Service is inactive",
+          "service": "FTP",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "Captive Portal Service is inactive",
+          "service": "CAPTIVE_PORTAL",
+          "status": "INACTIVE"
+        },
+        {
+          "service": "HSM",
+          "status": "UNKNOWN"
+        },
+        {
+          "description": "Subscriber Collection Service is inactive",
+          "service": "IMC",
+          "status": "INACTIVE"
+        },
+        {
+          "service": "IMC_DCA_BWL",
+          "status": "UNKNOWN"
+        },
+        {
+          "description": "TAXII Service is inactive",
+          "service": "TAXII",
+          "status": "INACTIVE"
+        },
+        {
+          "description": "Cloud Sync Service is not running.",
+          "service": "CLOUD_DNS_SYNC",
+          "status": "INACTIVE"
+        }
+      ]
+    }
+  ]
+}

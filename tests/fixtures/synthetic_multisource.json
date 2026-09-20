@@ -1,0 +1,13 @@
+{
+  "fixture_note": "Synthetic preservation-only test. This shape is not asserted to be an actual NIOS multisource response; no real multisource lab capture was supplied.",
+  "wrapper": {
+    "inherited": true,
+    "multisource": true,
+    "source": ["member:dhcpproperties/example:member-a", "member:dhcpproperties/example:member-b"],
+    "value": [
+      {"source": "member:dhcpproperties/example:member-a", "value": "10.77.0.20"},
+      {"source": "member:dhcpproperties/example:member-b", "value": "10.77.0.21"}
+    ],
+    "unknown_future_metadata": {"retained": true}
+  }
+}

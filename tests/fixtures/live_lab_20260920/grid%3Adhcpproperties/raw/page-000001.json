@@ -1,0 +1,45 @@
+{
+  "result": [
+    {
+      "_ref": "grid:dhcpproperties/ZG5zLmNsdXN0ZXJfZGhjcF9wcm9wZXJ0aWVzJDA:LAB-GRID",
+      "authority": false,
+      "ddns_generate_hostname": false,
+      "ddns_ttl": 0,
+      "ddns_update_fixed_addresses": false,
+      "ddns_use_option81": false,
+      "deny_bootp": false,
+      "enable_ddns": false,
+      "lease_scavenge_time": -1,
+      "nextserver": "10.77.0.10",
+      "options": [
+        {
+          "name": "domain-name-servers",
+          "num": 6,
+          "value": "10.77.0.53,10.77.0.54",
+          "vendor_class": "DHCP"
+        },
+        {
+          "name": "domain-name",
+          "num": 15,
+          "value": "lab.local",
+          "vendor_class": "DHCP"
+        },
+        {
+          "name": "dhcp-lease-time",
+          "num": 51,
+          "value": "28800",
+          "vendor_class": "DHCP"
+        },
+        {
+          "name": "routers",
+          "num": 3,
+          "value": "10.77.0.1",
+          "vendor_class": "DHCP"
+        }
+      ],
+      "pxe_lease_time": 43200,
+      "recycle_leases": true,
+      "update_dns_on_lease_renewal": false
+    }
+  ]
+}
