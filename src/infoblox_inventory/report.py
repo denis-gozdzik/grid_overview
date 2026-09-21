@@ -8,6 +8,7 @@ from typing import Any
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from .analysis import naming_analysis
@@ -313,7 +314,9 @@ def _wire_overview_standardization_links(workbook: Workbook, link_targets: dict[
     if missing:
         raise ValueError("Overview hotspot Parameter ID missing from Standardization sheet: " + ", ".join(missing))
     for overview_row, parameter_id in link_targets.items():
-        overview.cell(overview_row, 1).hyperlink = f"#'Standardization'!A{target_rows[parameter_id]}"
+        cell = overview.cell(overview_row, 1)
+        cell.hyperlink = Hyperlink(ref=cell.coordinate,
+                                   location=f"'Standardization'!A{target_rows[parameter_id]}")
 
 
 def _style_decision_support(sheet, name: str) -> None:
