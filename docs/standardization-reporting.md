@@ -7,7 +7,7 @@ The workbook is intentionally split into two layers. The first layer supports wo
 The first sheets are ordered for a Product Owner / engineering review:
 
 1. **Overview** — one-screen environment, collection/coverage and standardization summary plus the highest-priority observed hotspots.
-2. **Standardization** — one row per standardization question, not one row per WAPI object. It aggregates confirmed effective values, their frequencies, source levels and local override density.
+2. **Standardization** — one row per parameter **and object scope**, not one row per WAPI object. Grid, Member, Network and Range populations are never mixed in the same percentage. It aggregates confirmed effective values, collection coverage, source levels and local override density.
 3. **Decisions** — the human decision view. Yellow cells correspond to fields persisted in YAML. Editing the generated workbook alone is not persistent; copy decisions to the decision file before regenerating.
 4. **Exceptions** — actionable object-level rows. Before a target is approved an observed local/different value is `PENDING_DECISION`; after an approved target exists a mismatch can become `DEVIATION` or an explicitly selected `APPROVED_EXCEPTION`.
 5. **Grid_Comparison** — important parameters side by side across Grids. With one Grid it explicitly reports that cross-Grid comparison is not applicable instead of emitting pseudo-differences.
@@ -19,7 +19,9 @@ All existing technical sheets remain after this layer, including `DHCP_Effective
 ## Terminology
 
 - **Observed value**: a confirmed normalized effective value from collected evidence.
-- **Common observed value**: the unique most frequent confirmed value. It is descriptive only.
+- **Common observed value**: the unique most frequent confirmed value within one object scope. It is descriptive only.
+- **Population objects**: the collected RAW object population for that scope (for example all Networks). This is the denominator for common-value, inherited and local-override percentages.
+- **Query coverage**: the share of the scope population for which the corresponding effective query returned object evidence. Collection status remains authoritative; partial/error coverage is never promoted to complete because normalized values exist.
 - **Consistency**: a descriptive classification such as `CONSISTENT`, `MULTIPLE_VALUES`, `LOCAL_OVERRIDES`, `DIFFERENT_SOURCE`, `ONLY_IN_SOME_GRIDS`, `NOT_CONFIGURED` or `INSUFFICIENT_DATA`.
 - **Standardization candidate**: whether evidence is ready for human review. It is not an approval.
 - **Approved target**: a target supplied by a human decision with `status: APPROVED`.
@@ -67,7 +69,7 @@ Example:
 version: 1
 
 decisions:
-  dhcp.lease_time:
+  dhcp.lease_time.range:
     status: APPROVED
     proposed_target: 28800
     approved_target: 28800
@@ -82,24 +84,24 @@ decisions:
         object_ref: range/example:10.0.0.10/10.0.0.20/default
 ```
 
-Supported decision states are `PENDING`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `DEFERRED` and `NOT_APPLICABLE`. Unknown decision IDs are rejected rather than silently ignored.
+Supported decision states are `PENDING`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `DEFERRED` and `NOT_APPLICABLE`. Unknown decision IDs are rejected rather than silently ignored. Legacy unscoped IDs such as `dhcp.lease_time` are also rejected with a migration hint; a human must choose the intended scope rather than silently applying one target to several populations.
 
 `comparison_mode: exact` is the default. `unordered_list` is available for values explicitly judged to be order-insensitive; it must be a conscious decision because some DHCP option order can be semantically relevant.
 
 ## Standardization matrix
 
-The first increment covers normalized DHCP/PXE/DDNS parameters already present in the existing collector, including lease, DNS, domain, domain search, gateway, NTP, PXE options/scalars and currently normalized DDNS fields. It does **not** claim new DDNS collection coverage: rows with insufficient evidence are intentionally marked as blocked/insufficient.
+The first increment covers normalized DHCP/PXE/DDNS parameters already present in the existing collector, including lease, DNS, domain, domain search, gateway, NTP, PXE options/scalars and currently normalized DDNS fields. Each supported parameter is expanded into explicit scope-specific decision IDs such as `dhcp.lease_time.grid`, `dhcp.lease_time.network` and `dhcp.lease_time.range`. Fixed-address rows cannot enter Network/Range statistics unless a future parameter explicitly declares that scope. It does **not** claim new DDNS collection coverage: rows with insufficient evidence are intentionally marked as blocked/insufficient.
 
-For each question the matrix exposes:
+For each scoped question the matrix exposes:
 
-- confirmed and total assessed rows;
+- population objects and effective-query object coverage;
+- confirmed effective values and objects without a confirmed value;
 - distinct observed values and frequency distribution;
 - unique common observed value when one exists;
-- common-value percentage;
-- local override count and override-eligible denominator;
-- local override percentage;
-- inherited count and observed source levels;
-- evidence/coverage state;
+- common-value percentage against the full scope population;
+- local override count and percentage against the full non-Grid scope population;
+- inherited count/percentage and source-level distribution;
+- evidence/coverage state derived from collector Coverage plus normalized evidence;
 - descriptive consistency classification;
 - decision overlay and evidence sheet.
 
@@ -120,7 +122,7 @@ The sheet includes object/source refs so engineers can trace every item back to 
 
 ## Multi-Grid behavior
 
-`Grid_Comparison` puts the same standardization question across all collected Grids. Each Grid cell shows its confirmed observed distribution. The matrix also shows global distinct values, the common observed value, override count and coverage. With only one Grid the sheet states that comparison requires at least two Grids.
+`Grid_Comparison` puts the same **scoped** standardization question across all collected Grids. Each Grid cell shows its confirmed observed distribution with that Grid's object-population denominator. The matrix also shows global distinct values, the common observed value, override count and coverage. With only one Grid the sheet states that comparison requires at least two Grids.
 
 The current comparison is parameter-centric; it does not claim that networks in unrelated site structures are equivalent objects.
 
