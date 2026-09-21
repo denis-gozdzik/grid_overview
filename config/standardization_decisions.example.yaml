@@ -1,0 +1,27 @@
+version: 1
+
+decisions:
+  dhcp.lease_time:
+    status: PENDING
+    proposed_target: 28800
+    approved_target: null
+    exceptions_allowed: false
+    exception_rule: ""
+    owner: ""
+    decision_date: ""
+    notes: ""
+    comparison_mode: exact
+    approved_exceptions: []
+
+  dhcp.dns_servers:
+    status: PENDING
+    proposed_target: null
+    approved_target: null
+    exceptions_allowed: false
+    exception_rule: ""
+    owner: ""
+    decision_date: ""
+    notes: ""
+    # Use unordered_list only after deciding that order is not semantically relevant.
+    comparison_mode: exact
+    approved_exceptions: []

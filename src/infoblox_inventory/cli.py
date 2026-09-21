@@ -41,6 +41,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--test-connection", action="store_true")
     parser.add_argument("--collect-raw-only", action="store_true", help="Save responses and coverage; skip normalization and reports")
     parser.add_argument("--output-dir", default="output")
+    parser.add_argument("--decisions", metavar="YAML", help="Human standardization decisions overlaid on reports")
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"])
     tls = parser.add_mutually_exclusive_group()
     tls.add_argument("--verify-tls", dest="verify_tls", action="store_true")
@@ -60,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error("Offline replay cannot be combined with live collection options")
         try:
             results = [result for source in args.offline for result in load_raw(source, args.grid)]
-            write_reports(results, args.output_dir)
+            write_reports(results, args.output_dir, decisions_path=args.decisions)
         except (OSError, ValueError, KeyError) as exc:
             LOG.error("Offline replay failed: %s", exc)
             return 1
@@ -68,6 +69,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1 if any(result.errors for result in results) else 0
     if args.test_connection and args.collect_raw_only:
         parser.error("Choose connection testing or raw collection")
+    if args.collect_raw_only and args.decisions:
+        parser.error("--decisions applies to report generation and cannot be combined with --collect-raw-only")
     try:
         grids = load_config(args.config, args.grid)
     except (OSError, ValueError) as exc:
@@ -115,7 +118,11 @@ def main(argv: list[str] | None = None) -> int:
                 if not archive_path.exists():
                     RawStore(Path(args.output_dir) / "raw", result).finish_collection()
     if results and not args.collect_raw_only and not args.test_connection:
-        write_reports(results, args.output_dir)
+        try:
+            write_reports(results, args.output_dir, decisions_path=args.decisions)
+        except (OSError, ValueError, KeyError) as exc:
+            LOG.error("Report generation failed: %s", exc)
+            return 1
         print(f"Wrote reports to {args.output_dir}")
     elif results and args.collect_raw_only:
         print(f"Saved raw collection evidence to {Path(args.output_dir) / 'raw'}")

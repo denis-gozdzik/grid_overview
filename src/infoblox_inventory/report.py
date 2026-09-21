@@ -7,20 +7,23 @@ import re
 from typing import Any
 
 from openpyxl import Workbook
-from openpyxl.styles import Alignment, Font, PatternFill
-from openpyxl.formatting.rule import FormulaRule
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
-from .analysis import compare_options, naming_analysis
+from .analysis import naming_analysis
 from .models import CollectionResult
 from .dataset import combine_collections
-from .overview import OVERVIEW_HEADERS, overview_rows
 from .normalize import normalize_options, normalize_scalars
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
                            reservation_excel_rows, reservation_headers, reservation_option_rows,
                            reservation_relationship_rows)
+from .standardization import (
+    DECISION_HEADERS, DIFFERENCE_HEADERS, EXCEPTION_HEADERS, STANDARDIZATION_HEADERS,
+    build_standardization, decision_rows, difference_rows, exception_rows,
+    grid_comparison_rows, load_decisions, workbook_standardization_rows, write_decision_template,
+)
 
 
 def _json_value(value: Any) -> Any:
@@ -109,50 +112,212 @@ def _write_inventory_sheet(workbook: Workbook, index: int, name: str,
     # An empty inventory keeps its headers but has neither a table nor filter.
 
 
-def _style_overview(sheet) -> None:
+def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
+    sheet.merge_cells(start_row=row, start_column=start, end_row=row, end_column=end)
+    cell = sheet.cell(row, start, title)
+    cell.fill = PatternFill('solid', fgColor='17365D')
+    cell.font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+    cell.alignment = Alignment(vertical='center')
+    sheet.row_dimensions[row].height = 24
+
+
+def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult],
+                              coverage: list[dict[str, Any]], standardization: list[dict[str, Any]],
+                              exceptions: list[dict[str, Any]]) -> None:
+    """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
+    sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
-    sheet.sheet_view.zoomScale = 85
-    widths = {'A': 18, 'B': 20, 'C': 30, 'D': 60, 'E': 72}
+    sheet.sheet_view.zoomScale = 90
+    sheet.freeze_panes = 'A2'
+    widths = {'A': 28, 'B': 28, 'C': 14, 'D': 12, 'E': 22, 'F': 18, 'G': 18, 'H': 14, 'I': 18}
     for column, width in widths.items():
         sheet.column_dimensions[column].width = width
-    for cell in sheet[1]:
-        cell.fill = PatternFill('solid', fgColor='17365D')
-        cell.font = Font(name='Calibri', size=11, bold=True, color='FFFFFF')
+
+    sheet.merge_cells('A1:I1')
+    sheet['A1'] = 'Infoblox Current State & Standardization Assessment'
+    sheet['A1'].fill = PatternFill('solid', fgColor='0F243E')
+    sheet['A1'].font = Font(name='Calibri', size=18, bold=True, color='FFFFFF')
+    sheet['A1'].alignment = Alignment(vertical='center')
+    sheet.row_dimensions[1].height = 34
+    sheet.merge_cells('A2:I2')
+    sheet['A2'] = ('Observed configuration is evidence. Common values are candidates for review; '
+                   'only an explicit APPROVED decision defines a target standard.')
+    sheet['A2'].font = Font(name='Calibri', size=10, italic=True, color='666666')
+    sheet['A2'].alignment = Alignment(wrap_text=True, vertical='top')
+    sheet.row_dimensions[2].height = 30
+
+    def object_count(*types: str) -> int:
+        return sum(len(result.records.get(kind, [])) for result in results for kind in types)
+
+    _section_title(sheet, 4, 1, 4, 'Environment')
+    _section_title(sheet, 4, 5, 9, 'Standardization')
+    environment = [
+        ('Grids', len(results), 'Networks', object_count('network')),
+        ('Members', object_count('member'), 'Ranges', object_count('range')),
+        ('Network Views', object_count('networkview'), 'Reservations', object_count('fixedaddress')),
+        ('Templates', object_count('networktemplate', 'rangetemplate', 'fixedaddresstemplate'),
+         'Filters', object_count('filtermac', 'filteroption', 'filterrelayagent', 'filterfingerprint', 'filternac')),
+    ]
+    classifications = Counter(str(row.get('Consistency Classification', '')) for row in standardization)
+    decisions = Counter(str(row.get('Decision Status', 'PENDING')) for row in standardization)
+    blocked = sum(row.get('Standardization Candidate') == 'BLOCKED_BY_DATA' for row in standardization)
+    local_parameters = sum((row.get('Local Override Count') or 0) > 0 for row in standardization)
+    standard = [
+        ('Standardization questions', len(standardization), 'With confirmed evidence', sum((row.get('Confirmed Objects') or 0) > 0 for row in standardization)),
+        ('Multiple observed values', classifications['MULTIPLE_VALUES'], 'Parameters with local overrides', local_parameters),
+        ('Pending decisions', decisions['PENDING'], 'Approved targets', decisions['APPROVED']),
+        ('Blocked by data', blocked, 'Exception / review rows', len(exceptions)),
+    ]
+    thin = Side(style='thin', color='D9E2F3')
+    for offset, (left_label, left_value, right_label, right_value) in enumerate(environment, start=5):
+        for col, value in ((1, left_label), (2, left_value), (3, right_label), (4, right_value)):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.font = Font(name='Calibri', size=11, bold=col in {2, 4})
+            if col in {2, 4}:
+                cell.fill = PatternFill('solid', fgColor='EAF2F8')
+    for offset, (left_label, left_value, right_label, right_value) in enumerate(standard, start=5):
+        for col, value in ((5, left_label), (6, left_value), (7, right_label), (8, right_value)):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.font = Font(name='Calibri', size=11, bold=col in {6, 8})
+            if col in {6, 8}:
+                cell.fill = PatternFill('solid', fgColor='EAF2F8')
+
+    _section_title(sheet, 10, 1, 4, 'Assessment confidence / coverage')
+    _section_title(sheet, 10, 5, 9, 'Collection')
+    coverage_counts = Counter(str(row.get('Collection Status', 'PARTIAL')) for row in coverage)
+    coverage_rows = [
+        ('COMPLETE', coverage_counts['COMPLETE'], 'PARTIAL', coverage_counts['PARTIAL']),
+        ('EMPTY', coverage_counts['EMPTY'], 'NOT CONFIGURED', coverage_counts['NOT_CONFIGURED']),
+        ('NOT EXPOSED', coverage_counts['NOT_EXPOSED_BY_WAPI'], 'MANUAL REVIEW', coverage_counts['MANUAL_REVIEW_REQUIRED']),
+        ('ERROR', coverage_counts['ERROR'], '', ''),
+    ]
+    sources = [row for result in results for row in result.collection_sources]
+    timestamps = sorted({str(row.get('Collected At')) for row in sources if row.get('Collected At')})
+    archive_ids = {str(row.get('Archive ID')) for row in sources if row.get('Archive ID')}
+    versions = sorted({str(result.wapi_version) for result in results if result.wapi_version})
+    collection_rows = [
+        ('Earliest collection', timestamps[0] if timestamps else 'Unavailable', 'Latest collection', timestamps[-1] if timestamps else 'Unavailable'),
+        ('Archives combined', len(archive_ids) if archive_ids else ('PARTIAL' if sources else 0), 'WAPI version(s)', ', '.join(versions) or 'Unavailable'),
+        ('Collection errors', sum(len(result.errors) for result in results), 'Manual review items', coverage_counts['MANUAL_REVIEW_REQUIRED']),
+        ('Reference definitions', object_count('dhcpoptiondefinition', 'dhcpoptionspace', 'extensibleattributedef'), '', ''),
+    ]
+    for offset, row_values in enumerate(coverage_rows, start=11):
+        for col, value in zip((1, 2, 3, 4), row_values):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            if col in {2, 4}:
+                cell.font = Font(name='Calibri', size=11, bold=True)
+        status = str(sheet.cell(offset, 1).value or '')
+        if status == 'ERROR' and sheet.cell(offset, 2).value:
+            sheet.cell(offset, 2).fill = PatternFill('solid', fgColor='F4CCCC')
+        elif status in {'PARTIAL', 'NOT EXPOSED'}:
+            sheet.cell(offset, 2).fill = PatternFill('solid', fgColor='FFF2CC')
+    for offset, row_values in enumerate(collection_rows, start=11):
+        for col, value in zip((5, 6, 7, 8), row_values):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            if col in {6, 8}:
+                cell.font = Font(name='Calibri', size=10, bold=True)
+
+    _section_title(sheet, 16, 1, 9, 'Top standardization hotspots')
+    hotspot_headers = ['Parameter', 'Observed values', 'Confirmed', 'Grids', 'Consistency', 'Local overrides', 'Override %', 'Coverage', 'Decision']
+    for col, header in enumerate(hotspot_headers, start=1):
+        cell = sheet.cell(17, col, header)
+        cell.fill = PatternFill('solid', fgColor='D9EAF7')
+        cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
         cell.alignment = Alignment(vertical='center', wrap_text=True)
-    sheet.row_dimensions[1].height = 30
-    previous_section = None
-    for row in sheet.iter_rows(min_row=2):
-        section = (row[0].value, row[1].value)
-        for cell in row:
-            cell.font = Font(name='Calibri', size=11)
+    priority = {'MULTIPLE_VALUES': 0, 'ONLY_IN_SOME_GRIDS': 1, 'DIFFERENT_SOURCE': 2,
+                'LOCAL_OVERRIDES': 3, 'INSUFFICIENT_DATA': 4, 'NOT_CONFIGURED': 5, 'CONSISTENT': 6}
+    ordered = sorted(standardization, key=lambda row: (
+        priority.get(str(row.get('Consistency Classification')), 9),
+        -(row.get('Local Override Count') or 0), str(row.get('Parameter'))))
+    meaningful = [row for row in ordered if (row.get('Confirmed Objects') or 0) > 0
+                  and row.get('Consistency Classification') != 'CONSISTENT']
+    blocked_rows = [row for row in ordered if row.get('Standardization Candidate') == 'BLOCKED_BY_DATA']
+    hotspots = (meaningful[:8] + [row for row in blocked_rows if row not in meaningful][:2])
+    if not hotspots:
+        hotspots = [row for row in ordered if (row.get('Confirmed Objects') or 0) > 0][:8]
+    for idx, item in enumerate(hotspots, start=18):
+        values = [item.get('Parameter'), item.get('Observed Values') or item.get('Evidence Status'),
+                  item.get('Confirmed Objects'), item.get('Grids Assessed'), item.get('Consistency Classification'),
+                  item.get('Local Override Count'), item.get('Local Override %'), item.get('Coverage'),
+                  item.get('Decision Status')]
+        for col, value in enumerate(values, start=1):
+            cell = sheet.cell(idx, col, value)
             cell.alignment = Alignment(vertical='top', wrap_text=True)
-            if section != previous_section:
-                cell.fill = PatternFill('solid', fgColor='E7EFF8')
-                cell.font = Font(name='Calibri', size=11, bold=True, color='17365D')
-        if isinstance(row[3].value, (int, float)) and not isinstance(row[3].value, bool):
-            row[3].number_format = '#,##0'
-        lines = max(sum(max(1, (len(line) + int(widths[cell.column_letter]) - 1)
-                            // int(widths[cell.column_letter]))
-                        for line in str(cell.value or '').split('\n')) for cell in row)
-        sheet.row_dimensions[row[0].row].height = min(max(23, 16 * (lines + 1)), 180)
-        previous_section = section
-    if sheet.max_row > 1:
-        for status, color in [('ERROR', 'FCE4D6'), ('PARTIAL', 'FFF2CC')]:
-            sheet.conditional_formatting.add(
-                f'D2:D{sheet.max_row}', FormulaRule(
-                    formula=[f'ISNUMBER(SEARCH("{status}",$D2))'],
-                    fill=PatternFill('solid', fgColor=color)))
-    sheet.print_title_rows = '1:1'
-    sheet.print_options.horizontalCentered = True
+            cell.border = Border(bottom=Side(style='hair', color='E7E6E6'))
+        sheet.cell(idx, 1).hyperlink = f"#'Standardization'!A{standardization.index(item) + 2}"
+        sheet.cell(idx, 1).font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        if item.get('Local Override %') is not None:
+            sheet.cell(idx, 7).number_format = '0.0"%"'
+        consistency = str(item.get('Consistency Classification'))
+        fill = 'E2F0D9' if consistency == 'CONSISTENT' else 'FFF2CC' if consistency != 'INSUFFICIENT_DATA' else 'E7E6E6'
+        sheet.cell(idx, 5).fill = PatternFill('solid', fgColor=fill)
+    if hotspots:
+        table = Table(displayName='OverviewHotspots', ref=f'A17:I{17 + len(hotspots)}')
+        table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium2', showRowStripes=True)
+        sheet.add_table(table)
+
+    note_row = 19 + len(hotspots)
+    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
+    sheet.cell(note_row, 1, 'Workflow: review Standardization → record human decisions in YAML/Decisions → use Exceptions as the remediation/exception backlog.')
+    sheet.cell(note_row, 1).fill = PatternFill('solid', fgColor='EAF2F8')
+    sheet.cell(note_row, 1).font = Font(name='Calibri', size=10, italic=True, color='17365D')
+    sheet.cell(note_row, 1).alignment = Alignment(wrap_text=True, vertical='center')
+    sheet.row_dimensions[note_row].height = 30
+    sheet.print_area = f'A1:I{note_row}'
     sheet.page_setup.orientation = 'landscape'
     sheet.page_setup.paperSize = sheet.PAPERSIZE_A3
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
-    sheet.print_area = sheet.dimensions
 
 
-def write_reports(results: list[CollectionResult], output_dir: str | Path) -> None:
+def _style_decision_support(sheet, name: str) -> None:
+    sheet.sheet_view.showGridLines = False
+    sheet.sheet_view.zoomScale = 85
+    sheet.freeze_panes = 'A2'
+    for cell in sheet[1]:
+        cell.fill = PatternFill('solid', fgColor='17365D')
+        cell.font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+        cell.alignment = Alignment(vertical='center', wrap_text=True)
+    input_headers = {
+        'Decisions': {'Proposed / Discussed Target', 'Approved Target', 'Status', 'Exceptions Allowed',
+                      'Exception Rule', 'Owner', 'Decision Date', 'Notes'},
+        'Standardization': {'Decision Status', 'Proposed / Discussed Target', 'Approved Target', 'Exceptions Allowed',
+                            'Exception Rule', 'Decision Owner', 'Decision Date', 'Decision Notes'},
+    }.get(name, set())
+    header_map = {cell.value: cell.column for cell in sheet[1]}
+    for header in input_headers:
+        column = header_map.get(header)
+        if column:
+            for cell in [sheet.cell(row, column) for row in range(2, sheet.max_row + 1)]:
+                cell.fill = PatternFill('solid', fgColor='FFF2CC')
+    if name == 'Exceptions':
+        state_col = header_map.get('Assessment State')
+        if state_col:
+            fills = {'DEVIATION': 'F4CCCC', 'PENDING_DECISION': 'FFF2CC', 'APPROVED_EXCEPTION': 'E2F0D9',
+                     'INSUFFICIENT_DATA': 'E7E6E6'}
+            for row in range(2, sheet.max_row + 1):
+                value = str(sheet.cell(row, state_col).value or '')
+                if value in fills:
+                    sheet.cell(row, state_col).fill = PatternFill('solid', fgColor=fills[value])
+    if name in {'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+        for column in sheet.columns:
+            for cell in column:
+                cell.alignment = Alignment(vertical='top', wrap_text=True)
+    sheet.page_setup.orientation = 'landscape'
+    sheet.page_setup.fitToWidth = 1
+    sheet.page_setup.fitToHeight = 0
+    sheet.sheet_properties.pageSetUpPr.fitToPage = True
+
+def write_reports(results: list[CollectionResult], output_dir: str | Path, *, decisions_path: str | Path | None = None) -> None:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     all_options: list[dict[str, Any]] = []
@@ -184,21 +349,30 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                              "Objects Found": filter_count,
                              "Notes": "Configured names, expressions and references do not establish deployed permit/deny policy; "
                                       "consumer assignments outside this increment are not assessed."})
-    differences = (compare_options(all_options) if len(results) > 1 else
-                   [{"grid": results[0].grid, "classification": "NOT_APPLICABLE",
-                     "notes": "Cross-Grid comparison needs at least two Grids; only one Grid is present."}]
-                   if results else [])
+    decisions = load_decisions(decisions_path)
+    standardization = build_standardization(results, coverage, all_scalars, all_options, decisions) if results else []
+    standardization_excel = workbook_standardization_rows(standardization)
+    decisions_excel = decision_rows(standardization)
+    exceptions_excel = exception_rows(standardization)
+    grids = [result.grid for result in results]
+    grid_comparison, grid_comparison_headers = (grid_comparison_rows(standardization, grids) if results else ([], ["Category", "Parameter ID", "Parameter", "Distinct Values", "Common Observed Value", "Consistency", "Local Overrides", "Coverage", "Notes"]))
+    differences = difference_rows(standardization)
     effective_rows, effective_headers = assessment_table(all_scalars)
     manual_rows = [row for row in coverage if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
+    # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
-        **({'Overview': overview_rows(results, coverage, all_scalars, all_options)} if results else {}),
+        "Standardization": standardization_excel,
+        "Decisions": decisions_excel,
+        "Exceptions": exceptions_excel,
+        "Grid_Comparison": grid_comparison,
+        "Coverage": coverage,
+        "Manual_Review": manual_rows,
         "Grid_Summary": [{"Grid": result.grid, "URL": result.grid_url, "WAPI Version": result.wapi_version,
                           "Collected At": result.collected_at, "Object": key,
                           "Raw Count": len(result.records.get(key, [])),
                           **_effective_query_summary(result, key), "Errors": len(result.errors)}
                          for result in results
                          for key in (sorted(set(result.records) | set(result.effective_records)) or [""])],
-        "Coverage": coverage,
         "Errors": [row for result in results for row in result.errors],
         "DHCP_Effective": effective_rows,
         "DHCP_Options": all_options,
@@ -208,7 +382,6 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                      or any(key.startswith("use_") for key in row)],
         "Differences": differences,
         "Naming_Analysis": naming,
-        "Manual_Review": manual_rows,
         "Collection_Sources": [row for result in results for row in result.collection_sources],
     }
     for result in results:
@@ -223,7 +396,14 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                 {"grid": result.grid, **{key: _json_value(value) for key, value in row.items()}}
                 for row in rows)
     topology_rows = topology_excel_rows(topology_records)
-    sheet_headers = {'Overview': OVERVIEW_HEADERS, 'DHCP_Effective': effective_headers}
+    sheet_headers = {
+        'Standardization': STANDARDIZATION_HEADERS,
+        'Decisions': DECISION_HEADERS,
+        'Exceptions': EXCEPTION_HEADERS,
+        'Grid_Comparison': grid_comparison_headers,
+        'Differences': DIFFERENCE_HEADERS,
+        'DHCP_Effective': effective_headers,
+    }
     for object_type, name in TOPOLOGY_SHEETS.items():
         if name in sheets:
             sheets[name].extend(topology_rows[object_type])
@@ -255,12 +435,17 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
         ]
     workbook = Workbook()
     workbook.remove(workbook.active)
-    for index, (name, rows) in enumerate(sheets.items(), start=1):
+    if results:
+        _write_overview_dashboard(workbook, results, coverage, standardization, exceptions_excel)
+    table_index = 2 if results else 1
+    for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
-        _write_inventory_sheet(workbook, index, name, rows, headers, preserve_order=name == 'Overview')
-        if name == 'Overview':
-            _style_overview(workbook[name])
+        _write_inventory_sheet(workbook, index, name, rows, headers)
+        if name in {'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+            _style_decision_support(workbook[name], name)
     workbook.save(output / "current_state_inventory.xlsx")
+    if results:
+        write_decision_template(standardization, output / "standardization_decisions.template.yaml")
     summary = ["# Infoblox current-state inventory", "",
                "This is an evidence-gathering report; common values are not approved standards.", "",
                "Raw/local values and WAPI effective inheritance evidence are reported separately. "
@@ -309,19 +494,18 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                         "no policy meaning. Consumers outside this collection are not assessed. "
                         "DDNS/EA fields are retained solely as reservation metadata. For superhostchild, "
                         "an empty complete parent inventory means no child request; Coverage records that dependency."])
-    changed = [row for row in differences if row["classification"] in {"DIFFERENT", "SOURCE_DIFFERENCE"}]
-    summary.extend(["", "## Key differences", "",
-                    "Comparison currently covers confirmed DHCP options matched by queried object and Network View. "
-                    "Unresolved and multisource rows are excluded. Scalar, filter, failover, naming, "
-                    "and other cross-Grid comparisons remain to be implemented.", ""])
-    summary.extend(f"- {_markdown_value(row['grid'])}: {_markdown_value(row['object/context'])}, "
-                   f"{_markdown_value(row['parameter'])}: {_markdown_value(row['observed_value'])} "
-                   f"({row['classification']})." for row in changed[:20])
-    if len(results) < 2:
-        summary.append("Cross-Grid comparison is not yet applicable: at least two Grids are required.")
-    elif not changed:
-        summary.append("No differences identified among comparable, confirmed effective DHCP options. "
-                       "Unresolved and multisource rows are excluded from this comparison.")
+    changed = [row for row in differences if row.get("Classification") not in {"CONSISTENT", "NOT_CONFIGURED"}]
+    summary.extend(["", "## Standardization observations", "",
+                    "Observed differences and common values are descriptive. They are not approved standards. "
+                    "Use Standardization and Decisions to record human review, then Exceptions for actionable deviations. "
+                    "Additional DDNS/EA/DNS collection depth and broader policy interpretation remain to be implemented.", ""])
+    summary.extend(
+        f"- {_markdown_value(row.get('Parameter'))}: {_markdown_value(row.get('Observed Values') or row.get('Classification'))}; "
+        f"classification={_markdown_value(row.get('Classification'))}, local overrides={_markdown_value(row.get('Local Overrides'))}."
+        for row in changed[:20]
+    )
+    if not changed:
+        summary.append("No standardization differences identified in the currently confirmed parameter set.")
     candidates = [row for row in all_options + all_scalars
                   if row["configured_here"] is True and row["object_type"] != "grid:dhcpproperties"]
     summary.extend(["", "## Local exception candidates", "",
@@ -338,7 +522,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path) -> No
                     "## Manual review", "",
                     "Approval process and documentation requirements require confirmation with Grid owners. "
                     "WAPI observations do not establish organizational policy.", "", "## Files generated", "",
-                    "- current_state_inventory.xlsx", "- current_state_summary.md", "- manual_review.md"])
+                    "- current_state_inventory.xlsx", "- standardization_decisions.template.yaml", "- current_state_summary.md", "- manual_review.md"])
     (output / "current_state_summary.md").write_text("\n".join(summary) + "\n", encoding="utf-8")
     manual = ["# Manual review required", "", "Approval workflow and formal documentation policy are not reliably represented by DHCP WAPI objects.", ""]
     manual.extend(f"- {result.grid}: confirm approval process and documentation policy with Grid owners." for result in results)

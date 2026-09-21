@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from infoblox_inventory.models import CollectionResult
+from infoblox_inventory.dataset import combine_collections
 from infoblox_inventory.normalize import normalize_options, normalize_scalars
 from infoblox_inventory.overview import OVERVIEW_HEADERS, overview_rows
 from infoblox_inventory.storage import path_component
@@ -97,9 +98,72 @@ def test_source_timestamps_are_explicit_without_inventing_one_snapshot_time():
                                                   {"Collected At": "2026-09-20T12:00:00Z"},
                                                   {"Collected At": "2026-09-20T12:00:00Z"}])
     rows = overview_rows([result], [], [], [])
-    assert _row(rows, "Collection timestamps (UTC)")["Observed value"] == "2026-09-20T12:00:00Z; 2026-09-20T13:00:00Z"
+    assert _row(rows, "Earliest collection (UTC)")["Observed value"] == "2026-09-20T12:00:00Z"
+    assert _row(rows, "Latest collection (UTC)")["Observed value"] == "2026-09-20T13:00:00Z"
+    assert _row(rows, "Archive count")["Observed value"].startswith("PARTIAL")
     assert _row(rows, "WAPI version")["Observed value"] == "2.13.7"
     assert _row(rows, "Coverage status")["Observed value"].startswith("PARTIAL")
+
+
+def test_kpi_totals_separate_infrastructure_from_large_reference_definition_inventories():
+    records = {"network": [{}, {}], "range": [{}], "member": [{}],
+               "dhcpoptiondefinition": [{} for _ in range(95)], "dhcpoptionspace": [{}],
+               "extensibleattributedef": [{} for _ in range(3)]}
+    result = CollectionResult("LAB", records=records)
+    rows = overview_rows([result], [], [], [])
+    assert all(row["Section"] == "KPI" for row in rows[:8])
+    assert _row(rows, "Infrastructure / configuration rows")["Observed value"] == 4
+    assert _row(rows, "Reference definition rows")["Observed value"] == 99
+    assert _row(rows, "Total captured object rows")["Observed value"] == 103
+    assert _row(rows, "Option definitions")["Section"] == "Reference definitions"
+    assert _row(rows, "EA definitions")["Observed value"] == 3
+
+
+def test_reference_only_inventory_does_not_claim_empty_infrastructure():
+    result = CollectionResult("LAB", records={"dhcpoptiondefinition": [{}]})
+    rows = overview_rows([result], [], [], [])
+    assert _row(rows, "Infrastructure / configuration rows")["Observed value"].startswith("PARTIAL")
+    assert _row(rows, "Reference definition rows")["Observed value"] == 1
+
+
+def test_collection_period_uses_utc_chronology_and_unique_archive_ids():
+    result = CollectionResult("LAB", collection_sources=[
+        {"Archive ID": "one", "Collected At": "2026-09-20T13:00:00+02:00"},
+        {"Archive ID": "one", "Collected At": "2026-09-20T11:00:00Z"},
+        {"Archive ID": "two", "Collected At": "2026-09-20T10:30:00-02:00"},
+    ])
+    before = deepcopy(result)
+    rows = overview_rows([result], [], [], [])
+    assert _row(rows, "Earliest collection (UTC)")["Observed value"] == "2026-09-20T11:00:00Z"
+    assert _row(rows, "Latest collection (UTC)")["Observed value"] == "2026-09-20T12:30:00Z"
+    assert _row(rows, "Archive count")["Observed value"] == 2
+    assert result == before
+
+
+def test_unknown_timestamp_and_legacy_archive_identity_keep_period_partial():
+    result = CollectionResult("LAB", collection_sources=[
+        {"Archive ID": "one", "Collected At": "2026-09-20T11:00:00Z"},
+        {"Collected At": "invalid timestamp"},
+        {"Collected At": "2026-09-20T12:00:00"},
+        {"Collected At": None},
+    ])
+    merged, = combine_collections([result])
+    rows = overview_rows([merged], [], [], [])
+    assert _row(rows, "Earliest collection (UTC)")["Observed value"].startswith("PARTIAL")
+    assert _row(rows, "Latest collection (UTC)")["Observed value"].startswith("PARTIAL")
+    assert _row(rows, "Archive count")["Observed value"] == "PARTIAL; 1 identified archives"
+    assert "Unknown/invalid timestamp observations=3" in _row(rows, "Archive count")["Evidence / scope"]
+    assert {row["Collected At"] for row in merged.collection_sources} == {
+        "2026-09-20T11:00:00Z", "invalid timestamp", "2026-09-20T12:00:00", None}
+
+
+def test_duplicate_inputs_do_not_inflate_overview_archive_count():
+    first = CollectionResult("LAB", collected_at="2026-09-20T11:00:00Z", records={"network": [{}]})
+    second = CollectionResult("LAB", collected_at="2026-09-20T11:00:00Z", records={"filtermac": [{}]})
+    combined = combine_collections([first, deepcopy(first), second])
+    rows = overview_rows(combined, [], [], [])
+    assert _row(rows, "Archive count")["Observed value"] == 2
+    assert _row(rows, "Earliest collection (UTC)")["Observed value"] == _row(rows, "Latest collection (UTC)")["Observed value"]
 
 
 def test_effective_lease_summary_uses_confirmed_values_and_counts_unresolved_members():

@@ -161,6 +161,10 @@ def overview_rows(results: list[CollectionResult], coverage: list[dict[str, Any]
         add("KPI", "Collection errors", len(result.errors), "Recorded collection errors; see Errors and Coverage.")
         add("KPI", "Manual-review observations", counts["MANUAL_REVIEW_REQUIRED"], "See Manual_Review; configuration does not establish organizational policy.")
         earliest, latest, archive_count, period_evidence = _collection_period(result)
+        source_times = sorted({str(row.get("Collected At")) for row in result.collection_sources if row.get("Collected At")})
+        if source_times:
+            add("Collection", "Collection timestamps (UTC)", "; ".join(source_times),
+                "Source collection timestamps; combined archives can represent different collection times. See Collection_Sources.")
         add("Collection", "Earliest collection (UTC)", earliest, period_evidence)
         add("Collection", "Latest collection (UTC)", latest, period_evidence)
         add("Collection", "Archive count", archive_count, period_evidence)

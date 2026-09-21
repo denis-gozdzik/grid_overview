@@ -197,6 +197,35 @@ def test_identical_overlap_is_deduplicated_and_merge_can_be_applied_again():
     assert repeated == merged
 
 
+def test_archive_identity_preserves_distinct_families_at_one_time_and_deduplicates_replay():
+    core, configuration = _results()
+    configuration.collected_at = core.collected_at
+    merged, = combine_collections([core, deepcopy(core), configuration])
+    identities = {row["Archive ID"] for row in merged.collection_sources}
+    assert len(identities) == 2
+    assert {row["Archive ID"] for row in merged.collection_sources if row["Object"] == "network"}.isdisjoint(
+        {row["Archive ID"] for row in merged.collection_sources if row["Object"] == "filtermac"})
+    assert combine_collections([merged])[0] == merged
+    assert combine_collections([configuration, core])[0] == merged
+
+
+def test_archive_identity_normalizes_equivalent_timezone_metadata_but_preserves_original_text():
+    core, _ = _results()
+    same = deepcopy(core)
+    same.collected_at = "2026-09-20T14:00:00+02:00"
+    merged, = combine_collections([core, same])
+    assert len({row["Archive ID"] for row in merged.collection_sources}) == 1
+    assert {row["Collected At"] for row in merged.collection_sources} == {CORE_TIME, same.collected_at}
+
+
+def test_recombined_legacy_source_rows_are_not_assigned_an_invented_archive_identity():
+    core, _ = _results()
+    core.collection_sources = [{"Grid": core.grid, "Object": "network", "Collected At": CORE_TIME}]
+    merged, = combine_collections([core])
+    assert merged.collection_sources == core.collection_sources
+    assert "Archive ID" not in merged.collection_sources[0]
+
+
 @pytest.mark.parametrize("field", ["grid_url", "wapi_version", "records", "effective_records", "schemas"])
 def test_conflicting_same_grid_snapshots_are_rejected_without_mutating_input(field):
     core, _ = _results()

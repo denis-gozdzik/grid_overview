@@ -30,9 +30,9 @@ def collection_time_utc(value):
         return None
     try:
         parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
-    except ValueError:
+        return parsed.astimezone(timezone.utc) if parsed.tzinfo is not None else None
+    except (ValueError, OverflowError):
         return None
-    return parsed.astimezone(timezone.utc) if parsed.tzinfo is not None else None
 
 
 def _archive_id(source):
@@ -99,7 +99,7 @@ def combine_collections(results: list[CollectionResult]) -> list[CollectionResul
                                      if object_type in source.effective_records else None)}
                 for object_type in source_objects or ['']])
         result.collection_sources = _unique(result.collection_sources)
-        result.collected_at = '; '.join(sorted({row['Collected At'] for row in result.collection_sources}))
+        result.collected_at = '; '.join(sorted({str(row.get('Collected At') or '') for row in result.collection_sources}))
         covered_areas = {row.get('Area') for row in result.coverage if row.get('Object')}
         result.coverage = _unique([row for row in result.coverage if not (
             row.get('Notes') == 'Assessment area is not fully covered by this increment'

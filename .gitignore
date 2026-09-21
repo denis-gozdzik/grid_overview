@@ -4,6 +4,7 @@
 !.env.example
 /config/*
 !/config/grids.example.yaml
+!/config/standardization_decisions.example.yaml
 /output/
 *.log
 *.pem
