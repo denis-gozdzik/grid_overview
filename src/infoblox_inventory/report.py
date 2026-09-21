@@ -233,7 +233,8 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
         cell.alignment = Alignment(vertical='center', wrap_text=True)
     priority = {'MULTIPLE_VALUES': 0, 'ONLY_IN_SOME_GRIDS': 1, 'DIFFERENT_SOURCE': 2,
-                'LOCAL_OVERRIDES': 3, 'INSUFFICIENT_DATA': 4, 'NOT_CONFIGURED': 5, 'CONSISTENT': 6}
+                'LOCAL_OVERRIDES': 3, 'INSUFFICIENT_DATA': 4, 'NOT_CONFIGURED': 5,
+                'CONSISTENT': 6, 'NO_OBJECTS_IN_SCOPE': 7}
     ordered = sorted(standardization, key=lambda row: (
         priority.get(str(row.get('Consistency Classification')), 9),
         -(row.get('Local Override Count') or 0), str(row.get('Parameter'))))
@@ -533,7 +534,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                         "no policy meaning. Consumers outside this collection are not assessed. "
                         "DDNS/EA fields are retained solely as reservation metadata. For superhostchild, "
                         "an empty complete parent inventory means no child request; Coverage records that dependency."])
-    changed = [row for row in differences if row.get("Classification") not in {"CONSISTENT", "NOT_CONFIGURED"}]
+    changed = [row for row in differences if row.get("Classification") not in {"CONSISTENT", "NOT_CONFIGURED", "NO_OBJECTS_IN_SCOPE"}]
     summary.extend(["", "## Standardization observations", "",
                     "Observed differences and common values are descriptive. They are not approved standards. "
                     "Use Standardization and Decisions to record human review, then Exceptions for actionable deviations. "
