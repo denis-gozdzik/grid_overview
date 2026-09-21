@@ -20,8 +20,12 @@ All existing technical sheets remain after this layer, including `DHCP_Effective
 
 - **Observed value**: a confirmed normalized effective value from collected evidence.
 - **Common observed value**: the unique most frequent confirmed value within one object scope. It is descriptive only.
-- **Population objects**: the collected RAW object population for that scope (for example all Networks). This is the denominator for common-value, inherited and local-override percentages.
-- **Query coverage**: the share of the scope population for which the corresponding effective query returned object evidence. Collection status remains authoritative; partial/error coverage is never promoted to complete because normalized values exist.
+- **Population objects**: the collected RAW object population for that scope (for example all Networks). This is the denominator for common-value, confirmed-value, inherited and local-override percentages.
+- **Query coverage**: the share of the scope population for which the corresponding effective query returned object evidence.
+- **Collection status**: whether the object population itself was collected completely. A query-level `PARTIAL` caused only by an unrelated missing field can still be complete for another parameter when every object was returned and no collection error exists.
+- **Confirmed value**: a unique, complete normalized effective value for an object.
+- **Explicit not configured**: parameter-specific WAPI evidence explicitly reporting `NOT_DEFINED` / `NOT_CONFIGURED`; absence of a row is never treated as not configured.
+- **Unresolved**: a population object for which the parameter is neither confirmed nor explicitly not configured.
 - **Consistency**: a descriptive classification such as `CONSISTENT`, `MULTIPLE_VALUES`, `LOCAL_OVERRIDES`, `DIFFERENT_SOURCE`, `ONLY_IN_SOME_GRIDS`, `NOT_CONFIGURED` or `INSUFFICIENT_DATA`.
 - **Standardization candidate**: whether evidence is ready for human review. It is not an approval.
 - **Approved target**: a target supplied by a human decision with `status: APPROVED`.
@@ -95,13 +99,18 @@ The first increment covers normalized DHCP/PXE/DDNS parameters already present i
 For each scoped question the matrix exposes:
 
 - population objects and effective-query object coverage;
-- confirmed effective values and objects without a confirmed value;
+- a separate collection status, so a complete object read is not confused with incomplete parameter evidence;
+- the exact WAPI field required by the parameter and whether that field was explicitly unavailable;
+- confirmed effective values, explicit `NOT_CONFIGURED` objects and unresolved objects as separate populations;
+- confirmed/resolved/unresolved percentages against the full scoped object population;
 - distinct observed values and frequency distribution;
 - unique common observed value when one exists;
 - common-value percentage against the full scope population;
 - local override count and percentage against the full non-Grid scope population;
 - inherited count/percentage and source-level distribution;
-- evidence/coverage state derived from collector Coverage plus normalized evidence;
+- evidence/coverage state derived from collector Coverage, collection errors and normalized evidence;
+
+A collector-level `PARTIAL` caused only by an unrelated unreadable schema field does not automatically degrade every parameter on that object type. Conversely, a real pagination/transport failure or an unavailable field required by the parameter remains incomplete and is never upgraded from surviving normalized rows.
 - descriptive consistency classification;
 - decision overlay and evidence sheet.
 
