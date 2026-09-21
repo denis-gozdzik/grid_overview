@@ -1,7 +1,7 @@
-version: 1
+version: 2
 
 decisions:
-  dhcp.lease_time:
+  dhcp.lease_time.network:
     status: PENDING
     proposed_target: 28800
     approved_target: null
@@ -13,7 +13,19 @@ decisions:
     comparison_mode: exact
     approved_exceptions: []
 
-  dhcp.dns_servers:
+  dhcp.lease_time.range:
+    status: PENDING
+    proposed_target: null
+    approved_target: null
+    exceptions_allowed: false
+    exception_rule: ""
+    owner: ""
+    decision_date: ""
+    notes: ""
+    comparison_mode: exact
+    approved_exceptions: []
+
+  dhcp.dns_servers.network:
     status: PENDING
     proposed_target: null
     approved_target: null
