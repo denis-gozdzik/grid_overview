@@ -11,68 +11,165 @@ from infoblox_inventory.standardization import (
 from infoblox_inventory.xlsx_validation import validate_xlsx
 
 
-def _option(grid, obj_type, obj_ref, obj_name, value, *, configured_here, inherited, source_level, status="COMPLETE"):
+def _option(grid, obj_type, obj_ref, obj_name, value, *, configured_here, inherited,
+            source_level, status="COMPLETE", option_number=51, parameter="dhcp-lease-time"):
     return {
         "grid": grid, "object_type": obj_type, "object_ref": obj_ref, "object_name": obj_name,
-        "network_view": "default", "parent_network": "", "parameter": "dhcp-lease-time",
-        "option_number": 51, "vendor_class": "DHCP", "effective_value": value,
+        "network_view": "default", "parent_network": "", "parameter": parameter,
+        "option_number": option_number, "vendor_class": "DHCP", "effective_value": value,
         "configured_here": configured_here, "inherited": inherited, "multisource": False,
         "source_level": source_level, "source_object": obj_name if configured_here else "LAB",
         "source_ref": obj_ref if configured_here else "grid:dhcpproperties/example:LAB", "status": status,
     }
 
 
+def _coverage(grid, object_type, query, status, count):
+    return {"Grid": grid, "Area": "DHCP options and inheritance", "Object": object_type,
+            "Query": query, "Field": "", "Collection Status": status,
+            "Objects Found": count, "Notes": ""}
+
+
+def _result(grid="LAB", networks=1, ranges=1, *, network_effective=None, range_effective=None,
+            network_effective_status="COMPLETE", range_effective_status="COMPLETE"):
+    network_effective = networks if network_effective is None else network_effective
+    range_effective = ranges if range_effective is None else range_effective
+    grid_ref = f"grid:dhcpproperties/example:{grid}"
+    network_rows = [{"_ref": f"network/{grid}/{index}", "network": f"10.{index}.0.0/24"}
+                    for index in range(networks)]
+    range_rows = [{"_ref": f"range/{grid}/{index}", "start_addr": f"10.0.0.{index + 10}",
+                   "end_addr": f"10.0.0.{index + 20}"} for index in range(ranges)]
+    result = CollectionResult(
+        grid=grid,
+        records={
+            "grid:dhcpproperties": [{"_ref": grid_ref}],
+            "network": network_rows,
+            "range": range_rows,
+        },
+        effective_records={
+            "network": network_rows[:network_effective],
+            "range": range_rows[:range_effective],
+        },
+        coverage=[
+            _coverage(grid, "grid:dhcpproperties", "raw", "COMPLETE", 1),
+            _coverage(grid, "network", "raw", "COMPLETE", networks),
+            _coverage(grid, "network", "effective", network_effective_status, network_effective),
+            _coverage(grid, "range", "raw", "COMPLETE", ranges),
+            _coverage(grid, "range", "effective", range_effective_status, range_effective),
+        ],
+    )
+    return result
+
+
 def _standardization(decisions=None):
+    result = _result()
     rows = [
         _option("LAB", "grid:dhcpproperties", "grid:dhcpproperties/example:LAB", "LAB", "28800",
                 configured_here=True, inherited=False, source_level="Grid"),
-        _option("LAB", "network", "network/example:10.0.0.0/24/default", "10.0.0.0/24", "28800",
+        _option("LAB", "network", "network/LAB/0", "10.0.0.0/24", "28800",
                 configured_here=False, inherited=True, source_level="Grid"),
-        _option("LAB", "range", "range/example:10.0.0.10/10.0.0.20/default", "10.0.0.10-10.0.0.20", "3600",
+        _option("LAB", "range", "range/LAB/0", "10.0.0.10-10.0.0.20", "3600",
                 configured_here=True, inherited=False, source_level="Range"),
     ]
-    return build_standardization([CollectionResult("LAB")], [], [], rows, decisions or {})
+    return build_standardization([result], result.coverage, [], rows, decisions or {})
 
 
-def _lease(rows):
-    found = [row for row in rows if row["Parameter ID"] == "dhcp.lease_time"]
+def _lease(rows, scope):
+    found = [row for row in rows if row["Parameter ID"] == f"dhcp.lease_time.{scope.lower()}"]
     assert len(found) == 1
     return found[0]
 
 
-def test_common_value_and_local_override_are_observations_not_approval():
-    row = _lease(_standardization())
-    assert row["Observed Values"] == "28800 (2); 3600 (1)"
-    assert row["Common Observed Value"] == "28800"
-    assert row["Common Value Count"] == 2
-    assert row["Common Value %"] == 66.7
-    assert row["Local Override Count"] == 1
-    assert row["Override Eligible Objects"] == 2
-    assert row["Local Override %"] == 50.0
-    assert row["Consistency Classification"] == "MULTIPLE_VALUES"
-    assert row["Decision Status"] == "PENDING"
-    assert row["Approved Target"] == ""
-    pending = exception_rows(_standardization())
-    assert [(row["Object Type"], row["Assessment State"]) for row in pending] == [("range", "PENDING_DECISION")]
+def test_scope_specific_distributions_do_not_mix_grid_network_and_range():
+    rows = _standardization()
+    grid = _lease(rows, "Grid")
+    network = _lease(rows, "Network")
+    range_row = _lease(rows, "Range")
+
+    assert grid["Observed Values"] == "28800 (1/1, 100.0%)"
+    assert network["Observed Values"] == "28800 (1/1, 100.0%)"
+    assert range_row["Observed Values"] == "3600 (1/1, 100.0%)"
+    assert network["Common Value %"] == 100.0
+    assert range_row["Common Value %"] == 100.0
+    assert network["Consistency Classification"] == "CONSISTENT"
+    assert range_row["Consistency Classification"] == "LOCAL_OVERRIDES"
+    assert range_row["Local Override Count"] == 1
+    assert range_row["Local Override %"] == 100.0
+    assert grid["Override Eligible Objects"] == 0
 
 
-def test_approved_target_creates_deviation_only_after_human_decision():
-    decisions = {"dhcp.lease_time": {
+def test_fixedaddress_option_cannot_contaminate_network_or_range_statistics():
+    result = _result()
+    rows = [
+        _option("LAB", "network", "network/LAB/0", "10.0.0.0/24", "28800",
+                configured_here=False, inherited=True, source_level="Grid"),
+        _option("LAB", "range", "range/LAB/0", "10.0.0.10-10.0.0.20", "3600",
+                configured_here=True, inherited=False, source_level="Range"),
+        _option("LAB", "fixedaddress", "fixedaddress/LAB/1", "10.0.0.99", "86400",
+                configured_here=True, inherited=False, source_level="Fixed Address"),
+    ]
+    analysis = build_standardization([result], result.coverage, [], rows, {})
+    assert _lease(analysis, "Network")["Observed Values"] == "28800 (1/1, 100.0%)"
+    assert _lease(analysis, "Range")["Observed Values"] == "3600 (1/1, 100.0%)"
+    assert all("86400" not in _lease(analysis, scope)["Observed Values"] for scope in ("Grid", "Network", "Range"))
+
+
+def test_partial_effective_collection_changes_coverage_and_uses_population_denominator():
+    result = _result(networks=4, ranges=0, network_effective=3, network_effective_status="PARTIAL")
+    rows = [
+        _option("LAB", "network", "network/LAB/0", "n0", "28800",
+                configured_here=False, inherited=True, source_level="Grid"),
+        _option("LAB", "network", "network/LAB/1", "n1", "28800",
+                configured_here=True, inherited=False, source_level="Network"),
+    ]
+    lease = _lease(build_standardization([result], result.coverage, [], rows, {}), "Network")
+    assert lease["Population Objects"] == 4
+    assert lease["Query Evidence Objects"] == 3
+    assert lease["Query Coverage %"] == 75.0
+    assert lease["Confirmed Objects"] == 2
+    assert lease["Objects Without Confirmed Value"] == 2
+    assert lease["Common Value Count"] == 2
+    assert lease["Common Value %"] == 50.0
+    assert lease["Observed Values"] == "28800 (2/4, 50.0%)"
+    assert lease["Local Override Count"] == 1
+    assert lease["Override Eligible Objects"] == 4
+    assert lease["Local Override %"] == 25.0
+    assert lease["Inherited Count"] == 1
+    assert lease["Inherited %"] == 25.0
+    assert lease["Source Distribution"] == "Grid (1); Network (1)"
+    assert lease["Coverage"] == "MEDIUM"
+    assert lease["Evidence Status"] == "PARTIAL"
+    assert lease["Standardization Candidate"] == "NEEDS_ANALYSIS"
+
+
+def test_missing_collection_coverage_blocks_review_even_when_normalized_rows_exist():
+    result = CollectionResult("LAB", records={"network": [{"_ref": "network/LAB/0"}]},
+                              effective_records={"network": [{"_ref": "network/LAB/0"}]})
+    rows = [_option("LAB", "network", "network/LAB/0", "n0", "28800",
+                    configured_here=False, inherited=True, source_level="Grid")]
+    lease = _lease(build_standardization([result], [], [], rows, {}), "Network")
+    assert lease["Confirmed Objects"] == 1
+    assert lease["Coverage"] == "MEDIUM"
+    assert lease["Evidence Status"] == "PARTIAL"
+    assert lease["Standardization Candidate"] == "NEEDS_ANALYSIS"
+
+
+def test_approved_target_creates_deviation_only_for_the_selected_scope():
+    decisions = {"dhcp.lease_time.range": {
         "status": "APPROVED", "approved_target": "28800", "exceptions_allowed": False,
         "proposed_target": None, "exception_rule": "", "owner": "PO", "decision_date": "2026-09-21",
         "notes": "", "comparison_mode": "exact", "approved_exceptions": [],
     }}
     rows = exception_rows(_standardization(decisions))
-    assert len(rows) == 1
-    assert rows[0]["Object Type"] == "range"
-    assert rows[0]["Assessment State"] == "DEVIATION"
+    assert [(row["Object Type"], row["Parameter ID"], row["Assessment State"]) for row in rows] == [
+        ("range", "dhcp.lease_time.range", "DEVIATION")
+    ]
     assert rows[0]["Approved Target"] == "28800"
     assert rows[0]["Owner"] == "PO"
 
 
-def test_explicit_exception_selector_can_approve_a_deviation():
-    ref = "range/example:10.0.0.10/10.0.0.20/default"
-    decisions = {"dhcp.lease_time": {
+def test_explicit_exception_selector_can_approve_a_scoped_deviation():
+    ref = "range/LAB/0"
+    decisions = {"dhcp.lease_time.range": {
         "status": "APPROVED", "approved_target": 28800, "exceptions_allowed": True,
         "proposed_target": None, "exception_rule": "Short-lived test range", "owner": "PO", "decision_date": "",
         "notes": "", "comparison_mode": "exact", "approved_exceptions": [{"object_ref": ref}],
@@ -82,32 +179,67 @@ def test_explicit_exception_selector_can_approve_a_deviation():
     assert row["Exception Rule"] == "Short-lived test range"
 
 
-def test_single_grid_comparison_is_explicitly_not_applicable():
-    rows, headers = grid_comparison_rows(_standardization(), ["LAB"])
-    assert "LAB" in headers
-    assert rows == [{
-        "Category": "Comparison", "Parameter ID": "", "Parameter": "Cross-Grid comparison",
-        "LAB": "", "Distinct Values": "", "Common Observed Value": "", "Consistency": "NOT_APPLICABLE",
-        "Local Overrides": "", "Coverage": "", "Notes": "Cross-Grid comparison requires at least two Grids.",
-    }]
-
-
-def test_decision_loader_rejects_unknown_ids_and_never_infers_approval(tmp_path):
+def test_unscoped_decision_id_is_rejected_with_migration_hint(tmp_path):
     path = tmp_path / "decisions.yaml"
-    path.write_text("decisions:\n  dhcp.lease_time:\n    status: UNDER_REVIEW\n    proposed_target: 28800\n", encoding="utf-8")
-    loaded = load_decisions(path)
-    assert loaded["dhcp.lease_time"]["status"] == "UNDER_REVIEW"
-    assert loaded["dhcp.lease_time"]["approved_target"] is None
-    path.write_text("decisions:\n  made.up.parameter:\n    status: APPROVED\n", encoding="utf-8")
+    path.write_text("decisions:\n  dhcp.lease_time:\n    status: UNDER_REVIEW\n", encoding="utf-8")
     try:
         load_decisions(path)
     except ValueError as exc:
-        assert "Unknown standardization decision IDs" in str(exc)
+        text = str(exc)
+        assert "Unscoped decision IDs" in text
+        assert "dhcp.lease_time.network" in text
+        assert "dhcp.lease_time.range" in text
     else:
-        raise AssertionError("unknown decision id should fail")
+        raise AssertionError("legacy unscoped decision id should fail")
 
 
-def test_report_puts_decision_support_first_and_uses_decision_yaml(tmp_path):
+def test_scoped_decision_loader_never_infers_approval(tmp_path):
+    path = tmp_path / "decisions.yaml"
+    path.write_text("decisions:\n  dhcp.lease_time.network:\n    status: UNDER_REVIEW\n    proposed_target: 28800\n",
+                    encoding="utf-8")
+    loaded = load_decisions(path)
+    assert loaded["dhcp.lease_time.network"]["status"] == "UNDER_REVIEW"
+    assert loaded["dhcp.lease_time.network"]["approved_target"] is None
+
+
+def test_single_grid_comparison_is_explicitly_not_applicable():
+    rows, headers = grid_comparison_rows(_standardization(), ["LAB"])
+    assert {"LAB", "Scope", "Object Type"} <= set(headers)
+    assert rows == [{
+        "Category": "Comparison", "Parameter ID": "", "Parameter": "Cross-Grid comparison",
+        "Scope": "", "Object Type": "", "LAB": "", "Distinct Values": "", "Common Observed Value": "",
+        "Consistency": "NOT_APPLICABLE", "Local Overrides": "", "Coverage": "",
+        "Notes": "Cross-Grid comparison requires at least two Grids.",
+    }]
+
+
+def test_multi_grid_comparison_keeps_scope_and_grid_denominators_separate():
+    a = _result("GRID-A", networks=2, ranges=0)
+    b = _result("GRID-B", networks=1, ranges=0)
+    rows = [
+        _option("GRID-A", "network", "network/GRID-A/0", "a0", "28800",
+                configured_here=False, inherited=True, source_level="Grid"),
+        _option("GRID-A", "network", "network/GRID-A/1", "a1", "28800",
+                configured_here=False, inherited=True, source_level="Grid"),
+        _option("GRID-B", "network", "network/GRID-B/0", "b0", "43200",
+                configured_here=False, inherited=True, source_level="Grid"),
+    ]
+    coverage = a.coverage + b.coverage
+    analysis = build_standardization([a, b], coverage, [], rows, {})
+    lease = _lease(analysis, "Network")
+    assert lease["Consistency Classification"] == "MULTIPLE_VALUES"
+    assert lease["Common Observed Value"] == "28800"
+    assert lease["Common Value Count"] == 2
+    assert lease["Common Value %"] == 66.7
+    comparison, headers = grid_comparison_rows(analysis, ["GRID-A", "GRID-B"])
+    assert {"GRID-A", "GRID-B", "Scope"} <= set(headers)
+    row = next(item for item in comparison if item["Parameter ID"] == "dhcp.lease_time.network")
+    assert row["Scope"] == "Network"
+    assert row["GRID-A"] == "28800 (2/2, 100.0%)"
+    assert row["GRID-B"] == "43200 (1/1, 100.0%)"
+
+
+def test_report_puts_scoped_decision_support_first_and_links_overview_by_parameter_id(tmp_path):
     grid_ref = "grid:dhcpproperties/example:LAB"
     network_ref = "network/example:10.0.0.0/24/default"
     range_ref = "range/example:10.0.0.10/10.0.0.20/default"
@@ -130,11 +262,16 @@ def test_report_puts_decision_support_first_and_uses_decision_yaml(tmp_path):
         },
         schemas={"network": {"fields": [{"name": "options", "overridden_by": "use_options"}]},
                  "range": {"fields": [{"name": "options", "overridden_by": "use_options"}]}},
-        coverage=[{"Grid": "LAB", "Area": "DHCP options and inheritance", "Object": "network", "Query": "effective",
-                   "Field": "", "Collection Status": "COMPLETE", "Objects Found": 1, "Notes": ""}],
+        coverage=[
+            _coverage("LAB", "grid:dhcpproperties", "raw", "COMPLETE", 1),
+            _coverage("LAB", "network", "raw", "COMPLETE", 1),
+            _coverage("LAB", "network", "effective", "COMPLETE", 1),
+            _coverage("LAB", "range", "raw", "COMPLETE", 1),
+            _coverage("LAB", "range", "effective", "COMPLETE", 1),
+        ],
     )
     decisions = tmp_path / "decisions.yaml"
-    decisions.write_text(yaml.safe_dump({"decisions": {"dhcp.lease_time": {
+    decisions.write_text(yaml.safe_dump({"decisions": {"dhcp.lease_time.range": {
         "status": "APPROVED", "approved_target": 28800, "exceptions_allowed": False,
         "owner": "Infoblox Product Owner",
     }}}), encoding="utf-8")
@@ -147,37 +284,44 @@ def test_report_puts_decision_support_first_and_uses_decision_yaml(tmp_path):
         assert workbook.sheetnames[:7] == [
             "Overview", "Standardization", "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
         ]
-        assert workbook["Overview"]["A1"].value == "Infoblox Current State & Standardization Assessment"
+        standardization = workbook["Standardization"]
+        headers = {cell.value: cell.column for cell in standardization[1]}
+        parameter_id_col = headers["Parameter ID"]
+        parameter_col = headers["Parameter"]
+        scope_col = headers["Scope"]
+        links = []
+        for row_number in range(18, workbook["Overview"].max_row + 1):
+            cell = workbook["Overview"].cell(row_number, 1)
+            if cell.hyperlink is None:
+                continue
+            links.append(cell)
+            target = cell.hyperlink.target
+            assert target.startswith("#'Standardization'!A")
+            target_row = int(target.rsplit("A", 1)[1])
+            target_parameter = standardization.cell(target_row, parameter_col).value
+            target_scope = standardization.cell(target_row, scope_col).value
+            assert cell.value == f"{target_parameter} [{target_scope}]"
+            target_id = standardization.cell(target_row, parameter_id_col).value
+            assert target_id
+        assert links
+
         decision_headers = [cell.value for cell in workbook["Decisions"][1]]
-        rows = [dict(zip(decision_headers, values)) for values in workbook["Decisions"].iter_rows(min_row=2, values_only=True)]
-        lease = [row for row in rows if row["Decision ID"] == "dhcp.lease_time"][0]
+        decision_rows = [dict(zip(decision_headers, values)) for values in workbook["Decisions"].iter_rows(min_row=2, values_only=True)]
+        lease = [row for row in decision_rows if row["Decision ID"] == "dhcp.lease_time.range"][0]
+        assert lease["Scope"] == "Range"
         assert lease["Status"] == "APPROVED"
         assert lease["Approved Target"] == "28800"
+
         exception_headers = [cell.value for cell in workbook["Exceptions"][1]]
         exceptions = [dict(zip(exception_headers, values)) for values in workbook["Exceptions"].iter_rows(min_row=2, values_only=True)]
-        assert [(row["Object Type"], row["Assessment State"]) for row in exceptions] == [("range", "DEVIATION")]
+        assert [(row["Object Type"], row["Parameter ID"], row["Assessment State"]) for row in exceptions] == [
+            ("range", "dhcp.lease_time.range", "DEVIATION")
+        ]
     finally:
         workbook.close()
     template = yaml.safe_load((output / "standardization_decisions.template.yaml").read_text(encoding="utf-8"))
-    assert template["decisions"]["dhcp.lease_time"]["status"] == "APPROVED"
-
-def test_multi_grid_comparison_is_parameter_centric_and_descriptive():
-    rows = [
-        _option("GRID-A", "network", "network/a", "10.0.0.0/24", "28800",
-                configured_here=False, inherited=True, source_level="Grid"),
-        _option("GRID-B", "network", "network/b", "10.1.0.0/24", "43200",
-                configured_here=False, inherited=True, source_level="Grid"),
-    ]
-    analysis = build_standardization([CollectionResult("GRID-A"), CollectionResult("GRID-B")], [], [], rows, {})
-    lease = _lease(analysis)
-    assert lease["Consistency Classification"] == "MULTIPLE_VALUES"
-    assert lease["Common Observed Value"] == ""  # tie: no implied standard
-    comparison, headers = grid_comparison_rows(analysis, ["GRID-A", "GRID-B"])
-    assert {"GRID-A", "GRID-B"} <= set(headers)
-    row = next(item for item in comparison if item["Parameter ID"] == "dhcp.lease_time")
-    assert row["GRID-A"] == "28800 (1)"
-    assert row["GRID-B"] == "43200 (1)"
-    assert row["Consistency"] == "MULTIPLE_VALUES"
+    assert template["version"] == 2
+    assert template["decisions"]["dhcp.lease_time.range"]["status"] == "APPROVED"
 
 
 def test_cli_parser_accepts_decision_overlay_for_offline_reporting():
