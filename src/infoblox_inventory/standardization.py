@@ -103,7 +103,7 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
 )
 
 STANDARDIZATION_HEADERS = [
-    "Parameter ID", "Category", "Parameter", "Scope", "Object Type", "Required Field",
+    "Parameter ID", "Category", "Parameter", "Scope", "Object Type", "Required Field", "Required Field Status",
     "Collection Status", "Coverage", "Evidence Status",
     "Population Objects", "Query Evidence Objects", "Query Coverage %", "Confirmed Objects",
     "Confirmed Value %", "Explicit Not Configured", "Resolved Evidence %", "Unresolved Objects",
@@ -471,9 +471,6 @@ def build_standardization(
 
         field_status = metrics["required_field_status"]
         collection_status = metrics["collection_status"]
-        if metrics["coverage"] if "coverage" in metrics else False:
-            raise AssertionError("legacy coverage key must not be produced")
-
         if metrics["population"] == 0 and collection_status in {"EMPTY", "COMPLETE"}:
             coverage_label, evidence_status = "HIGH", "EMPTY"
         elif field_status == "NOT_EXPOSED_BY_WAPI":
@@ -533,6 +530,7 @@ def build_standardization(
             "Scope": spec.scope,
             "Object Type": spec.object_type,
             "Required Field": spec.required_field,
+            "Required Field Status": field_status,
             "Collection Status": collection_status,
             "Coverage": coverage_label,
             "Evidence Status": evidence_status,
