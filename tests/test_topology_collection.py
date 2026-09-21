@@ -94,7 +94,7 @@ def test_topology_pages_use_live_schema_fields_and_preserve_raw_offline(tmp_path
     assert_get_only_topology()
     first_query = parse_qs(urlsplit(responses.calls[2].request.url).query)
     assert first_query["_paging"] == first_query["_return_as_object"] == ["1"]
-    assert first_query["_max_results"] == ["1000"]
+    assert first_query["_max_results"] == ["250"]
     requested = set(first_query["_return_fields"][0].split(","))
     metadata = {field["name"]: field for field in schema["fields"]}
     assessment_fields = set(TOPOLOGY_OBJECTS[object_type][2])

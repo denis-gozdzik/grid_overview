@@ -110,7 +110,7 @@ def collect_superhost_children(client: InfobloxClient, result: CollectionResult,
         elif name not in names:
             names.append(name)
     params = {"_return_fields": ",".join(selected_fields), "_paging": "1",
-              "_return_as_object": "1", "_max_results": 1000, "type": "FixedAddress"}
+              "_return_as_object": "1", "_max_results": client.grid.page_size, "type": "FixedAddress"}
     query = store.start_query(object_type, "raw", params) if store else None
     if query is not None:
         query.update(parent_object="superhost", parent_count=len(names), subqueries=[])
@@ -118,7 +118,9 @@ def collect_superhost_children(client: InfobloxClient, result: CollectionResult,
     captured: list[dict[str, Any]] = []
     failures = 0
     global_page = 0
+    successful_pages = 0
     for name in names:
+        parent_successful_pages = 0
         subquery: dict[str, Any] = {"params": {**params, "parent": name}, "status": "PARTIAL",
                                     "pages": [], "record_count": 0}
         if query is not None:
@@ -126,7 +128,7 @@ def collect_superhost_children(client: InfobloxClient, result: CollectionResult,
             store.save_manifest()
 
         def save_page(_number: int, response: Any) -> None:
-            nonlocal global_page
+            nonlocal global_page, successful_pages, parent_successful_pages
             global_page += 1
             if store and query is not None:
                 store.save_page(query, global_page, response)
@@ -135,6 +137,8 @@ def collect_superhost_children(client: InfobloxClient, result: CollectionResult,
                 rows = page_records(response)
                 captured.extend(rows)
                 subquery["record_count"] += len(rows)
+                successful_pages += 1
+                parent_successful_pages += 1
             except ValueError:
                 pass  # The unchanged client validates after the original page is saved.
             if store:
@@ -143,19 +147,20 @@ def collect_superhost_children(client: InfobloxClient, result: CollectionResult,
         try:
             rows = client.get_all_objects(object_type, selected_fields,
                                           {"type": "FixedAddress", "parent": name},
+                                          max_results=client.grid.page_size,
                                           page_callback=save_page)
             subquery["status"] = "COMPLETE" if rows else "EMPTY"
         except Exception as exc:
             failures += 1
-            subquery["status"] = "PARTIAL" if subquery["record_count"] else "ERROR"
+            subquery["status"] = "PARTIAL" if parent_successful_pages else "ERROR"
             result.errors.append({"grid": result.grid, "area": area, "object_type": object_type,
                                   "query": "raw", "parent": name, "error": str(exc)})
         if store:
             store.save_manifest()
-    if incomplete or missing_fields:
+    if failures:
+        status = "PARTIAL" if successful_pages else "ERROR"
+    elif incomplete or missing_fields:
         status = "PARTIAL"
-    elif failures:
-        status = "PARTIAL" if captured else "ERROR"
     else:
         status = "COMPLETE" if captured else "EMPTY"
     notes = ["Read per observed superhost name with type=FixedAddress."]

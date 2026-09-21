@@ -104,8 +104,9 @@ def test_http_error_never_exposes_server_text_and_is_not_retried():
 
 
 @responses.activate
-def test_transient_get_status_is_retried():
-    responses.add(responses.GET, BASE + "/network", status=503)
+def test_rate_limited_get_status_is_retried(monkeypatch):
+    monkeypatch.setattr("infoblox_inventory.client.sleep", lambda seconds: None)
+    responses.add(responses.GET, BASE + "/network", status=429)
     responses.add(responses.GET, BASE + "/network", json=[])
     assert client().get("network") == []
     assert len(responses.calls) == 2
@@ -113,11 +114,11 @@ def test_transient_get_status_is_retried():
 
 
 @responses.activate
-def test_permanent_transient_status_stops_after_retry_budget():
+def test_service_unavailable_status_is_not_retried():
     responses.add(responses.GET, BASE + "/network", body="secret", status=503)
     with pytest.raises(WapiError, match="HTTP 503"):
         client().get("network")
-    assert len(responses.calls) == 4
+    assert len(responses.calls) == 1
 
 
 @responses.activate
@@ -168,7 +169,7 @@ def test_filters_cannot_override_read_only_collection_controls(control):
 
 @pytest.mark.parametrize("size", [0, -1, True, 1.5, "100"])
 def test_page_size_must_be_positive_integer(size):
-    with pytest.raises(WapiError, match="positive integer"):
+    with pytest.raises(WapiError, match="integer between 1 and 1000"):
         client().get_all_objects("network", max_results=size)
 
 

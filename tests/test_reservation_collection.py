@@ -110,7 +110,7 @@ def test_reservation_requests_use_only_readable_runtime_fields(object_type):
         assert requested == assessment_fields | declared_flags
         assert all("r" in metadata[name]["supports"] for name in requested)
         assert query["_paging"] == query["_return_as_object"] == ["1"]
-        assert query["_max_results"] == ["1000"]
+        assert query["_max_results"] == ["250"]
         assert not requested & {"dns_associated_objects", "configure_for_dns", "aliases",
                                 "zone", "view", "ttl", "ipv6addrs", "network_template",
                                 "template", "failover_association", "member"}

@@ -10,6 +10,15 @@ from urllib.parse import urlsplit
 import yaml
 
 
+DEFAULT_PAGE_SIZE = 250
+MAX_PAGE_SIZE = 1000
+
+
+def validate_page_size(value: int) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or not 1 <= value <= MAX_PAGE_SIZE:
+        raise ValueError(f"page_size must be an integer between 1 and {MAX_PAGE_SIZE}")
+
+
 @dataclass(frozen=True)
 class GridConfig:
     name: str
@@ -20,6 +29,7 @@ class GridConfig:
     timeout: tuple[float, float] = (10.0, 60.0)
     username: str | None = None
     password_env: str = "INFOBLOX_PASSWORD"
+    page_size: int = DEFAULT_PAGE_SIZE
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name.strip() or any(ord(c) < 32 for c in self.name):
@@ -46,9 +56,12 @@ class GridConfig:
             raise ValueError("password_env must name an environment variable")
         if self.username is not None and (not isinstance(self.username, str) or not self.username):
             raise ValueError("username must be nonempty text")
-        if len(self.timeout) != 2 or any(isinstance(value, bool) or not isinstance(value, (int, float))
-                                         or not math.isfinite(value) or value <= 0 for value in self.timeout):
+        if (not isinstance(self.timeout, (tuple, list)) or len(self.timeout) != 2
+                or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                       or (isinstance(value, float) and not math.isfinite(value)) or value <= 0
+                       for value in self.timeout)):
             raise ValueError("Connection and read timeouts must be finite positive numbers")
+        validate_page_size(self.page_size)
 
 
 def load_config(path: str | Path, selected_grid: str | None = None) -> list[GridConfig]:
@@ -59,7 +72,7 @@ def load_config(path: str | Path, selected_grid: str | None = None) -> list[Grid
     if not isinstance(data, dict) or not isinstance(data.get("grids"), list):
         raise ValueError("Configuration must contain a grids list")
     allowed = {"name", "url", "wapi_version", "verify_tls", "ca_bundle", "connect_timeout",
-               "read_timeout", "username", "password_env"}
+               "read_timeout", "username", "password_env", "page_size"}
     grids: list[GridConfig] = []
     names: set[str] = set()
     for item in data["grids"]:
@@ -74,6 +87,7 @@ def load_config(path: str | Path, selected_grid: str | None = None) -> list[Grid
             verify_tls=item.get("verify_tls", True), ca_bundle=item.get("ca_bundle"),
             timeout=(item.get("connect_timeout", 10.0), item.get("read_timeout", 60.0)),
             username=item.get("username"), password_env=item.get("password_env", "INFOBLOX_PASSWORD"),
+            page_size=item.get("page_size", DEFAULT_PAGE_SIZE),
         )
         if grid.name.casefold() in names:
             raise ValueError("Grid names must be unique (case insensitive for portable archives)")

@@ -131,21 +131,25 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
         for mode in modes:
             filters = {**required_filters, **({"_inheritance": "True"} if mode == "effective" else {})} or None
             params = {"_return_fields": ",".join(selected_fields), "_paging": "1",
-                      "_return_as_object": "1", "_max_results": 1000, **(filters or {})}
+                      "_return_as_object": "1", "_max_results": client.grid.page_size, **(filters or {})}
             query = store.start_query(object_type, mode, params) if store else None
             captured: list[dict[str, Any]] = []
+            successful_pages = 0
 
             def save_page(number: int, response: Any) -> None:
+                nonlocal successful_pages
                 if store and query is not None:
                     store.save_page(query, number, response)
                 try:
                     captured.extend(page_records(response))
+                    successful_pages += 1
                 except ValueError:
                     pass  # Client validates after preserving the original response.
 
             target = result.records if mode == "raw" else result.effective_records
             try:
-                rows = client.get_all_objects(object_type, selected_fields, filters, page_callback=save_page)
+                rows = client.get_all_objects(object_type, selected_fields, filters,
+                                              max_results=client.grid.page_size, page_callback=save_page)
                 target[object_type] = rows
                 status = "PARTIAL" if missing else ("COMPLETE" if rows else "EMPTY")
                 note = "Some requested fields are unavailable; see schema coverage rows" if missing else ""
@@ -154,7 +158,8 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
                     store.finish_query(query, "COMPLETE" if rows else "EMPTY")
             except Exception as exc:
                 target[object_type] = captured
-                status = "PARTIAL" if captured else "ERROR"
+                # Empty successful pages still establish partial query progress.
+                status = "PARTIAL" if successful_pages else "ERROR"
                 _coverage(result, area, object_type, mode, status, len(captured), str(exc))
                 result.errors.append({"grid": result.grid, "area": area, "object_type": object_type,
                                       "query": mode, "error": str(exc)})

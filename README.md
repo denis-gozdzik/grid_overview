@@ -64,6 +64,32 @@ Twelve typed sheets plus `Reservation_Options` and `Reservation_Links` expose st
 
 The LAB requires `parent` for `superhostchild`, although its schema does not mark it mandatory. The collector discovers Superhost names first and paginates `type=FixedAddress&parent=<observed-name>` for each one. Version-1 manifests retain one child query with optional `subqueries` metadata recording each actual request and its pages. Complete empty parent discovery yields `EMPTY` with no child GET or fabricated response; incomplete parents or failed reads remain partial/error. Selecting `superhostchild` also collects its `superhost` dependency.
 
+## Large-Grid collection
+
+Each Grid accepts these settings in YAML (shown with their defaults):
+
+```yaml
+page_size: 250
+connect_timeout: 10
+read_timeout: 60
+```
+
+`page_size` must be an integer from 1 to 1000; booleans, fractions, strings and out-of-range values fail configuration validation. Every RAW/effective query, including per-parent child queries, starts with the configured `_max_results`. Subsequent requests use the WAPI `_page_id`, which retains the initial query and page size. There is no automatic page-size adjustment or concurrent collection.
+
+Timeouts are positive finite seconds, passed separately to Requests. A read timeout limits socket read inactivity, not total request duration. Increasing it does not fix an HTTP 504 returned by the server or gateway.
+
+Each GET has at most two attempts: one retry after `ConnectTimeout` or HTTP 429, with a fixed one-second wait. The same two-attempt budget applies if these failures occur in sequence. `ReadTimeout`, other connection errors, HTTP 500/502/503/504, other HTTP failures and malformed JSON are not retried. Transport retries, exponential backoff and `Retry-After` delays are disabled so expensive inheritance reads are not repeatedly submitted after a read timeout or gateway failure. Errors distinguish connection/read timeouts, HTTP status and malformed JSON, retaining the status code where available.
+
+At `--log-level INFO`, each attempt records Grid, object type, mode (`raw`, `effective` or `schema`), page number, configured page size, attempt, elapsed seconds, result count, HTTP status and outcome. Failures include their error kind; unavailable counts/status and schema page size appear as `-`. DEBUG also records request starts and configured timeouts. Logs omit credentials, headers, full URLs, filters, continuation tokens and response bodies.
+
+A failure before any valid page marks the query `ERROR`. A failure after valid pages marks it `PARTIAL`, even when those pages contained no records. Downloaded pages remain in the RAW archive, the failure reason is recorded, and collection continues with subsequent queries, objects and parents where safe. Offline replay uses the existing archive format without timing metadata or network access.
+
+For the next corporate LAB test, set the values above in your private configuration, retain WAPI 2.13.7 and the corporate CA configuration, and choose a new output directory for each run:
+
+```powershell
+python -m infoblox_inventory --config config/grids.work.yaml --all --collect-raw-only --output-dir output/work-largegrid-001 --log-level INFO
+```
+
 ## Evidence and inheritance
 
 The existing modules keep live collection, raw persistence, normalization, comparison, and reporting separate. The collector reads root/object schemas once per client, selects bounded readable fields, and derives `use_*` relationships from schema `overridden_by`. Unsupported fields/objects are recorded explicitly. Schema failures do not cause an unbounded all-fields query.

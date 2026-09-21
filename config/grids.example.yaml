@@ -5,6 +5,9 @@ grids:
     password_env: INFOBLOX_JB_PASSWORD
     wapi_version: 2.13.7
     verify_tls: true
+    connect_timeout: 10
+    read_timeout: 60
+    page_size: 250
 
   - name: GRID2
     url: https://grid2-grid-master.example.com
@@ -13,3 +16,6 @@ grids:
     wapi_version: 2.13.7
     verify_tls: true
     ca_bundle: C:/path/to/corporate-ca.pem
+    connect_timeout: 10
+    read_timeout: 60
+    page_size: 250
