@@ -86,7 +86,8 @@ def test_live_capture_reports_preserve_empty_headers_coverage_and_repeat_offline
     coverage = rows(workbook["Coverage"])
     assert sum(row.get("Query") == "raw" and row["Collection Status"] == "EMPTY" for row in coverage) == 4
     assert sum(row.get("Query") == "normalization" and row["Collection Status"] == "COMPLETE" for row in coverage) == 2
-    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref for sheet in workbook)
+    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref is None for sheet in workbook)
+    assert all(table.autoFilter.ref == table.ref for sheet in workbook for table in sheet.tables.values())
     workbook.close()
 
 

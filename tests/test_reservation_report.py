@@ -87,7 +87,8 @@ def test_empty_live_reports_have_meaningful_columns_and_repeat_offline(tmp_path,
         "enable_ddns", "ddns_hostname", "ddns_domainname", "extattrs", "disable", "ms_server"}
     assert {cell.value for cell in workbook["Option_Filters"][1]} >= {"expression", "option_list", "apply_as_class"}
     assert {cell.value for cell in workbook["MAC_Filter_Addresses"][1]} >= {"filter", "mac", "expiration_time"}
-    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref for sheet in workbook)
+    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref is None for sheet in workbook)
+    assert all(table.autoFilter.ref == table.ref for sheet in workbook for table in sheet.tables.values())
     assert not any(row["Query"] == "normalization" for row in rows(workbook["Coverage"]))
     workbook.close()
 

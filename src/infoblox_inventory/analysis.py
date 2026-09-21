@@ -45,8 +45,41 @@ def compare_options(option_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def naming_analysis(records: dict[str, list[dict[str, Any]]]) -> list[dict[str, Any]]:
-    names = [str(row.get("name")) for rows in records.values() for row in rows if row.get("name")]
-    prefixes = Counter(re.match(r"^[A-Za-z]+", name).group(0) for name in names if re.match(r"^[A-Za-z]+", name))
-    return [{"observed_pattern": f"prefix:{prefix}", "count": count,
-             "examples": ", ".join(name for name in names if name.startswith(prefix))[:500],
-             "confidence": "INFERRED"} for prefix, count in prefixes.most_common()]
+    # Definition names describe protocol metadata, not an organization's naming.
+    fields = {
+        "networkview": ("name", "comment"), "network": ("name", "comment"),
+        "range": ("name", "comment"), "member": ("name", "host_name"),
+        "dhcpfailover": ("name", "comment"),
+        **{kind: ("name", "comment") for kind in (
+            "networktemplate", "rangetemplate", "fixedaddresstemplate", "fixedaddress",
+            "record:host", "roaminghost", "superhost", "filtermac", "filteroption",
+            "filterrelayagent", "filterfingerprint", "filternac")},
+        "macfilteraddress": ("comment",),
+    }
+    output = []
+    for kind in sorted(set(records) & set(fields)):
+        for field in fields[kind]:
+            inventory = records[kind]
+            values = [row[field].strip() for row in inventory
+                      if isinstance(row.get(field), str) and row[field].strip()]
+            observed = sum(field in row for row in inventory)
+            base = {"object_type": kind, "field": field, "sample_count": len(values),
+                    "blank_count": sum(isinstance(row.get(field), str) and not row[field].strip()
+                                       for row in inventory), "confidence": "OBSERVED",
+                    "notes": "Configured names/comments only; no approved naming standard or ownership is inferred."}
+            prefixes = Counter(match.group(0) for value in values
+                               if (match := re.match(r"^[A-Za-z]+", value)))
+            recurring = [(prefix, count) for prefix, count in prefixes.most_common() if count >= 2]
+            if recurring:
+                output.extend({**base, "status": "COMPLETE", "observed_pattern": f"prefix:{prefix}",
+                               "count": count, "examples": ", ".join(value for value in values
+                                                                         if value.startswith(prefix))[:500]}
+                              for prefix, count in recurring)
+            else:
+                status = "EMPTY" if not inventory or (observed == len(inventory) and not values) else "PARTIAL"
+                output.append({**base, "status": status, "observed_pattern": "", "count": 0,
+                               "examples": ", ".join(values)[:500],
+                               "notes": "Insufficient repeated user naming evidence; no pattern inferred. " + base["notes"]})
+    return output or [{"status": "PARTIAL", "observed_pattern": "", "count": 0,
+                       "confidence": "OBSERVED", "notes": "No administrator naming inventory available. "
+                       "DHCP option spaces/definitions and EA definitions are excluded."}]

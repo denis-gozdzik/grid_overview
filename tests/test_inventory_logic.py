@@ -57,7 +57,7 @@ def test_comparison_keeps_network_views_and_option_spaces_separate():
 
 def test_naming_patterns_are_inferred():
     patterns = naming_analysis({"network": [{"name": "NYC-core"}, {"name": "NYC-edge"}, {"name": "LON-core"}]})
-    assert any(row["observed_pattern"] == "prefix:NYC" and row["confidence"] == "INFERRED" for row in patterns)
+    assert any(row["observed_pattern"] == "prefix:NYC" and row["confidence"] == "OBSERVED" for row in patterns)
 
 
 def test_reports_separate_raw_effective_and_preserve_literals_and_metadata(tmp_path):
@@ -95,7 +95,8 @@ def test_reports_separate_raw_effective_and_preserve_literals_and_metadata(tmp_p
     assert "2026-09-19T10:00:00Z" in summary
     assert "COMPLETE: 1" in summary
     assert "remain to be implemented" in summary
-    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref for sheet in workbook)
+    assert all(sheet.freeze_panes == "A2" and sheet.auto_filter.ref is None for sheet in workbook)
+    assert all(table.autoFilter.ref == table.ref for sheet in workbook for table in sheet.tables.values())
 
 
 def test_markdown_aggregates_field_coverage_into_concise_area_rows(tmp_path):

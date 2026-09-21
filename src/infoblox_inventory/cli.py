@@ -32,7 +32,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Read-only Infoblox NIOS current-state inventory")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--config", help="Multi-Grid YAML configuration for live collection")
-    source.add_argument("--offline", "--fixture", metavar="RAW_DIR", help="Replay saved raw archives without network access or credentials")
+    source.add_argument("--offline", "--fixture", metavar="RAW_DIR", action="append",
+                        help="Replay saved RAW without network access; repeat to combine collector archives")
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument("--grid")
     selection.add_argument("--all", action="store_true", help="Collect every configured Grid (the default)")
@@ -58,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.test_connection or args.collect_raw_only or args.collector or args.verify_tls is not None:
             parser.error("Offline replay cannot be combined with live collection options")
         try:
-            results = load_raw(args.offline, args.grid)
+            results = [result for source in args.offline for result in load_raw(source, args.grid)]
             write_reports(results, args.output_dir)
         except (OSError, ValueError, KeyError) as exc:
             LOG.error("Offline replay failed: %s", exc)

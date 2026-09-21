@@ -119,7 +119,7 @@ class InfobloxClient:
         try:
             data = response.json()
         except ValueError:
-            raise WapiError(f"GET {path} returned invalid JSON") from None
+            raise WapiError(f"GET {path} returned invalid JSON", status_code=response.status_code) from None
         return WapiResponse(data, url)
 
     def detect_version(self, candidates: Iterable[str] = (COMPATIBLE_WAPI_VERSION,)) -> str:

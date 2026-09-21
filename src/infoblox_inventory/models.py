@@ -14,6 +14,7 @@ class CollectionResult:
     grid_url: str = ""
     wapi_version: str = ""
     collected_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    collection_sources: list[dict[str, Any]] = field(default_factory=list)
 
     def add(self, area: str, object_type: str, rows: list[dict[str, Any]], note: str = "") -> None:
         self.records[object_type] = rows

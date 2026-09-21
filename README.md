@@ -32,6 +32,14 @@ python -m infoblox_inventory --config config/grids.yaml --all --output-dir outpu
 
 `--fixture` is an alias for `--offline`. Replay accepts a run directory, its `raw` directory, or a single Grid archive directory; `--grid` can narrow it. Connection testing does not prove object-level read permissions. Live collection errors return exit code 1, retain completed pages, and appear in coverage/errors. An existing raw Grid directory is refused: choose a fresh run output directory so evidence from separate runs cannot be mixed or overwritten.
 
+Repeat `--offline` to combine explicitly selected collector archives for the same Grid before normalization and reporting:
+
+```powershell
+python -m infoblox_inventory --offline output/core-001/raw --offline output/topology-001/raw --offline output/reservations-001/raw --output-dir output/assessment-001
+```
+
+`Collection_Sources` preserves the timestamp and counts for each source object. Disjoint object families merge, identical snapshots deduplicate, and conflicting snapshots or Grid identities are rejected. RAW and effective responses from different snapshots are never paired. Archives remain immutable. Live `--all` retains its existing interface; without `--collector`, every registered collector is selected.
+
 Focused collectors include `--collector networks`, `ranges`, `members`, `options`, `templates`, `topology`, `reservations`, `reservations_filters`, `filters`, and any object name listed by `--help`. The `options` alias collects Grid DHCP, Member DHCP, Networks, Ranges, and Fixed Addresses. The `members` alias includes both related registered object types; `filters` selects six filter and MAC-entry types; `templates` selects network, range and fixed-address templates.
 
 For controlled lab validation, `--collector core` selects only Network Views, Grid DHCP, Members, Member DHCP, Networks, and Ranges. `config/grids.lab.yaml` pins the existing lab to WAPI 2.13.7 and stores no password; use `--insecure` only for this lab. `--log-level DEBUG` records GET methods and object paths without credentials, query tokens, or response bodies.
@@ -81,6 +89,16 @@ A plain child GET can contain a shadow/default value while its `use_*` flag is f
 
 Reports include `current_state_inventory.xlsx`, `current_state_summary.md`, and `manual_review.md`. The workbook retains filters, freeze panes, readable widths, object inventories, and coverage, with separate DHCP raw, effective scalar, and option information. Source refs are retained alongside human-readable source levels and objects. Nested values are serialized for Excel, and values resembling formulas are written as literal text.
 
+Start with `Overview` for Grid metadata, inventory counts, exact coverage-status counts, errors, manual review and observed effective DHCP settings. Unknown/failed inventories do not become successful zero counts. Effective summaries use confirmed normalized evidence only; Member values without authoritative wrappers remain unresolved. Detailed source refs and RAW values remain in `DHCP_Effective`, `DHCP_Options` and `DHCP_Raw`.
+
+Excel tables own their AutoFilters; no worksheet filter overlaps a table. Empty inventories retain headers without creating header-only tables. The independent ZIP/OOXML validator checks serialized table ranges, headers, IDs/names, column counts and relationships. To rebuild a cumulative report twice with network access blocked, verify all tables and compare reports/RAW hashes:
+
+```powershell
+python scripts/validate_report_package.py output/core-001/raw output/topology-001/raw output/reservations-001/raw --output-dir output/assessment-validated
+```
+
+Choose a fresh validation output directory. See [reporting stabilization](docs/reporting-stabilization.md) for Microsoft Excel validation, row counts, HTTP regressions and fixture-byte handling.
+
 Coverage distinguishes `COMPLETE`, `PARTIAL`, `EMPTY`, `MANUAL_REVIEW_REQUIRED`, `NOT_EXPOSED_BY_WAPI`, and `ERROR`; normalized field status also distinguishes `NOT_CONFIGURED`. Coverage is recorded per object/query and unsupported field. A completed query does not imply that every assessment area is covered. Approval workflows and documentation requirements always need manual confirmation. Commonly observed values are descriptive evidence, not approved standards or Grid rankings.
 
 ## Tests and remaining work
@@ -100,3 +118,5 @@ No live lab or production access is required for these tests. NIOS 9.1 lab evide
 The topology increment adds reusable DHCP objects only. Fixed-address objects, filters, DNS, DDNS and Extensible Attributes are not extended by it. Cross-Grid analysis remains a limited descriptive comparison of comparable resolved options; it does not establish object correspondence across differing site structures or exhaustively compare scalars, filters, templates and EAs. Further scope requires a separate increment backed by runtime schemas and response evidence.
 
 The subsequent reservation/filter increment was validated with **301 tests**. All eleven directly collected LAB object types are empty; Superhost children are absent by complete empty parent discovery. Populated behavior uses explicitly synthetic fixtures only for these empty inventories; no populated live validation is claimed. Twelve genuine schemas, twelve successful empty response pages (including fixed-address effective), and the real parent-required HTTP400 diagnostic are preserved with SHA-256 provenance. IPv6 fixed-address/host endpoints and consumers outside this increment remain deferred.
+
+The reporting/client/fixture stabilization passes **379 tests**. All captured fixture trees use `-text` Git attributes. Nineteen older files require their original captured CRLF bytes to be recorded instead of previously normalized LF blobs; original SHA-256 values remain unchanged. When staging this fix, include `git add --renormalize -- tests/fixtures/live_lab_20260920 tests/fixtures/topology_lab_20260920`. New isolated Git tests verify identical evidence bytes under both Windows and Linux newline settings.
