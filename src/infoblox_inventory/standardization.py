@@ -20,51 +20,100 @@ from .models import CollectionResult
 @dataclass(frozen=True)
 class ParameterSpec:
     key: str
+    base_key: str
     category: str
     label: str
     scope: str
+    object_type: str
     source: str  # option | scalar
     option_number: int | None = None
     parameter: str | None = None
     evidence_sheet: str = "DHCP_Effective"
 
 
+_SCOPE_OBJECT_TYPES = {
+    "Grid": "grid:dhcpproperties",
+    "Member": "member:dhcpproperties",
+    "Network": "network",
+    "Range": "range",
+}
+
+
+def _scoped_specs(
+    base_key: str, category: str, label: str, scopes: tuple[str, ...], source: str,
+    option_number: int | None = None, parameter: str | None = None,
+    evidence_sheet: str = "DHCP_Effective",
+) -> tuple[ParameterSpec, ...]:
+    return tuple(
+        ParameterSpec(
+            key=f"{base_key}.{scope.lower()}", base_key=base_key, category=category,
+            label=label, scope=scope, object_type=_SCOPE_OBJECT_TYPES[scope], source=source,
+            option_number=option_number, parameter=parameter, evidence_sheet=evidence_sheet,
+        )
+        for scope in scopes
+    )
+
+
 PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
-    ParameterSpec("dhcp.lease_time", "DHCP", "Default lease time", "Grid / Network / Range", "option", 51, evidence_sheet="DHCP_Options"),
-    ParameterSpec("dhcp.dns_servers", "DHCP", "DNS servers", "Grid / Network / Range", "option", 6, evidence_sheet="DHCP_Options"),
-    ParameterSpec("dhcp.domain_name", "DHCP", "Domain name", "Grid / Network / Range", "option", 15, evidence_sheet="DHCP_Options"),
-    ParameterSpec("dhcp.domain_search", "DHCP", "Domain search", "Grid / Network / Range", "option", 119, evidence_sheet="DHCP_Options"),
-    ParameterSpec("dhcp.router", "DHCP", "Router / gateway", "Grid / Network / Range", "option", 3, evidence_sheet="DHCP_Options"),
-    ParameterSpec("dhcp.ntp_servers", "DHCP", "NTP servers", "Grid / Network / Range", "option", 42, evidence_sheet="DHCP_Options"),
-    ParameterSpec("pxe.tftp_server_name", "PXE", "TFTP server name", "Grid / Network / Range", "option", 66, evidence_sheet="DHCP_Options"),
-    ParameterSpec("pxe.bootfile_name_option", "PXE", "Bootfile name (option 67)", "Grid / Network / Range", "option", 67, evidence_sheet="DHCP_Options"),
-    ParameterSpec("pxe.nextserver", "PXE", "Next server", "Grid / Member / Network / Range", "scalar", parameter="nextserver"),
-    ParameterSpec("pxe.bootserver", "PXE", "Boot server", "Network / Range", "scalar", parameter="bootserver"),
-    ParameterSpec("pxe.bootfile", "PXE", "Bootfile", "Network / Range", "scalar", parameter="bootfile"),
-    ParameterSpec("pxe.lease_time", "PXE", "PXE lease time", "Grid / Network / Range", "scalar", parameter="pxe_lease_time"),
-    ParameterSpec("pxe.lease_enabled", "PXE", "PXE lease enabled", "Grid / Network / Range", "scalar", parameter="enable_pxe_lease_time"),
-    ParameterSpec("dhcp.deny_bootp", "DHCP", "BOOTP denied", "Grid / Member / Network / Range", "scalar", parameter="deny_bootp"),
-    ParameterSpec("ddns.enabled", "DDNS", "DDNS enabled", "Grid / Member / Network / Range", "scalar", parameter="enable_ddns"),
-    ParameterSpec("ddns.domain", "DDNS", "DDNS domain", "Network / Range", "scalar", parameter="ddns_domainname"),
-    ParameterSpec("ddns.generate_hostname", "DDNS", "Generate hostname", "Grid / Member / Network / Range", "scalar", parameter="ddns_generate_hostname"),
-    ParameterSpec("ddns.ttl", "DDNS", "DDNS TTL", "Grid / Member / Network", "scalar", parameter="ddns_ttl"),
-    ParameterSpec("ddns.update_fixed_addresses", "DDNS", "Update fixed addresses", "Grid / Member / Network", "scalar", parameter="ddns_update_fixed_addresses"),
-    ParameterSpec("ddns.use_option81", "DDNS", "Use DHCP option 81", "Grid / Member / Network", "scalar", parameter="ddns_use_option81"),
-    ParameterSpec("ddns.update_on_renewal", "DDNS", "DNS update on lease renewal", "Grid / Member / Network / Range", "scalar", parameter="update_dns_on_lease_renewal"),
+    *_scoped_specs("dhcp.lease_time", "DHCP", "Default lease time", ("Grid", "Network", "Range"),
+                   "option", 51, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("dhcp.dns_servers", "DHCP", "DNS servers", ("Grid", "Network", "Range"),
+                   "option", 6, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("dhcp.domain_name", "DHCP", "Domain name", ("Grid", "Network", "Range"),
+                   "option", 15, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("dhcp.domain_search", "DHCP", "Domain search", ("Grid", "Network", "Range"),
+                   "option", 119, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("dhcp.router", "DHCP", "Router / gateway", ("Grid", "Network", "Range"),
+                   "option", 3, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("dhcp.ntp_servers", "DHCP", "NTP servers", ("Grid", "Network", "Range"),
+                   "option", 42, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("pxe.tftp_server_name", "PXE", "TFTP server name", ("Grid", "Network", "Range"),
+                   "option", 66, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("pxe.bootfile_name_option", "PXE", "Bootfile name (option 67)", ("Grid", "Network", "Range"),
+                   "option", 67, evidence_sheet="DHCP_Options"),
+    *_scoped_specs("pxe.nextserver", "PXE", "Next server", ("Grid", "Member", "Network", "Range"),
+                   "scalar", parameter="nextserver"),
+    *_scoped_specs("pxe.bootserver", "PXE", "Boot server", ("Network", "Range"),
+                   "scalar", parameter="bootserver"),
+    *_scoped_specs("pxe.bootfile", "PXE", "Bootfile", ("Network", "Range"),
+                   "scalar", parameter="bootfile"),
+    *_scoped_specs("pxe.lease_time", "PXE", "PXE lease time", ("Grid", "Network", "Range"),
+                   "scalar", parameter="pxe_lease_time"),
+    *_scoped_specs("pxe.lease_enabled", "PXE", "PXE lease enabled", ("Grid", "Network", "Range"),
+                   "scalar", parameter="enable_pxe_lease_time"),
+    *_scoped_specs("dhcp.deny_bootp", "DHCP", "BOOTP denied", ("Grid", "Member", "Network", "Range"),
+                   "scalar", parameter="deny_bootp"),
+    *_scoped_specs("ddns.enabled", "DDNS", "DDNS enabled", ("Grid", "Member", "Network", "Range"),
+                   "scalar", parameter="enable_ddns"),
+    *_scoped_specs("ddns.domain", "DDNS", "DDNS domain", ("Network", "Range"),
+                   "scalar", parameter="ddns_domainname"),
+    *_scoped_specs("ddns.generate_hostname", "DDNS", "Generate hostname", ("Grid", "Member", "Network", "Range"),
+                   "scalar", parameter="ddns_generate_hostname"),
+    *_scoped_specs("ddns.ttl", "DDNS", "DDNS TTL", ("Grid", "Member", "Network"),
+                   "scalar", parameter="ddns_ttl"),
+    *_scoped_specs("ddns.update_fixed_addresses", "DDNS", "Update fixed addresses", ("Grid", "Member", "Network"),
+                   "scalar", parameter="ddns_update_fixed_addresses"),
+    *_scoped_specs("ddns.use_option81", "DDNS", "Use DHCP option 81", ("Grid", "Member", "Network"),
+                   "scalar", parameter="ddns_use_option81"),
+    *_scoped_specs("ddns.update_on_renewal", "DDNS", "DNS update on lease renewal",
+                   ("Grid", "Member", "Network", "Range"), "scalar",
+                   parameter="update_dns_on_lease_renewal"),
 )
 
 STANDARDIZATION_HEADERS = [
-    "Parameter ID", "Category", "Parameter", "Scope", "Coverage", "Evidence Status",
-    "Objects Assessed", "Confirmed Objects", "Grids Assessed", "Distinct Observed Values",
+    "Parameter ID", "Category", "Parameter", "Scope", "Object Type", "Coverage", "Evidence Status",
+    "Population Objects", "Query Evidence Objects", "Query Coverage %", "Confirmed Objects",
+    "Objects Without Confirmed Value", "Grids in Scope", "Grids Assessed", "Distinct Observed Values",
     "Observed Values", "Common Observed Value", "Common Value Count", "Common Value %",
-    "Local Override Count", "Override Eligible Objects", "Local Override %", "Inherited Count",
-    "Source Levels", "Consistency Classification", "Standardization Candidate", "Decision Status",
-    "Proposed / Discussed Target", "Approved Target", "Exceptions Allowed", "Exception Rule",
+    "Local Override Count", "Override Eligible Objects", "Local Override %", "Inherited Count", "Inherited %",
+    "Source Levels", "Source Distribution", "Consistency Classification", "Standardization Candidate",
+    "Decision Status", "Proposed / Discussed Target", "Approved Target", "Exceptions Allowed", "Exception Rule",
     "Decision Owner", "Decision Date", "Decision Notes", "Evidence Sheet",
 ]
 
 DECISION_HEADERS = [
-    "Decision ID", "Category", "Parameter", "Current Observed State", "Common Observed Value",
+    "Decision ID", "Category", "Parameter", "Scope", "Object Type", "Population Objects",
+    "Query Coverage %", "Confirmed Objects", "Current Observed State", "Common Observed Value",
     "Coverage", "Proposed / Discussed Target", "Approved Target", "Status", "Exceptions Allowed",
     "Exception Rule", "Owner", "Decision Date", "Notes", "Persistence",
 ]
@@ -77,12 +126,15 @@ EXCEPTION_HEADERS = [
 ]
 
 DIFFERENCE_HEADERS = [
-    "Category", "Parameter ID", "Parameter", "Observed Values", "Distinct Values", "Confirmed Objects",
-    "Grids", "Common Observed Value", "Common Value Count", "Common Value %", "Local Overrides",
-    "Source Levels", "Classification", "Coverage", "Notes",
+    "Category", "Parameter ID", "Parameter", "Scope", "Object Type", "Population Objects",
+    "Query Coverage %", "Observed Values", "Distinct Values", "Confirmed Objects", "Grids",
+    "Common Observed Value", "Common Value Count", "Common Value %", "Local Overrides", "Local Override %",
+    "Source Levels", "Source Distribution", "Classification", "Coverage", "Notes",
 ]
 
 _ALLOWED_DECISION_STATUSES = {"PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "DEFERRED", "NOT_APPLICABLE"}
+_AUTHORITATIVE_QUERY_STATES = {"COMPLETE", "EMPTY"}
+_INCOMPLETE_QUERY_STATES = {"PARTIAL", "ERROR", "NOT_EXPOSED_BY_WAPI", "MANUAL_REVIEW_REQUIRED"}
 
 
 def _json(value: Any) -> str:
@@ -103,33 +155,132 @@ def _percent(numerator: int, denominator: int) -> float | None:
     return round(numerator * 100.0 / denominator, 1) if denominator else None
 
 
+def _object_key(row: dict[str, Any]) -> tuple[str, str, str]:
+    identity = row.get("object_ref") or row.get("object_name") or _json([
+        row.get("network_view"), row.get("parent_network"), row.get("source_ref")
+    ])
+    return str(row.get("grid", "")), str(row.get("object_type", "")), str(identity)
+
+
 def _spec_rows(spec: ParameterSpec, scalars: list[dict[str, Any]], options: list[dict[str, Any]]) -> list[dict[str, Any]]:
     if spec.source == "option":
         return [row for row in options
-                if str(row.get("vendor_class", "DHCP")) == "DHCP"
+                if row.get("object_type") == spec.object_type
+                and str(row.get("vendor_class", "DHCP")) == "DHCP"
                 and str(row.get("option_number", "")) == str(spec.option_number)]
-    return [row for row in scalars if row.get("parameter") == spec.parameter]
+    return [row for row in scalars
+            if row.get("object_type") == spec.object_type and row.get("parameter") == spec.parameter]
 
 
 def _proven(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [row for row in rows if row.get("status") == "COMPLETE"
-            and row.get("multisource") is not True and row.get("effective_value") is not None]
+    """Return at most one unambiguous confirmed value per object."""
+    candidates = [row for row in rows if row.get("status") == "COMPLETE"
+                  and row.get("multisource") is not True and row.get("effective_value") is not None]
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in candidates:
+        grouped[_object_key(row)].append(row)
+    proven: list[dict[str, Any]] = []
+    for object_rows in grouped.values():
+        signatures = {_json([
+            row.get("effective_value"), row.get("source_level"), row.get("source_ref"),
+            row.get("configured_here"), row.get("inherited"),
+        ]) for row in object_rows}
+        if len(signatures) == 1:
+            proven.append(object_rows[0])
+    return sorted(proven, key=lambda row: _object_key(row))
 
 
-def _coverage_state(rows: list[dict[str, Any]]) -> tuple[str, str]:
-    if not rows:
-        return "LOW", "INSUFFICIENT_DATA"
-    complete = sum(row.get("status") == "COMPLETE" and row.get("multisource") is not True
-                   and row.get("effective_value") is not None for row in rows)
-    unresolved = sum(row.get("status") in {None, "PARTIAL", "ERROR"} or row.get("multisource") is True for row in rows)
-    not_configured = sum(row.get("status") == "NOT_CONFIGURED" for row in rows)
-    if complete and not unresolved:
-        return "HIGH", "COMPLETE"
-    if complete:
-        return "MEDIUM", "PARTIAL"
-    if not_configured == len(rows):
-        return "HIGH", "NOT_CONFIGURED"
-    return "LOW", "INSUFFICIENT_DATA"
+def _coverage_query_rows(coverage: list[dict[str, Any]], grid: str, object_type: str, query: str) -> list[dict[str, Any]]:
+    return [row for row in coverage
+            if str(row.get("Grid", "")) == grid
+            and row.get("Object") == object_type
+            and row.get("Query") == query
+            and not row.get("Field")]
+
+
+def _query_status(coverage: list[dict[str, Any]], grid: str, object_type: str, query: str) -> str:
+    rows = _coverage_query_rows(coverage, grid, object_type, query)
+    statuses = {str(row.get("Collection Status", "")) for row in rows if row.get("Collection Status")}
+    if not statuses:
+        return "UNKNOWN"
+    for status in ("ERROR", "PARTIAL", "NOT_EXPOSED_BY_WAPI", "MANUAL_REVIEW_REQUIRED", "COMPLETE", "EMPTY"):
+        if status in statuses:
+            return status
+    return sorted(statuses)[0]
+
+
+def _scope_metrics(spec: ParameterSpec, results: list[CollectionResult], coverage: list[dict[str, Any]],
+                   rows: list[dict[str, Any]]) -> dict[str, Any]:
+    query = "raw" if spec.object_type == "grid:dhcpproperties" else "effective"
+    row_keys_by_grid: dict[str, set[tuple[str, str, str]]] = defaultdict(set)
+    for row in rows:
+        row_keys_by_grid[str(row.get("grid", ""))].add(_object_key(row))
+
+    population_by_grid: dict[str, int] = {}
+    query_by_grid: dict[str, int] = {}
+    raw_status_by_grid: dict[str, str] = {}
+    query_status_by_grid: dict[str, str] = {}
+    for result in results:
+        raw_count = len(result.records.get(spec.object_type, []))
+        query_count = (raw_count if query == "raw"
+                       else len(result.effective_records.get(spec.object_type, [])))
+        observed_count = len(row_keys_by_grid.get(result.grid, set()))
+        population_by_grid[result.grid] = max(raw_count, query_count, observed_count)
+        query_by_grid[result.grid] = query_count
+        raw_status_by_grid[result.grid] = _query_status(coverage, result.grid, spec.object_type, "raw")
+        query_status_by_grid[result.grid] = _query_status(coverage, result.grid, spec.object_type, query)
+
+    population = sum(population_by_grid.values())
+    query_objects = sum(min(query_by_grid[grid], population_by_grid[grid])
+                        for grid in population_by_grid)
+    query_coverage = _percent(query_objects, population)
+    grids_in_scope = sum(population_by_grid[grid] > 0 or raw_status_by_grid[grid] == "EMPTY"
+                         for grid in population_by_grid)
+    grids_assessed = sum(query_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
+                         or query_by_grid[grid] > 0 for grid in population_by_grid)
+
+    authoritative = bool(results) and all(
+        raw_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
+        and query_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
+        and query_by_grid[grid] >= population_by_grid[grid]
+        for grid in population_by_grid
+    )
+    any_incomplete = any(
+        raw_status_by_grid[grid] in _INCOMPLETE_QUERY_STATES
+        or query_status_by_grid[grid] in _INCOMPLETE_QUERY_STATES
+        or raw_status_by_grid[grid] == "UNKNOWN" or query_status_by_grid[grid] == "UNKNOWN"
+        for grid in population_by_grid
+    )
+    if authoritative:
+        coverage_label = "HIGH"
+        evidence_status = "EMPTY" if population == 0 else "COMPLETE"
+    elif query_objects > 0:
+        coverage_label = "MEDIUM"
+        evidence_status = "PARTIAL"
+    else:
+        coverage_label = "LOW"
+        if any(status == "ERROR" for status in query_status_by_grid.values()):
+            evidence_status = "ERROR"
+        elif any(status == "NOT_EXPOSED_BY_WAPI" for status in query_status_by_grid.values()):
+            evidence_status = "NOT_EXPOSED_BY_WAPI"
+        else:
+            evidence_status = "INSUFFICIENT_DATA"
+    if not any_incomplete and population == 0 and results:
+        coverage_label, evidence_status = "HIGH", "EMPTY"
+
+    return {
+        "population": population,
+        "query_objects": query_objects,
+        "query_coverage": query_coverage,
+        "coverage": coverage_label,
+        "evidence_status": evidence_status,
+        "grids_in_scope": grids_in_scope,
+        "grids_assessed": grids_assessed,
+        "population_by_grid": population_by_grid,
+        "query_by_grid": query_by_grid,
+        "query_status_by_grid": query_status_by_grid,
+        "raw_status_by_grid": raw_status_by_grid,
+    }
 
 
 def _normalize_decision(key: str, value: Any) -> dict[str, Any]:
@@ -172,6 +323,14 @@ def load_decisions(path: str | Path | None) -> dict[str, dict[str, Any]]:
     if not isinstance(decisions, dict):
         raise ValueError("Decision file 'decisions' must be a mapping")
     known = {spec.key for spec in PARAMETER_SPECS}
+    legacy = {spec.base_key for spec in PARAMETER_SPECS}
+    legacy_used = sorted(set(decisions) & legacy)
+    if legacy_used:
+        suggestions = []
+        for key in legacy_used:
+            scoped = ", ".join(spec.key for spec in PARAMETER_SPECS if spec.base_key == key)
+            suggestions.append(f"{key} -> {scoped}")
+        raise ValueError("Unscoped decision IDs are no longer valid; choose a scope-specific ID: " + "; ".join(suggestions))
     unknown = sorted(set(decisions) - known)
     if unknown:
         raise ValueError("Unknown standardization decision IDs: " + ", ".join(unknown))
@@ -192,12 +351,25 @@ def _distribution(proven: list[dict[str, Any]]) -> tuple[Counter[str], dict[str,
     return counts, decoded
 
 
-def _observed_values(counts: Counter[str], decoded: dict[str, Any], limit: int = 8) -> str:
+def _observed_values(counts: Counter[str], decoded: dict[str, Any], denominator: int | None = None,
+                     limit: int = 8) -> str:
     ordered = sorted(counts.items(), key=lambda item: (-item[1], _display(decoded[item[0]])))
-    parts = [f"{_display(decoded[key])} ({count})" for key, count in ordered[:limit]]
+    parts = []
+    for key, count in ordered[:limit]:
+        if denominator:
+            parts.append(f"{_display(decoded[key])} ({count}/{denominator}, {_percent(count, denominator):.1f}%)")
+        else:
+            parts.append(f"{_display(decoded[key])} ({count})")
     if len(ordered) > limit:
         parts.append(f"+{len(ordered) - limit} more")
     return "; ".join(parts)
+
+
+def _source_distribution(proven: list[dict[str, Any]]) -> tuple[list[str], str]:
+    counts = Counter(str(row.get("source_level")) for row in proven if row.get("source_level"))
+    levels = sorted(counts)
+    display = "; ".join(f"{level} ({counts[level]})" for level in sorted(counts, key=lambda key: (-counts[key], key)))
+    return levels, display
 
 
 def build_standardization(
@@ -205,30 +377,41 @@ def build_standardization(
     scalars: list[dict[str, Any]], options: list[dict[str, Any]],
     decisions: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Aggregate normalized evidence into one row per standardization question."""
+    """Aggregate normalized evidence into one row per parameter and object scope."""
     decisions = decisions or {}
-    all_grids = {result.grid for result in results}
     output: list[dict[str, Any]] = []
     for spec in PARAMETER_SPECS:
         rows = _spec_rows(spec, scalars, options)
         proven = _proven(rows)
+        metrics = _scope_metrics(spec, results, coverage, rows)
+        population = metrics["population"]
         counts, decoded = _distribution(proven)
         ordered = counts.most_common()
         highest = ordered[0][1] if ordered else 0
         tied = [key for key, count in ordered if count == highest]
         common_key = tied[0] if len(tied) == 1 else None
         common = decoded.get(common_key) if common_key is not None else None
-        coverage_label, evidence_status = _coverage_state(rows)
-        eligible = [row for row in proven if row.get("object_type") != "grid:dhcpproperties"]
-        local = [row for row in eligible if row.get("configured_here") is True]
-        inherited = [row for row in eligible if row.get("inherited") is True]
-        source_levels = sorted({str(row.get("source_level", "")) for row in proven if row.get("source_level")})
-        observed_grids = {str(row.get("grid", "")) for row in rows if row.get("grid")}
-        if evidence_status == "NOT_CONFIGURED":
+        explicit_not_configured = bool(rows) and all(row.get("status") == "NOT_CONFIGURED" for row in rows)
+        evidence_status = metrics["evidence_status"]
+        if explicit_not_configured and metrics["coverage"] == "HIGH":
+            evidence_status = "NOT_CONFIGURED"
+
+        eligible_denominator = 0 if spec.object_type == "grid:dhcpproperties" else population
+        local = [row for row in proven if row.get("configured_here") is True
+                 and spec.object_type != "grid:dhcpproperties"]
+        inherited = [row for row in proven if row.get("inherited") is True]
+        source_levels, source_distribution = _source_distribution(proven)
+        proven_grids = {str(row.get("grid", "")) for row in proven if row.get("grid")}
+        scope_grids = {grid for grid, count in metrics["population_by_grid"].items() if count > 0}
+
+        if metrics["coverage"] == "HIGH" and population == 0:
+            classification = "NO_OBJECTS_IN_SCOPE"
+        elif evidence_status == "NOT_CONFIGURED":
             classification = "NOT_CONFIGURED"
         elif not proven:
+            evidence_status = "INSUFFICIENT_DATA"
             classification = "INSUFFICIENT_DATA"
-        elif len(all_grids) > 1 and observed_grids and observed_grids != all_grids:
+        elif metrics["coverage"] == "HIGH" and len(scope_grids) > 1 and proven_grids != scope_grids:
             classification = "ONLY_IN_SOME_GRIDS"
         elif len(counts) > 1:
             classification = "MULTIPLE_VALUES"
@@ -238,33 +421,44 @@ def build_standardization(
             classification = "LOCAL_OVERRIDES"
         else:
             classification = "CONSISTENT"
-        if coverage_label == "LOW":
+
+        if classification == "NO_OBJECTS_IN_SCOPE":
+            candidate = "NOT_APPLICABLE"
+        elif metrics["coverage"] == "LOW" or classification == "INSUFFICIENT_DATA":
             candidate = "BLOCKED_BY_DATA"
-        elif classification in {"NOT_CONFIGURED"}:
+        elif metrics["coverage"] == "MEDIUM" or classification == "NOT_CONFIGURED":
             candidate = "NEEDS_ANALYSIS"
         else:
             candidate = "READY_FOR_REVIEW"
+
         decision = _decision_for(spec, decisions)
         output.append({
             "Parameter ID": spec.key,
             "Category": spec.category,
             "Parameter": spec.label,
             "Scope": spec.scope,
-            "Coverage": coverage_label,
+            "Object Type": spec.object_type,
+            "Coverage": metrics["coverage"],
             "Evidence Status": evidence_status,
-            "Objects Assessed": len(rows),
+            "Population Objects": population,
+            "Query Evidence Objects": metrics["query_objects"],
+            "Query Coverage %": metrics["query_coverage"],
             "Confirmed Objects": len(proven),
-            "Grids Assessed": len(observed_grids),
+            "Objects Without Confirmed Value": max(population - len(proven), 0),
+            "Grids in Scope": metrics["grids_in_scope"],
+            "Grids Assessed": metrics["grids_assessed"],
             "Distinct Observed Values": len(counts),
-            "Observed Values": _observed_values(counts, decoded) if counts else "",
+            "Observed Values": _observed_values(counts, decoded, population) if counts else "",
             "Common Observed Value": _display(common) if common_key is not None else "",
             "Common Value Count": highest if common_key is not None else None,
-            "Common Value %": _percent(highest, len(proven)) if common_key is not None else None,
+            "Common Value %": _percent(highest, population) if common_key is not None else None,
             "Local Override Count": len(local),
-            "Override Eligible Objects": len(eligible),
-            "Local Override %": _percent(len(local), len(eligible)),
+            "Override Eligible Objects": eligible_denominator,
+            "Local Override %": _percent(len(local), eligible_denominator),
             "Inherited Count": len(inherited),
+            "Inherited %": _percent(len(inherited), population),
             "Source Levels": ", ".join(source_levels),
+            "Source Distribution": source_distribution,
             "Consistency Classification": classification,
             "Standardization Candidate": candidate,
             "Decision Status": decision["status"],
@@ -280,6 +474,7 @@ def build_standardization(
             "_rows": rows,
             "_proven": proven,
             "_decision": decision,
+            "_population_by_grid": metrics["population_by_grid"],
         })
     return output
 
@@ -290,8 +485,11 @@ def decision_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any]]
         state = item["Observed Values"] or item["Evidence Status"]
         rows.append({
             "Decision ID": item["Parameter ID"], "Category": item["Category"], "Parameter": item["Parameter"],
-            "Current Observed State": state, "Common Observed Value": item["Common Observed Value"],
-            "Coverage": item["Coverage"], "Proposed / Discussed Target": item["Proposed / Discussed Target"],
+            "Scope": item["Scope"], "Object Type": item["Object Type"],
+            "Population Objects": item["Population Objects"], "Query Coverage %": item["Query Coverage %"],
+            "Confirmed Objects": item["Confirmed Objects"], "Current Observed State": state,
+            "Common Observed Value": item["Common Observed Value"], "Coverage": item["Coverage"],
+            "Proposed / Discussed Target": item["Proposed / Discussed Target"],
             "Approved Target": item["Approved Target"], "Status": item["Decision Status"],
             "Exceptions Allowed": item["Exceptions Allowed"], "Exception Rule": item["Exception Rule"],
             "Owner": item["Decision Owner"], "Decision Date": item["Decision Date"], "Notes": item["Decision Notes"],
@@ -349,20 +547,27 @@ def _approved_exception(row: dict[str, Any], decision: dict[str, Any]) -> bool:
 
 
 def exception_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Return actionable rows only; ordinary matches are summarized, not flooded into Excel."""
+    """Return actionable object rows without duplicating ambiguous normalized evidence."""
     output: list[dict[str, Any]] = []
     for item in standardization:
         decision = item["_decision"]
         approved = decision["status"] == "APPROVED" and decision.get("approved_target") is not None
         common_key = item.get("_common_key")
+        proven_by_key = {_object_key(row): row for row in item["_proven"]}
+        all_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
         for row in item["_rows"]:
-            proven = row.get("status") == "COMPLETE" and row.get("multisource") is not True and row.get("effective_value") is not None
+            all_by_key.setdefault(_object_key(row), row)
+        candidate_rows = (all_by_key.items() if approved
+                          else ((key, row) for key, row in proven_by_key.items()))
+        for row_key, fallback_row in candidate_rows:
+            row = proven_by_key.get(row_key, fallback_row)
+            proven = row_key in proven_by_key
             state = None
             if approved:
                 if not proven:
                     state = "INSUFFICIENT_DATA"
                 elif _matches_target(row.get("effective_value"), decision["approved_target"], decision.get("comparison_mode", "exact")):
-                    continue  # Matches are counted in Standardization; Exceptions stays actionable.
+                    continue
                 elif decision["exceptions_allowed"] and _approved_exception(row, decision):
                     state = "APPROVED_EXCEPTION"
                 else:
@@ -392,13 +597,13 @@ def exception_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any]
 
 
 def grid_comparison_rows(standardization: list[dict[str, Any]], grids: list[str]) -> tuple[list[dict[str, Any]], list[str]]:
-    headers = ["Category", "Parameter ID", "Parameter", *grids,
+    headers = ["Category", "Parameter ID", "Parameter", "Scope", "Object Type", *grids,
                "Distinct Values", "Common Observed Value", "Consistency", "Local Overrides", "Coverage", "Notes"]
     if len(grids) < 2:
         return [{"Category": "Comparison", "Parameter ID": "", "Parameter": "Cross-Grid comparison",
-                 **{grid: "" for grid in grids}, "Distinct Values": "", "Common Observed Value": "",
-                 "Consistency": "NOT_APPLICABLE", "Local Overrides": "", "Coverage": "",
-                 "Notes": "Cross-Grid comparison requires at least two Grids."}], headers
+                 "Scope": "", "Object Type": "", **{grid: "" for grid in grids}, "Distinct Values": "",
+                 "Common Observed Value": "", "Consistency": "NOT_APPLICABLE", "Local Overrides": "",
+                 "Coverage": "", "Notes": "Cross-Grid comparison requires at least two Grids."}], headers
     output = []
     for item in standardization:
         by_grid: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -408,14 +613,17 @@ def grid_comparison_rows(standardization: list[dict[str, Any]], grids: list[str]
         display_by_grid = {}
         for grid in grids:
             counts, decoded = _distribution(by_grid.get(grid, []))
-            display_by_grid[grid] = _observed_values(counts, decoded) if counts else "NO_CONFIRMED_EVIDENCE"
+            denominator = int(item.get("_population_by_grid", {}).get(grid, 0) or 0)
+            display_by_grid[grid] = (_observed_values(counts, decoded, denominator)
+                                     if counts else "NO_CONFIRMED_EVIDENCE")
             values.update(counts)
-        decoded_all = {_json(row.get("effective_value")): row.get("effective_value") for row in item["_proven"]}
         output.append({
             "Category": item["Category"], "Parameter ID": item["Parameter ID"], "Parameter": item["Parameter"],
-            **display_by_grid, "Distinct Values": len(values), "Common Observed Value": item["Common Observed Value"],
+            "Scope": item["Scope"], "Object Type": item["Object Type"], **display_by_grid,
+            "Distinct Values": len(values), "Common Observed Value": item["Common Observed Value"],
             "Consistency": item["Consistency Classification"], "Local Overrides": item["Local Override Count"],
-            "Coverage": item["Coverage"], "Notes": "Observed effective values only; common value is not an approved standard.",
+            "Coverage": item["Coverage"],
+            "Notes": "Observed effective values within this scope only; common value is not an approved standard.",
         })
     return output, headers
 
@@ -427,11 +635,14 @@ def difference_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any
             continue
         output.append({
             "Category": item["Category"], "Parameter ID": item["Parameter ID"], "Parameter": item["Parameter"],
+            "Scope": item["Scope"], "Object Type": item["Object Type"],
+            "Population Objects": item["Population Objects"], "Query Coverage %": item["Query Coverage %"],
             "Observed Values": item["Observed Values"], "Distinct Values": item["Distinct Observed Values"],
             "Confirmed Objects": item["Confirmed Objects"], "Grids": item["Grids Assessed"],
             "Common Observed Value": item["Common Observed Value"], "Common Value Count": item["Common Value Count"],
             "Common Value %": item["Common Value %"], "Local Overrides": item["Local Override Count"],
-            "Source Levels": item["Source Levels"], "Classification": item["Consistency Classification"],
+            "Local Override %": item["Local Override %"], "Source Levels": item["Source Levels"],
+            "Source Distribution": item["Source Distribution"], "Classification": item["Consistency Classification"],
             "Coverage": item["Coverage"],
             "Notes": "Observed difference only; no deviation exists until an approved target is defined.",
         })
@@ -459,7 +670,7 @@ def decision_template_payload(standardization: list[dict[str, Any]]) -> dict[str
             "comparison_mode": decision["comparison_mode"],
             "approved_exceptions": decision["approved_exceptions"],
         }
-    return {"version": 1, "decisions": decisions}
+    return {"version": 2, "decisions": decisions}
 
 
 def write_decision_template(standardization: list[dict[str, Any]], path: str | Path) -> None:
