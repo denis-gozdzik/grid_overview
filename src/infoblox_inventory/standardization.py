@@ -26,6 +26,7 @@ class ParameterSpec:
     scope: str
     object_type: str
     source: str  # option | scalar
+    required_field: str
     option_number: int | None = None
     parameter: str | None = None
     evidence_sheet: str = "DHCP_Effective"
@@ -48,6 +49,7 @@ def _scoped_specs(
         ParameterSpec(
             key=f"{base_key}.{scope.lower()}", base_key=base_key, category=category,
             label=label, scope=scope, object_type=_SCOPE_OBJECT_TYPES[scope], source=source,
+            required_field="options" if source == "option" else str(parameter or ""),
             option_number=option_number, parameter=parameter, evidence_sheet=evidence_sheet,
         )
         for scope in scopes
@@ -101,9 +103,11 @@ PARAMETER_SPECS: tuple[ParameterSpec, ...] = (
 )
 
 STANDARDIZATION_HEADERS = [
-    "Parameter ID", "Category", "Parameter", "Scope", "Object Type", "Coverage", "Evidence Status",
+    "Parameter ID", "Category", "Parameter", "Scope", "Object Type", "Required Field",
+    "Collection Status", "Coverage", "Evidence Status",
     "Population Objects", "Query Evidence Objects", "Query Coverage %", "Confirmed Objects",
-    "Objects Without Confirmed Value", "Grids in Scope", "Grids Assessed", "Distinct Observed Values",
+    "Confirmed Value %", "Explicit Not Configured", "Resolved Evidence %", "Unresolved Objects",
+    "Unresolved %", "Grids in Scope", "Grids Assessed", "Distinct Observed Values",
     "Observed Values", "Common Observed Value", "Common Value Count", "Common Value %",
     "Local Override Count", "Override Eligible Objects", "Local Override %", "Inherited Count", "Inherited %",
     "Source Levels", "Source Distribution", "Consistency Classification", "Standardization Candidate",
@@ -113,9 +117,10 @@ STANDARDIZATION_HEADERS = [
 
 DECISION_HEADERS = [
     "Decision ID", "Category", "Parameter", "Scope", "Object Type", "Population Objects",
-    "Query Coverage %", "Confirmed Objects", "Current Observed State", "Common Observed Value",
-    "Coverage", "Proposed / Discussed Target", "Approved Target", "Status", "Exceptions Allowed",
-    "Exception Rule", "Owner", "Decision Date", "Notes", "Persistence",
+    "Query Coverage %", "Confirmed Objects", "Confirmed Value %", "Explicit Not Configured",
+    "Unresolved Objects", "Current Observed State", "Common Observed Value",
+    "Collection Status", "Coverage", "Proposed / Discussed Target", "Approved Target", "Status",
+    "Exceptions Allowed", "Exception Rule", "Owner", "Decision Date", "Notes", "Persistence",
 ]
 
 EXCEPTION_HEADERS = [
@@ -127,9 +132,10 @@ EXCEPTION_HEADERS = [
 
 DIFFERENCE_HEADERS = [
     "Category", "Parameter ID", "Parameter", "Scope", "Object Type", "Population Objects",
-    "Query Coverage %", "Observed Values", "Distinct Values", "Confirmed Objects", "Grids",
+    "Query Coverage %", "Confirmed Value %", "Explicit Not Configured", "Unresolved Objects", "Unresolved %",
+    "Observed Values", "Distinct Values", "Confirmed Objects", "Grids",
     "Common Observed Value", "Common Value Count", "Common Value %", "Local Overrides", "Local Override %",
-    "Source Levels", "Source Distribution", "Classification", "Coverage", "Notes",
+    "Source Levels", "Source Distribution", "Collection Status", "Classification", "Coverage", "Notes",
 ]
 
 _ALLOWED_DECISION_STATUSES = {"PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "DEFERRED", "NOT_APPLICABLE"}
@@ -209,6 +215,48 @@ def _query_status(coverage: list[dict[str, Any]], grid: str, object_type: str, q
     return sorted(statuses)[0]
 
 
+def _required_field_unavailable(coverage: list[dict[str, Any]], grid: str,
+                                object_type: str, field: str) -> bool:
+    return any(
+        str(row.get("Grid", "")) == grid
+        and row.get("Object") == object_type
+        and row.get("Query") == "schema"
+        and row.get("Field") == field
+        and row.get("Collection Status") == "NOT_EXPOSED_BY_WAPI"
+        for row in coverage
+    )
+
+
+def _has_collection_error(results: list[CollectionResult], grid: str,
+                          object_type: str, query: str) -> bool:
+    for result in results:
+        if result.grid != grid:
+            continue
+        for error in result.errors:
+            if error.get("object_type") != object_type:
+                continue
+            error_query = error.get("query")
+            if error_query in (None, "", query):
+                return True
+    return False
+
+
+def _parameter_evidence(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], set[tuple[str, str, str]]]:
+    proven = _proven(rows)
+    confirmed_keys = {_object_key(row) for row in proven}
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[_object_key(row)].append(row)
+    not_configured: set[tuple[str, str, str]] = set()
+    for key, object_rows in grouped.items():
+        if key in confirmed_keys:
+            continue
+        statuses = {row.get("status") for row in object_rows}
+        if statuses == {"NOT_CONFIGURED"}:
+            not_configured.add(key)
+    return proven, not_configured
+
+
 def _scope_metrics(spec: ParameterSpec, results: list[CollectionResult], coverage: list[dict[str, Any]],
                    rows: list[dict[str, Any]]) -> dict[str, Any]:
     query = "raw" if spec.object_type == "grid:dhcpproperties" else "effective"
@@ -220,6 +268,9 @@ def _scope_metrics(spec: ParameterSpec, results: list[CollectionResult], coverag
     query_by_grid: dict[str, int] = {}
     raw_status_by_grid: dict[str, str] = {}
     query_status_by_grid: dict[str, str] = {}
+    field_unavailable_by_grid: dict[str, bool] = {}
+    actual_error_by_grid: dict[str, bool] = {}
+
     for result in results:
         raw_count = len(result.records.get(spec.object_type, []))
         query_count = (raw_count if query == "raw"
@@ -229,6 +280,12 @@ def _scope_metrics(spec: ParameterSpec, results: list[CollectionResult], coverag
         query_by_grid[result.grid] = query_count
         raw_status_by_grid[result.grid] = _query_status(coverage, result.grid, spec.object_type, "raw")
         query_status_by_grid[result.grid] = _query_status(coverage, result.grid, spec.object_type, query)
+        field_unavailable_by_grid[result.grid] = _required_field_unavailable(
+            coverage, result.grid, spec.object_type, spec.required_field)
+        actual_error_by_grid[result.grid] = (
+            _has_collection_error(results, result.grid, spec.object_type, "raw")
+            or _has_collection_error(results, result.grid, spec.object_type, query)
+        )
 
     population = sum(population_by_grid.values())
     query_objects = sum(min(query_by_grid[grid], population_by_grid[grid])
@@ -236,50 +293,65 @@ def _scope_metrics(spec: ParameterSpec, results: list[CollectionResult], coverag
     query_coverage = _percent(query_objects, population)
     grids_in_scope = sum(population_by_grid[grid] > 0 or raw_status_by_grid[grid] == "EMPTY"
                          for grid in population_by_grid)
-    grids_assessed = sum(query_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
-                         or query_by_grid[grid] > 0 for grid in population_by_grid)
+    grids_assessed = sum(query_by_grid[grid] > 0
+                         or query_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
+                         for grid in population_by_grid)
 
-    authoritative = bool(results) and all(
-        raw_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
-        and query_status_by_grid[grid] in _AUTHORITATIVE_QUERY_STATES
-        and query_by_grid[grid] >= population_by_grid[grid]
-        for grid in population_by_grid
-    )
-    any_incomplete = any(
-        raw_status_by_grid[grid] in _INCOMPLETE_QUERY_STATES
-        or query_status_by_grid[grid] in _INCOMPLETE_QUERY_STATES
-        or raw_status_by_grid[grid] == "UNKNOWN" or query_status_by_grid[grid] == "UNKNOWN"
-        for grid in population_by_grid
-    )
-    if authoritative:
-        coverage_label = "HIGH"
-        evidence_status = "EMPTY" if population == 0 else "COMPLETE"
-    elif query_objects > 0:
-        coverage_label = "MEDIUM"
-        evidence_status = "PARTIAL"
-    else:
-        coverage_label = "LOW"
-        if any(status == "ERROR" for status in query_status_by_grid.values()):
-            evidence_status = "ERROR"
-        elif any(status == "NOT_EXPOSED_BY_WAPI" for status in query_status_by_grid.values()):
-            evidence_status = "NOT_EXPOSED_BY_WAPI"
+    per_grid_collection: dict[str, str] = {}
+    for grid in population_by_grid:
+        pop = population_by_grid[grid]
+        returned = query_by_grid[grid]
+        raw_status = raw_status_by_grid[grid]
+        query_status = query_status_by_grid[grid]
+        if actual_error_by_grid[grid] or raw_status == "ERROR" or query_status == "ERROR":
+            per_grid_collection[grid] = "ERROR" if returned == 0 else "PARTIAL"
+        elif raw_status == "UNKNOWN" or query_status == "UNKNOWN":
+            per_grid_collection[grid] = "UNKNOWN"
+        elif returned < pop:
+            per_grid_collection[grid] = "PARTIAL"
+        elif pop == 0:
+            per_grid_collection[grid] = "EMPTY"
         else:
-            evidence_status = "INSUFFICIENT_DATA"
-    if not any_incomplete and population == 0 and results:
-        coverage_label, evidence_status = "HIGH", "EMPTY"
+            # Collector-level PARTIAL can mean an unrelated schema field was unavailable.
+            # Full object return with no recorded query error is complete for this parameter;
+            # required-field availability is evaluated separately below.
+            per_grid_collection[grid] = "COMPLETE"
+
+    states = set(per_grid_collection.values())
+    if "ERROR" in states:
+        collection_status = "ERROR" if query_objects == 0 else "PARTIAL"
+    elif "PARTIAL" in states:
+        collection_status = "PARTIAL"
+    elif "UNKNOWN" in states:
+        collection_status = "UNKNOWN"
+    elif states <= {"COMPLETE", "EMPTY"}:
+        collection_status = "EMPTY" if population == 0 else "COMPLETE"
+    else:
+        collection_status = "UNKNOWN"
+
+    scoped_grids = [grid for grid, count in population_by_grid.items() if count > 0]
+    unavailable_scoped = [grid for grid in scoped_grids if field_unavailable_by_grid[grid]]
+    if scoped_grids and len(unavailable_scoped) == len(scoped_grids):
+        required_field_status = "NOT_EXPOSED_BY_WAPI"
+    elif unavailable_scoped:
+        required_field_status = "NOT_EXPOSED_IN_SOME_GRIDS"
+    else:
+        required_field_status = "AVAILABLE_OR_NOT_FLAGGED"
 
     return {
         "population": population,
         "query_objects": query_objects,
         "query_coverage": query_coverage,
-        "coverage": coverage_label,
-        "evidence_status": evidence_status,
+        "collection_status": collection_status,
         "grids_in_scope": grids_in_scope,
         "grids_assessed": grids_assessed,
         "population_by_grid": population_by_grid,
         "query_by_grid": query_by_grid,
         "query_status_by_grid": query_status_by_grid,
         "raw_status_by_grid": raw_status_by_grid,
+        "required_field_status": required_field_status,
+        "field_unavailable_by_grid": field_unavailable_by_grid,
+        "actual_error_by_grid": actual_error_by_grid,
     }
 
 
@@ -382,19 +454,42 @@ def build_standardization(
     output: list[dict[str, Any]] = []
     for spec in PARAMETER_SPECS:
         rows = _spec_rows(spec, scalars, options)
-        proven = _proven(rows)
+        proven, not_configured_keys = _parameter_evidence(rows)
         metrics = _scope_metrics(spec, results, coverage, rows)
         population = metrics["population"]
+        confirmed = len(proven)
+        explicit_not_configured = min(len(not_configured_keys), max(population - confirmed, 0))
+        resolved = min(confirmed + explicit_not_configured, population)
+        unresolved = max(population - resolved, 0)
+
         counts, decoded = _distribution(proven)
         ordered = counts.most_common()
         highest = ordered[0][1] if ordered else 0
         tied = [key for key, count in ordered if count == highest]
         common_key = tied[0] if len(tied) == 1 else None
         common = decoded.get(common_key) if common_key is not None else None
-        explicit_not_configured = bool(rows) and all(row.get("status") == "NOT_CONFIGURED" for row in rows)
-        evidence_status = metrics["evidence_status"]
-        if explicit_not_configured and metrics["coverage"] == "HIGH":
-            evidence_status = "NOT_CONFIGURED"
+
+        field_status = metrics["required_field_status"]
+        collection_status = metrics["collection_status"]
+        if metrics["coverage"] if "coverage" in metrics else False:
+            raise AssertionError("legacy coverage key must not be produced")
+
+        if metrics["population"] == 0 and collection_status in {"EMPTY", "COMPLETE"}:
+            coverage_label, evidence_status = "HIGH", "EMPTY"
+        elif field_status == "NOT_EXPOSED_BY_WAPI":
+            coverage_label, evidence_status = "LOW", "NOT_EXPOSED_BY_WAPI"
+        elif collection_status == "ERROR":
+            coverage_label, evidence_status = "LOW", "ERROR"
+        elif collection_status in {"PARTIAL", "UNKNOWN"}:
+            coverage_label = "MEDIUM" if metrics["query_objects"] > 0 or resolved > 0 else "LOW"
+            evidence_status = "PARTIAL" if coverage_label == "MEDIUM" else "INSUFFICIENT_DATA"
+        elif field_status == "NOT_EXPOSED_IN_SOME_GRIDS":
+            coverage_label, evidence_status = ("MEDIUM", "PARTIAL") if resolved > 0 else ("LOW", "NOT_EXPOSED_BY_WAPI")
+        elif unresolved == 0:
+            coverage_label = "HIGH"
+            evidence_status = "NOT_CONFIGURED" if confirmed == 0 and explicit_not_configured == population else "COMPLETE"
+        else:
+            coverage_label, evidence_status = "MEDIUM", "PARTIAL"
 
         eligible_denominator = 0 if spec.object_type == "grid:dhcpproperties" else population
         local = [row for row in proven if row.get("configured_here") is True
@@ -404,14 +499,13 @@ def build_standardization(
         proven_grids = {str(row.get("grid", "")) for row in proven if row.get("grid")}
         scope_grids = {grid for grid, count in metrics["population_by_grid"].items() if count > 0}
 
-        if metrics["coverage"] == "HIGH" and population == 0:
+        if coverage_label == "HIGH" and population == 0:
             classification = "NO_OBJECTS_IN_SCOPE"
         elif evidence_status == "NOT_CONFIGURED":
             classification = "NOT_CONFIGURED"
         elif not proven:
-            evidence_status = "INSUFFICIENT_DATA"
             classification = "INSUFFICIENT_DATA"
-        elif metrics["coverage"] == "HIGH" and len(scope_grids) > 1 and proven_grids != scope_grids:
+        elif coverage_label == "HIGH" and len(scope_grids) > 1 and proven_grids != scope_grids:
             classification = "ONLY_IN_SOME_GRIDS"
         elif len(counts) > 1:
             classification = "MULTIPLE_VALUES"
@@ -424,9 +518,9 @@ def build_standardization(
 
         if classification == "NO_OBJECTS_IN_SCOPE":
             candidate = "NOT_APPLICABLE"
-        elif metrics["coverage"] == "LOW" or classification == "INSUFFICIENT_DATA":
+        elif coverage_label == "LOW" or classification == "INSUFFICIENT_DATA":
             candidate = "BLOCKED_BY_DATA"
-        elif metrics["coverage"] == "MEDIUM" or classification == "NOT_CONFIGURED":
+        elif coverage_label == "MEDIUM" or classification == "NOT_CONFIGURED":
             candidate = "NEEDS_ANALYSIS"
         else:
             candidate = "READY_FOR_REVIEW"
@@ -438,13 +532,19 @@ def build_standardization(
             "Parameter": spec.label,
             "Scope": spec.scope,
             "Object Type": spec.object_type,
-            "Coverage": metrics["coverage"],
+            "Required Field": spec.required_field,
+            "Collection Status": collection_status,
+            "Coverage": coverage_label,
             "Evidence Status": evidence_status,
             "Population Objects": population,
             "Query Evidence Objects": metrics["query_objects"],
             "Query Coverage %": metrics["query_coverage"],
-            "Confirmed Objects": len(proven),
-            "Objects Without Confirmed Value": max(population - len(proven), 0),
+            "Confirmed Objects": confirmed,
+            "Confirmed Value %": _percent(confirmed, population),
+            "Explicit Not Configured": explicit_not_configured,
+            "Resolved Evidence %": _percent(resolved, population),
+            "Unresolved Objects": unresolved,
+            "Unresolved %": _percent(unresolved, population),
             "Grids in Scope": metrics["grids_in_scope"],
             "Grids Assessed": metrics["grids_assessed"],
             "Distinct Observed Values": len(counts),
@@ -487,8 +587,11 @@ def decision_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any]]
             "Decision ID": item["Parameter ID"], "Category": item["Category"], "Parameter": item["Parameter"],
             "Scope": item["Scope"], "Object Type": item["Object Type"],
             "Population Objects": item["Population Objects"], "Query Coverage %": item["Query Coverage %"],
-            "Confirmed Objects": item["Confirmed Objects"], "Current Observed State": state,
-            "Common Observed Value": item["Common Observed Value"], "Coverage": item["Coverage"],
+            "Confirmed Objects": item["Confirmed Objects"], "Confirmed Value %": item["Confirmed Value %"],
+            "Explicit Not Configured": item["Explicit Not Configured"],
+            "Unresolved Objects": item["Unresolved Objects"], "Current Observed State": state,
+            "Common Observed Value": item["Common Observed Value"],
+            "Collection Status": item["Collection Status"], "Coverage": item["Coverage"],
             "Proposed / Discussed Target": item["Proposed / Discussed Target"],
             "Approved Target": item["Approved Target"], "Status": item["Decision Status"],
             "Exceptions Allowed": item["Exceptions Allowed"], "Exception Rule": item["Exception Rule"],
@@ -641,13 +744,16 @@ def difference_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any
             "Category": item["Category"], "Parameter ID": item["Parameter ID"], "Parameter": item["Parameter"],
             "Scope": item["Scope"], "Object Type": item["Object Type"],
             "Population Objects": item["Population Objects"], "Query Coverage %": item["Query Coverage %"],
+            "Confirmed Value %": item["Confirmed Value %"],
+            "Explicit Not Configured": item["Explicit Not Configured"],
+            "Unresolved Objects": item["Unresolved Objects"], "Unresolved %": item["Unresolved %"],
             "Observed Values": item["Observed Values"], "Distinct Values": item["Distinct Observed Values"],
             "Confirmed Objects": item["Confirmed Objects"], "Grids": item["Grids Assessed"],
             "Common Observed Value": item["Common Observed Value"], "Common Value Count": item["Common Value Count"],
             "Common Value %": item["Common Value %"], "Local Overrides": item["Local Override Count"],
             "Local Override %": item["Local Override %"], "Source Levels": item["Source Levels"],
-            "Source Distribution": item["Source Distribution"], "Classification": item["Consistency Classification"],
-            "Coverage": item["Coverage"],
+            "Source Distribution": item["Source Distribution"], "Collection Status": item["Collection Status"],
+            "Classification": item["Consistency Classification"], "Coverage": item["Coverage"],
             "Notes": "Observed difference only; no deviation exists until an approved target is defined.",
         })
     return output
