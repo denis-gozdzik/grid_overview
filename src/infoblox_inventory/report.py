@@ -123,7 +123,7 @@ def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
 
 def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult],
                               coverage: list[dict[str, Any]], standardization: list[dict[str, Any]],
-                              exceptions: list[dict[str, Any]]) -> None:
+                              exceptions: list[dict[str, Any]]) -> dict[int, str]:
     """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
     sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
@@ -243,6 +243,7 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
     hotspots = (meaningful[:8] + [row for row in blocked_rows if row not in meaningful][:2])
     if not hotspots:
         hotspots = [row for row in ordered if (row.get('Confirmed Objects') or 0) > 0][:8]
+    link_targets: dict[int, str] = {}
     for idx, item in enumerate(hotspots, start=18):
         values = [item.get('Parameter'), item.get('Observed Values') or item.get('Evidence Status'),
                   item.get('Confirmed Objects'), item.get('Grids Assessed'), item.get('Consistency Classification'),
@@ -252,7 +253,9 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
             cell = sheet.cell(idx, col, value)
             cell.alignment = Alignment(vertical='top', wrap_text=True)
             cell.border = Border(bottom=Side(style='hair', color='E7E6E6'))
-        sheet.cell(idx, 1).hyperlink = f"#'Standardization'!A{standardization.index(item) + 2}"
+        parameter_id = str(item.get('Parameter ID') or '')
+        if parameter_id:
+            link_targets[idx] = parameter_id
         sheet.cell(idx, 1).font = Font(name='Calibri', size=10, color='0563C1', underline='single')
         if item.get('Local Override %') is not None:
             sheet.cell(idx, 7).number_format = '0.0"%"'
@@ -277,6 +280,37 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
+    return link_targets
+
+
+def _wire_overview_standardization_links(workbook: Workbook, link_targets: dict[int, str]) -> None:
+    """Resolve Overview drill-down links against the final Standardization row order."""
+    if not link_targets:
+        return
+    overview = workbook['Overview']
+    standardization = workbook['Standardization']
+    header_map = {cell.value: cell.column for cell in standardization[1]}
+    parameter_column = header_map.get('Parameter ID')
+    if parameter_column is None:
+        raise ValueError("Standardization sheet is missing the 'Parameter ID' column")
+
+    target_rows: dict[str, int] = {}
+    for row_number in range(2, standardization.max_row + 1):
+        value = standardization.cell(row_number, parameter_column).value
+        if value in (None, ''):
+            continue
+        parameter_id = str(value)
+        if parameter_id in target_rows:
+            raise ValueError(f"Duplicate Parameter ID in Standardization sheet: {parameter_id}")
+        target_rows[parameter_id] = row_number
+
+    missing = sorted({parameter_id for parameter_id in link_targets.values()
+                      if parameter_id not in target_rows})
+    if missing:
+        raise ValueError("Overview hotspot Parameter ID missing from Standardization sheet: " + ", ".join(missing))
+
+    for overview_row, parameter_id in link_targets.items():
+        overview.cell(overview_row, 1).hyperlink = f"#'Standardization'!A{target_rows[parameter_id]}"
 
 
 def _style_decision_support(sheet, name: str) -> None:
@@ -435,14 +469,17 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         ]
     workbook = Workbook()
     workbook.remove(workbook.active)
+    overview_links: dict[int, str] = {}
     if results:
-        _write_overview_dashboard(workbook, results, coverage, standardization, exceptions_excel)
+        overview_links = _write_overview_dashboard(workbook, results, coverage, standardization, exceptions_excel)
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
         _write_inventory_sheet(workbook, index, name, rows, headers)
         if name in {'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
             _style_decision_support(workbook[name], name)
+    if results:
+        _wire_overview_standardization_links(workbook, overview_links)
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
