@@ -127,7 +127,7 @@ python scripts/validate_report_package.py output/core-001/raw output/topology-00
 
 Choose a fresh validation output directory. See [reporting stabilization](docs/reporting-stabilization.md) for Microsoft Excel validation, row counts, HTTP regressions and fixture-byte handling.
 
-Coverage distinguishes `COMPLETE`, `PARTIAL`, `EMPTY`, `MANUAL_REVIEW_REQUIRED`, `NOT_EXPOSED_BY_WAPI`, and `ERROR`; normalized field status also distinguishes `NOT_CONFIGURED`. Coverage is recorded per object/query and unsupported field. A completed query does not imply that every assessment area is covered. Approval workflows and documentation requirements always need manual confirmation. Commonly observed values are descriptive evidence, not approved standards or Grid rankings.
+Coverage distinguishes `COMPLETE`, `PARTIAL`, `EMPTY`, `MANUAL_REVIEW_REQUIRED`, `NOT_EXPOSED_BY_WAPI`, and `ERROR`; normalized field status also distinguishes `NOT_CONFIGURED`. Coverage is recorded per object/query and unsupported field. Standardization additionally separates object-collection coverage from parameter evidence: confirmed values, explicit not-configured objects and unresolved objects are counted independently against the scoped population. An unrelated missing schema field does not automatically degrade another parameter, while a real query error or unavailable required field remains incomplete. A completed query does not imply that every assessment area is covered. Approval workflows and documentation requirements always need manual confirmation. Commonly observed values are descriptive evidence, not approved standards or Grid rankings.
 
 ## Tests and remaining work
 
