@@ -614,8 +614,12 @@ def grid_comparison_rows(standardization: list[dict[str, Any]], grids: list[str]
         for grid in grids:
             counts, decoded = _distribution(by_grid.get(grid, []))
             denominator = int(item.get("_population_by_grid", {}).get(grid, 0) or 0)
-            display_by_grid[grid] = (_observed_values(counts, decoded, denominator)
-                                     if counts else "NO_CONFIRMED_EVIDENCE")
+            if counts:
+                display_by_grid[grid] = _observed_values(counts, decoded, denominator)
+            elif denominator == 0:
+                display_by_grid[grid] = "NO_OBJECTS_IN_SCOPE"
+            else:
+                display_by_grid[grid] = "NO_CONFIRMED_EVIDENCE"
             values.update(counts)
         output.append({
             "Category": item["Category"], "Parameter ID": item["Parameter ID"], "Parameter": item["Parameter"],
@@ -631,7 +635,7 @@ def grid_comparison_rows(standardization: list[dict[str, Any]], grids: list[str]
 def difference_rows(standardization: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     for item in standardization:
-        if item["Consistency Classification"] == "CONSISTENT" and not item["Local Override Count"]:
+        if item["Consistency Classification"] in {"CONSISTENT", "NO_OBJECTS_IN_SCOPE"} and not item["Local Override Count"]:
             continue
         output.append({
             "Category": item["Category"], "Parameter ID": item["Parameter ID"], "Parameter": item["Parameter"],
