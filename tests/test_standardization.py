@@ -148,6 +148,22 @@ def test_report_puts_decision_support_first_and_uses_decision_yaml(tmp_path):
             "Overview", "Standardization", "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
         ]
         assert workbook["Overview"]["A1"].value == "Infoblox Current State & Standardization Assessment"
+
+        standardization = workbook["Standardization"]
+        standardization_headers = {cell.value: cell.column for cell in standardization[1]}
+        parameter_col = standardization_headers["Parameter"]
+        hotspot_links = []
+        for row_number in range(18, workbook["Overview"].max_row + 1):
+            cell = workbook["Overview"].cell(row_number, 1)
+            if cell.hyperlink is None:
+                continue
+            hotspot_links.append(cell)
+            target = cell.hyperlink.target
+            assert target.startswith("#'Standardization'!A")
+            target_row = int(target.rsplit("A", 1)[1])
+            assert standardization.cell(target_row, parameter_col).value == cell.value
+        assert hotspot_links
+
         decision_headers = [cell.value for cell in workbook["Decisions"][1]]
         rows = [dict(zip(decision_headers, values)) for values in workbook["Decisions"].iter_rows(min_row=2, values_only=True)]
         lease = [row for row in rows if row["Decision ID"] == "dhcp.lease_time"][0]
