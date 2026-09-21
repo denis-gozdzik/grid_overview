@@ -250,8 +250,13 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         parameter_label = f"{item.get('Parameter')} [{item.get('Scope')}]"
         confirmed = f"{item.get('Confirmed Objects') or 0}/{item.get('Population Objects') or 0}"
         query_coverage = item.get('Query Coverage %')
-        coverage_display = (f"{item.get('Coverage')} ({query_coverage:.1f}%)"
-                            if query_coverage is not None else str(item.get('Coverage') or ''))
+        resolved_coverage = item.get('Resolved Evidence %')
+        coverage_parts = [str(item.get('Coverage') or '')]
+        if query_coverage is not None:
+            coverage_parts.append(f"collection {query_coverage:.1f}%")
+        if resolved_coverage is not None:
+            coverage_parts.append(f"evidence {resolved_coverage:.1f}%")
+        coverage_display = " | ".join(part for part in coverage_parts if part)
         values = [parameter_label, item.get('Observed Values') or item.get('Evidence Status'),
                   confirmed, item.get('Grids Assessed'), item.get('Consistency Classification'),
                   item.get('Local Override Count'), item.get('Local Override %'), coverage_display,
