@@ -86,6 +86,12 @@ def test_range_association_classification_is_explicit_and_conservative(value, ex
         assert raw == "future-value"
 
 
+def test_missing_range_association_field_is_unknown_not_none():
+    segment, raw = range_association_segment({})
+    assert segment == RANGE_SEGMENT_UNKNOWN
+    assert raw == ""
+
+
 def test_non_scalar_range_association_is_unknown_not_coerced():
     segment, raw = range_association_segment({"server_association_type": {"future": True}})
     assert segment == RANGE_SEGMENT_UNKNOWN
