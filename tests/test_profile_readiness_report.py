@@ -73,6 +73,24 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
                    for row in population_rows)
         assert any(row['Population Basis'] == 'DHCP_RELEVANT_NETWORK_CANDIDATES'
                    and row['Object Count'] == 1 for row in population_rows)
+        usefulness = _rows(workbook['Profile_Usefulness'])
+        assert len(usefulness) == 39
+        lease_usefulness = next(row for row in usefulness
+                                if row['Parameter ID'] == 'dhcp.lease_time.network')
+        assert lease_usefulness['Fingerprint Role'] == 'CORE'
+        assert lease_usefulness['Resolved %'] == 100
+        fingerprints = _rows(workbook['Profile_Fingerprints'])
+        network_fp = next(row for row in fingerprints if row['Profile'] == 'Network Profile v1')
+        assert network_fp['Fingerprint ID'].startswith('NET-FP1-')
+        assert network_fp['Object Count'] == 1
+        assignments = _rows(workbook['Profile_Assignments'])
+        network_assignment = next(row for row in assignments if row['Scope'] == 'Network')
+        assert network_assignment['Population Status'] == 'PROFILED'
+        assert network_assignment['Fingerprint ID'] == network_fp['Fingerprint ID']
+        kpis = _rows(workbook['Profile_KPIs'])
+        network_kpi = next(row for row in kpis if row['Profile'] == 'Network Profile v1')
+        assert network_kpi['Profiled Objects'] == 1
+        assert network_kpi['Distinct Profiles'] == 1
     finally:
         workbook.close()
 
