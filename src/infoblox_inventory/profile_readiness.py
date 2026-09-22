@@ -117,10 +117,12 @@ def _classify(row: dict[str, Any]) -> tuple[str, str]:
         return "NOT_READY", "Population evidence unavailable or invalid"
     collection = row.get("Collection Status")
     if population == 0:
-        reason = "No objects in scope"
-        if collection not in {"COMPLETE", "EMPTY"}:
-            reason += f"; collection status {collection or 'UNKNOWN'} does not confirm an empty scope"
-        return "NOT_APPLICABLE", reason
+        if collection in {"COMPLETE", "EMPTY"}:
+            return "NOT_APPLICABLE", "No objects in scope"
+        return "NOT_READY", (
+            "Population could not be established; "
+            f"query collection is {str(collection or 'UNKNOWN').lower()}"
+        )
     if row.get("Required Field Status") == "NOT_EXPOSED_BY_WAPI":
         return "NOT_READY", "Required WAPI field not exposed"
     if collection != "COMPLETE":
@@ -131,12 +133,27 @@ def _classify(row: dict[str, Any]) -> tuple[str, str]:
     field_status = row.get("Required Field Status")
     if field_status not in {"AVAILABLE", "AVAILABLE_OR_NOT_FLAGGED", "NOT_EXPOSED_IN_SOME_GRIDS"}:
         return "NOT_READY", f"Required field availability is {field_status or 'UNKNOWN'}"
-    resolved = row.get("Resolved Evidence %")
-    if (isinstance(resolved, bool) or not isinstance(resolved, (int, float))
-            or not 0 <= resolved <= 100 or not math.isfinite(resolved)):
+
+    # Keep the rounded percentage for display, but make threshold decisions from
+    # integer evidence counts so a value such as 94.96% cannot round to 95.0%
+    # and be promoted to READY.
+    displayed_resolved = row.get("Resolved Evidence %")
+    if (isinstance(displayed_resolved, bool) or not isinstance(displayed_resolved, (int, float))
+            or not 0 <= displayed_resolved <= 100 or not math.isfinite(displayed_resolved)):
         return "NOT_READY", "Resolved evidence percentage unavailable or invalid"
-    readiness = "READY" if resolved >= 95.0 else "CONDITIONAL" if resolved >= 80.0 else "NOT_READY"
-    reason = f"{'Only ' if readiness == 'NOT_READY' else ''}{resolved:.1f}% resolved evidence"
+    confirmed = row.get("Confirmed Objects")
+    not_configured = row.get("Explicit Not Configured")
+    if (type(confirmed) is not int or confirmed < 0
+            or type(not_configured) is not int or not_configured < 0
+            or confirmed + not_configured > population):
+        return "NOT_READY", "Resolved evidence counts unavailable or invalid"
+    resolved_count = confirmed + not_configured
+    resolved_exact = resolved_count * 100.0 / population
+
+    readiness = ("READY" if resolved_exact >= 95.0
+                 else "CONDITIONAL" if resolved_exact >= 80.0
+                 else "NOT_READY")
+    reason = f"{'Only ' if readiness == 'NOT_READY' else ''}{resolved_exact:.1f}% resolved evidence"
     unresolved = row.get("Unresolved Objects")
     if isinstance(unresolved, int) and unresolved > 0:
         reason += f"; {unresolved}/{population} unresolved"
