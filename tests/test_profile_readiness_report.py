@@ -64,7 +64,7 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
         assert sheet.auto_filter.ref is None
         assert len(sheet.tables) == 1
         table = next(iter(sheet.tables.values()))
-        assert table.autoFilter.ref == table.ref == 'A1:U40'
+        assert table.autoFilter.ref == table.ref == 'A1:W40'
         assert all(cell.data_type != 'f' for row in sheet for cell in row)
     finally:
         workbook.close()
@@ -76,19 +76,22 @@ def test_overview_summary_has_input_denominator_and_both_profile_drilldowns(repo
         overview = workbook['Overview']
         title = next(cell for row in overview for cell in row if cell.value == 'Profile discovery readiness')
         header_row = title.row + 1
-        assert [overview.cell(header_row, column).value for column in range(1, 9)] == list(PROFILE_SUMMARY_HEADERS)
+        assert [overview.cell(header_row, column).value for column in range(1, 10)] == list(PROFILE_SUMMARY_HEADERS)
         summaries = [dict(zip(PROFILE_SUMMARY_HEADERS,
-                              [overview.cell(row, column).value for column in range(1, 9)]))
+                              [overview.cell(row, column).value for column in range(1, 10)]))
                      for row in range(header_row + 1, header_row + 3)]
-        assert summaries[0]['Candidate Inputs'] == summaries[0]['Applicable Inputs'] == 21
-        assert summaries[0]['READY'] == 1
-        assert summaries[0]['NOT_READY'] == 20
-        assert summaries[0]['Ready Input %'] == 4.8
+        assert summaries[0]['Candidate Inputs'] == 21
+        assert summaries[0]['Applicable Inputs'] == 20
+        assert summaries[0]['READY'] == 8
+        assert summaries[0]['NOT_READY'] == 12
+        assert summaries[0]['DEFERRED'] == 1
+        assert summaries[0]['Ready Input %'] == 40
         assert summaries[1]['Candidate Inputs'] == summaries[1]['NOT_APPLICABLE'] == 18
         assert summaries[1]['Applicable Inputs'] == 0
+        assert summaries[1]['DEFERRED'] == 0
         assert summaries[1]['Ready Input %'] is None
         for row_number, expected_target in ((header_row + 1, 2), (header_row + 2, 23)):
-            link = overview.cell(row_number, 9).hyperlink
+            link = overview.cell(row_number, 1).hyperlink
             assert link.location == f"'Profile_Readiness'!A{expected_target}"
             assert link.target is None
             assert workbook['Profile_Readiness'].cell(expected_target, 1).value == overview.cell(row_number, 1).value
@@ -126,8 +129,8 @@ def test_profile_matrix_preserves_literal_strings_and_escapes_control_characters
 
     original = report.build_profile_readiness
 
-    def with_literal_data(standardization):
-        rows = original(standardization)
+    def with_literal_data(standardization, *args, **kwargs):
+        rows = original(standardization, *args, **kwargs)
         rows[0]['Readiness Reason'] = '=1+1\x01literal'
         return rows
 
