@@ -16,8 +16,30 @@ Readiness consumes existing scope-specific Standardization rows. It adds no coll
 
 `src/infoblox_inventory/profile_readiness.py` defines an explicit input specification containing the profile, input key, label, source parameter ID, scope and semantic role. Every source ID must exist in `standardization.PARAMETER_SPECS` with the matching scope. An unknown ID is a development error; it must not disappear silently or create a new Standardization parameter.
 
-The specification contains **21 Network Profile v1 inputs** and **18 Range Profile v1 inputs**. All listed IDs exist in the current parameter specification. Inputs are `DIRECT` except `gateway_convention`, which uses the scope's router parameter with role `DERIVED_LATER`. Readiness assesses the literal router evidence only. No conversion to `FIRST_USABLE`, `LAST_USABLE`, `OTHER_IN_SUBNET` or `OUTSIDE_SUBNET` takes place. PXE inputs remain atomic; no composite PXE interpretation is implemented.
+The specification contains **21 Network Profile v1 inputs** and **18 Range Profile v1 inputs**. All listed IDs exist in the current parameter specification. `gateway_convention` uses the scope's router parameter with role `DERIVED_LATER`; readiness assesses literal router evidence only and does not yet convert it to `FIRST_USABLE`, `LAST_USABLE`, `OTHER_IN_SUBNET` or `OUTSIDE_SUBNET`.
 
+`pxe.lease_enabled` is now `COMPOSITE_LATER`, not a direct input. The collected `enable_pxe_lease_time` field is not treated as a complete standalone semantic model. Populated scopes therefore report this input as `DEFERRED`, and deferred inputs are excluded from the Ready Input % denominator until the composite PXE lease semantics are defined.
+
+## Profile population
+
+Network readiness no longer assumes that every IPAM `network` object participates in DHCP. The Network Profile uses an evidence-backed candidate population named:
+
+```text
+DHCP_RELEVANT_NETWORK_CANDIDATES
+```
+
+A Network enters this candidate population when at least one currently collected signal is present:
+
+- a non-empty `members` association;
+- it is the parent Network of an observed DHCP Range;
+- at least one collected `use_*` flag is explicitly true;
+- at least one stored DHCP option has `use_option=true`.
+
+These signals identify candidate DHCP-relevant Networks; they do **not** prove service activation or define an approved standard. `Profile_Readiness` retains both `Source Population Objects` (all Networks in scoped Standardization) and the profile-specific `Population Objects` denominator.
+
+Range Profile v1 continues to use `ALL_RANGES`.
+
+If Networks exist but no DHCP-relevant candidate can be established from the available evidence, readiness is `NOT_READY`, not `NOT_APPLICABLE`.
 ## Evidence and classification
 
 The primary metric is **Resolved Evidence %**, with the scope's **Population Objects** as its denominator:
@@ -27,7 +49,9 @@ Resolved Evidence % =
     (Confirmed Objects + Explicit Not Configured) / Population Objects * 100
 ```
 
-Only explicit parameter evidence counts as `NOT_CONFIGURED`. A missing normalized row remains unresolved. Confirmed Value % alone is insufficient because an explicit not-configured state is also usable evidence.
+Only explicit parameter evidence counts as `NOT_CONFIGURED`. A missing normalized scalar row remains unresolved. For the bounded assessed DHCP option set, one additional authoritative case is allowed: when a Network/Range `_inheritance=True` response contains a fully recognized effective `options` group structure, an assessed option absent from every returned group is recorded as explicit `NOT_CONFIGURED`. Malformed, plain/unwrapped, or empty option responses never trigger this inference.
+
+Confirmed Value % alone is insufficient because an explicit not-configured state is also usable evidence.
 
 Classification follows this order:
 
@@ -47,6 +71,8 @@ Hard blockers are:
 - Collection Status: `ERROR`, `PARTIAL` or `UNKNOWN`.
 - Required Field Status: `NOT_EXPOSED_BY_WAPI`.
 - Evidence Status: `ERROR`, `NOT_EXPOSED_BY_WAPI` or `INSUFFICIENT_DATA`.
+
+`DEFERRED` is not an evidence failure. It marks an input whose semantics intentionally require a later composite derivation and excludes that input from the readiness-rate denominator.
 
 A missing source Standardization row cannot prove zero population. It stays `NOT_READY` with a missing-evidence reason; it must not be converted to `NOT_APPLICABLE` or explicit `NOT_CONFIGURED`. Missing or invalid population/resolved metrics and unrecognized statuses are also handled conservatively as `NOT_READY`.
 
@@ -161,6 +187,24 @@ These items are documented only as `FUTURE_PROFILE_INPUT`; they have no fabricat
 | EA / organizational context | Deferred; no EA correlation in this increment |
 | Naming / organizational context | Deferred; no naming-pattern detection in this increment |
 
-The next increment will implement deterministic Network/Range fingerprints **only after this readiness matrix is validated against the real LAB**. Unresolved values must not enter future fingerprints.
+Before deterministic fingerprints are implemented, two diagnostics must be resolved:
+
+1. validate per-page inheritance response shapes for Network collections that exceed one WAPI page;
+2. distinguish true unresolved scalar inheritance from explicit not-configured option absence.
+
+The repository includes two read-only diagnostics:
+
+```powershell
+python scripts/analyze_inheritance_shapes.py <RAW_DIR> --object-type network
+
+python scripts/probe_inheritance_paging.py `
+  --config config/grids.work.yaml `
+  --grid LAB `
+  --no-verify-tls
+```
+
+The first is offline-only and prints wrapper/plain/absent counts per archived page. The second performs GET requests only and prints response-shape counts, never object values, names, refs or continuation tokens. Add `--compare-reassert-inheritance` only when explicitly testing whether reasserting `_inheritance=True` changes page-2 response shape.
+
+Deterministic Network/Range fingerprints are implemented **only after** this readiness matrix and paging behavior are validated against the real LAB. Unresolved values must not enter future fingerprints.
 
 This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
