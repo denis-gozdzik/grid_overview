@@ -118,6 +118,23 @@ def test_overview_summary_has_input_denominator_and_both_profile_drilldowns(repo
         assert 'not object coverage' in note
         assert 'not an approved standard' in note
         assert str(header_row + 3) in str(overview.print_area)
+
+        discovery_title = next(
+            cell for row in overview for cell in row
+            if cell.value == 'Observed configuration profiles'
+        )
+        discovery_header = discovery_title.row + 1
+        assert overview.cell(discovery_header, 1).value == 'Profile Type'
+        discovered = [
+            [overview.cell(row, column).value for column in range(1, 11)]
+            for row in range(discovery_header + 1, discovery_header + 3)
+        ]
+        network = next(row for row in discovered if row[0] == 'Network')
+        assert network[1:5] == [1, 1, 100, 1]
+        link = overview.cell(discovery_header + 1, 10).hyperlink
+        assert link is not None
+        assert link.location.startswith("'Profiles'!A")
+        assert str(discovery_header + 3) in str(overview.print_area)
     finally:
         workbook.close()
 
