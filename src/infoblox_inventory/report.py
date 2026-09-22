@@ -284,13 +284,13 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         sheet.add_table(table)
 
     note_row = 19 + len(hotspots)
-    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
+    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=10)
     sheet.cell(note_row, 1, 'Workflow: review Standardization → record human decisions in YAML/Decisions → use Exceptions as the remediation/exception backlog.')
     sheet.cell(note_row, 1).fill = PatternFill('solid', fgColor='EAF2F8')
     sheet.cell(note_row, 1).font = Font(name='Calibri', size=10, italic=True, color='17365D')
     sheet.cell(note_row, 1).alignment = Alignment(wrap_text=True, vertical='center')
     sheet.row_dimensions[note_row].height = 30
-    sheet.print_area = f'A1:I{note_row}'
+    sheet.print_area = f'A1:J{note_row}'
     sheet.page_setup.orientation = 'landscape'
     sheet.page_setup.paperSize = sheet.PAPERSIZE_A3
     sheet.page_setup.fitToWidth = 1
@@ -339,8 +339,8 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
         if profile:
             targets.setdefault(str(profile), row_number)
     start = sheet.max_row + 2
-    _section_title(sheet, start, 1, 9, 'Profile discovery readiness')
-    for column, label in enumerate(PROFILE_SUMMARY_HEADERS, start=1):
+    _section_title(sheet, start, 1, 10, 'Profile discovery readiness')
+    for column, label in enumerate([*PROFILE_SUMMARY_HEADERS, 'Input details'], start=1):
         cell = sheet.cell(start + 1, column, label)
         cell.fill = PatternFill('solid', fgColor='D9EAF7')
         cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
@@ -356,9 +356,11 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
             if header == 'Ready Input %':
                 cell.number_format = '0.0"%"'
         target = targets[str(summary['Profile'])]
-        profile_cell = sheet.cell(row_number, 1)
-        profile_cell.hyperlink = Hyperlink(ref=profile_cell.coordinate, location=f"'Profile_Readiness'!A{target}")
-        profile_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        link_cell = sheet.cell(row_number, 10, 'View inputs')
+        link_cell.hyperlink = Hyperlink(ref=link_cell.coordinate, location=f"'Profile_Readiness'!A{target}")
+        link_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        link_cell.alignment = Alignment(wrap_text=True, vertical='center')
+        link_cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
     note_row = start + len(summaries) + 2
     sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
     cell = sheet.cell(note_row, 1,
