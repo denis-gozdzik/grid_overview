@@ -37,12 +37,12 @@ RANGE_IDS = {
 HEADERS = [
     "Profile", "Input Key", "Input", "Semantic Role", "Parameter ID", "Scope",
     "Population Basis", "Source Population Objects",
-    "Required Field", "Required Field Status", "Population Objects", "Query Evidence Objects",
-    "Query Coverage %", "Collection Status", "Confirmed Objects", "Confirmed Value %",
+    "Required Field", "Required Field Status", "Population Objects", "Excluded By Applicability",
+    "Query Evidence Objects", "Query Coverage %", "Collection Status", "Confirmed Objects", "Confirmed Value %",
     "Explicit Not Configured", "Resolved Evidence %", "Unresolved Objects", "Unresolved %",
     "Evidence Status", "Readiness", "Readiness Reason",
 ]
-EVIDENCE_HEADERS = HEADERS[8:21]
+EVIDENCE_HEADERS = [header for header in HEADERS[8:22] if header != "Excluded By Applicability"]
 
 
 def _spec(parameter_id="pxe.bootserver.network"):
@@ -86,7 +86,8 @@ def _coverage(object_type, count, query="effective", status="COMPLETE"):
 def _collection(networks=0, ranges=0):
     records = {
         "network": [{"_ref": f"network/LAB/{i}"} for i in range(networks)],
-        "range": [{"_ref": f"range/LAB/{i}"} for i in range(ranges)],
+        "range": [{"_ref": f"range/LAB/{i}", "server_association_type": "MEMBER"}
+                  for i in range(ranges)],
     }
     return CollectionResult(
         grid="LAB", records=records, effective_records=deepcopy(records),
@@ -100,6 +101,18 @@ def _scalar(kind, index, *, status="COMPLETE"):
         "grid": "LAB", "object_type": kind, "object_ref": f"{kind}/LAB/{index}",
         "object_name": f"{kind}-{index}", "network_view": "default", "parent_network": "",
         "parameter": "bootserver", "effective_value": "192.0.2.10" if status == "COMPLETE" else None,
+        "configured_here": False, "inherited": True, "multisource": False,
+        "source_level": "Grid" if status == "COMPLETE" else "NOT_DEFINED",
+        "source_object": "LAB", "source_ref": "grid:dhcpproperties/LAB", "status": status,
+    }
+
+
+def _option(kind, index, *, value="3600", status="COMPLETE"):
+    return {
+        "grid": "LAB", "object_type": kind, "object_ref": f"{kind}/LAB/{index}",
+        "object_name": f"{kind}-{index}", "network_view": "default", "parent_network": "",
+        "parameter": "dhcp-lease-time", "option_number": 51, "vendor_class": "DHCP",
+        "raw_value": None, "effective_value": value if status == "COMPLETE" else None,
         "configured_here": False, "inherited": True, "multisource": False,
         "source_level": "Grid" if status == "COMPLETE" else "NOT_DEFINED",
         "source_object": "LAB", "source_ref": "grid:dhcpproperties/LAB", "status": status,
@@ -350,6 +363,133 @@ def test_network_profile_object_level_readiness_uses_only_dhcp_relevant_candidat
     assert item["Query Evidence Objects"] == 3
     assert item["Confirmed Objects"] == 3
     assert item["Resolved Evidence %"] == 100.0
+    assert item["Readiness"] == "READY"
+
+
+def test_functional_value_proof_accepts_same_value_from_different_sources():
+    result = _collection(networks=1)
+    result.records["network"][0]["members"] = ["m1"]
+    first = _scalar("network", 0)
+    second = deepcopy(first)
+    second.update({
+        "source_level": "Network", "source_ref": "network/LAB/0",
+        "configured_here": True, "inherited": False,
+    })
+    rows = [first, second]
+    snapshot = deepcopy(rows)
+    standardization = build_standardization([result], result.coverage, rows, [], {})
+    standard_row = next(row for row in standardization if row["Parameter ID"] == "pxe.bootserver.network")
+    assert standard_row["Confirmed Objects"] == 0  # source-sensitive Standardization remains unchanged
+
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.network"),),
+        results=[result], scalars=rows, options=[],
+    ), "pxe.bootserver.network")
+    assert item["Confirmed Objects"] == 1
+    assert item["Resolved Evidence %"] == 100.0
+    assert item["Readiness"] == "READY"
+    assert rows == snapshot
+    assert {row["source_level"] for row in rows} == {"Grid", "Network"}
+
+
+def test_functional_value_proof_keeps_conflicting_values_unresolved():
+    result = _collection(networks=1)
+    result.records["network"][0]["members"] = ["m1"]
+    first = _scalar("network", 0)
+    second = deepcopy(first)
+    second.update({"effective_value": "192.0.2.11", "source_level": "Network",
+                   "source_ref": "network/LAB/0", "configured_here": True, "inherited": False})
+    rows = [first, second]
+    standardization = build_standardization([result], result.coverage, rows, [], {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.network"),),
+        results=[result], scalars=rows, options=[],
+    ), "pxe.bootserver.network")
+    assert item["Confirmed Objects"] == 0
+    assert item["Unresolved Objects"] == 1
+    assert item["Readiness"] == "NOT_READY"
+
+
+def test_functional_value_proof_does_not_promote_multisource_observation():
+    result = _collection(networks=1)
+    result.records["network"][0]["members"] = ["m1"]
+    first = _scalar("network", 0)
+    second = deepcopy(first)
+    second["multisource"] = True
+    rows = [first, second]
+    standardization = build_standardization([result], result.coverage, rows, [], {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.network"),),
+        results=[result], scalars=rows, options=[],
+    ), "pxe.bootserver.network")
+    assert item["Confirmed Objects"] == 0
+    assert item["Unresolved Objects"] == 1
+
+
+def test_range_option_and_scalar_inputs_use_different_association_populations():
+    result = _collection(ranges=8)
+    associations = ["MS_SERVER"] * 4 + ["MEMBER"] * 2 + ["FAILOVER"] + ["NONE"]
+    for record, association in zip(result.records["range"], associations):
+        record["server_association_type"] = association
+    for record, association in zip(result.effective_records["range"], associations):
+        record["server_association_type"] = association
+
+    option_rows = [_option("range", i) for i in range(7)]
+    scalar_rows = (
+        [_scalar("range", i, status="PARTIAL") for i in range(4)]
+        + [_scalar("range", i) for i in range(4, 7)]
+    )
+    standardization = build_standardization(
+        [result], result.coverage, scalar_rows, option_rows, {}
+    )
+    readiness = build_profile_readiness(
+        standardization,
+        (_spec("dhcp.lease_time.range"), _spec("pxe.bootserver.range")),
+        results=[result], scalars=scalar_rows, options=option_rows,
+    )
+
+    option_item = _find(readiness, "dhcp.lease_time.range")
+    assert option_item["Population Basis"] == "DHCP_ASSOCIATED_RANGES"
+    assert option_item["Source Population Objects"] == 8
+    assert option_item["Population Objects"] == 7
+    assert option_item["Excluded By Applicability"] == 1
+    assert option_item["Confirmed Objects"] == 7
+    assert option_item["Readiness"] == "READY"
+
+    scalar_item = _find(readiness, "pxe.bootserver.range")
+    assert scalar_item["Population Basis"] == "INFOBLOX_MANAGED_RANGES"
+    assert scalar_item["Source Population Objects"] == 8
+    assert scalar_item["Population Objects"] == 3
+    assert scalar_item["Excluded By Applicability"] == 5
+    assert scalar_item["Confirmed Objects"] == 3
+    assert scalar_item["Explicit Not Configured"] == 0
+    assert scalar_item["Unresolved Objects"] == 0
+    assert scalar_item["Readiness"] == "READY"
+
+
+def test_authoritative_ms_server_scalar_evidence_is_preserved_without_calling_it_not_configured():
+    result = _collection(ranges=8)
+    associations = ["MS_SERVER"] * 4 + ["MEMBER"] * 2 + ["FAILOVER"] + ["NONE"]
+    for record, association in zip(result.records["range"], associations):
+        record["server_association_type"] = association
+    for record, association in zip(result.effective_records["range"], associations):
+        record["server_association_type"] = association
+
+    rows = (
+        [_scalar("range", 0)]
+        + [_scalar("range", i, status="PARTIAL") for i in range(1, 4)]
+        + [_scalar("range", i) for i in range(4, 7)]
+    )
+    standardization = build_standardization([result], result.coverage, rows, [], {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.range"),),
+        results=[result], scalars=rows, options=[],
+    ), "pxe.bootserver.range")
+    assert item["Population Basis"] == "INFOBLOX_MANAGED_RANGES+AUTHORITATIVE_MS_SERVER"
+    assert item["Population Objects"] == 4
+    assert item["Excluded By Applicability"] == 4
+    assert item["Confirmed Objects"] == 4
+    assert item["Explicit Not Configured"] == 0
     assert item["Readiness"] == "READY"
 
 
