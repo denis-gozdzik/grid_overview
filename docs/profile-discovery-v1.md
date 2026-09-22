@@ -187,10 +187,12 @@ These items are documented only as `FUTURE_PROFILE_INPUT`; they have no fabricat
 | EA / organizational context | Deferred; no EA correlation in this increment |
 | Naming / organizational context | Deferred; no naming-pattern detection in this increment |
 
-Before deterministic fingerprints are implemented, two diagnostics must be resolved:
+Before deterministic fingerprints are implemented, two evidence gaps must be controlled:
 
-1. validate per-page inheritance response shapes for Network collections that exceed one WAPI page;
-2. distinguish true unresolved scalar inheritance from explicit not-configured option absence.
+1. per-page inheritance response shapes for Network collections that exceed one WAPI page;
+2. true unresolved scalar inheritance versus explicit not-configured option absence.
+
+The paging behavior is now empirically confirmed: on NIOS 9.x, continuation requests using `_page_id` alone can drop scalar inheritance wrappers from page 2 onward. Reasserting `_inheritance=True` together with `_page_id` restores the effective scalar wrapper representation. The GET-only client therefore reasserts inheritance on every continuation page of an effective query; raw pagination remains unchanged.
 
 The repository includes two read-only diagnostics:
 
@@ -205,6 +207,6 @@ python scripts/probe_inheritance_paging.py `
 
 The first is offline-only and prints wrapper/plain/absent counts per archived page. The second performs GET requests only and prints response-shape counts, never object values, names, refs or continuation tokens. Add `--compare-reassert-inheritance` only when explicitly testing whether reasserting `_inheritance=True` changes page-2 response shape.
 
-Deterministic Network/Range fingerprints are implemented **only after** this readiness matrix and paging behavior are validated against the real LAB. Unresolved values must not enter future fingerprints.
+Deterministic Network/Range fingerprints are implemented **only after** the updated collector passes the full regression suite and a fresh real-LAB collection confirms the corrected multi-page effective evidence. Unresolved values must not enter future fingerprints.
 
 This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
