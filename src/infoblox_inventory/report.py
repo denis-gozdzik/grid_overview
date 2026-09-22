@@ -556,12 +556,16 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     )
     profile_summaries = profile_readiness_summary(profile_readiness)
     profile_populations = profile_population_rows(results)
-    profile_usefulness = build_profile_usefulness(
-        results, all_scalars, all_options, readiness=profile_readiness
-    )
-    profile_discovery, profiles, profile_objects = build_profile_discovery(
-        results, all_scalars, all_options
-    )
+    if results:
+        profile_usefulness = build_profile_usefulness(
+            results, all_scalars, all_options, readiness=profile_readiness
+        )
+        profile_discovery, profiles, profile_objects = build_profile_discovery(
+            results, all_scalars, all_options
+        )
+    else:
+        profile_usefulness = []
+        profile_discovery, profiles, profile_objects = [], [], []
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
