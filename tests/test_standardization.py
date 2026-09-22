@@ -422,8 +422,8 @@ def test_report_puts_scoped_decision_support_first_and_links_overview_by_paramet
     assert validated["zip_crc_ok"] is True
     workbook = load_workbook(output / "current_state_inventory.xlsx")
     try:
-        assert workbook.sheetnames[:7] == [
-            "Overview", "Standardization", "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
+        assert workbook.sheetnames[:8] == [
+            "Overview", "Profile_Readiness", "Standardization", "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
         ]
         standardization = workbook["Standardization"]
         headers = {cell.value: cell.column for cell in standardization[1]}

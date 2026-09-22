@@ -75,9 +75,20 @@ def test_generated_report_is_valid_ooxml_across_collector_families(tmp_path, mon
 
 def test_empty_report_contains_no_header_only_tables(tmp_path):
     write_reports([], tmp_path)
-    validated = validate_xlsx(tmp_path / "current_state_inventory.xlsx")
-    assert validated["table_count"] == 0
-    assert not any(validated["sheet_rows"].values())
+    path = tmp_path / "current_state_inventory.xlsx"
+    validated = validate_xlsx(path)
+    # Candidate readiness rows remain visible even when collection evidence is absent.
+    assert validated["table_count"] == 1
+    assert validated["sheet_rows"]["Profile_Readiness"] == 39
+    assert not any(count for name, count in validated["sheet_rows"].items()
+                   if name != "Profile_Readiness")
+    workbook = load_workbook(path)
+    try:
+        assert len(workbook["Profile_Readiness"].tables) == 1
+        assert workbook["Profile_Readiness"].max_row == 40
+        assert all(not sheet.tables for sheet in workbook if sheet.title != "Profile_Readiness")
+    finally:
+        workbook.close()
 
 
 def test_case_colliding_and_blank_source_keys_have_valid_headers_without_losing_values(tmp_path):

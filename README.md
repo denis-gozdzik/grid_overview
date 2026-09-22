@@ -119,6 +119,8 @@ Start with `Overview`. It is a workshop-oriented dashboard rather than an API du
 
 Decision input is persisted outside the generated workbook. Copy `standardization_decisions.template.yaml` to an ignored local file such as `config/standardization_decisions.yaml`, edit it with the Product Owner, and pass `--decisions config/standardization_decisions.yaml` on the next live or offline report build. See [standardization reporting](docs/standardization-reporting.md) for the workflow, classifications and exception model.
 
+`Profile_Readiness`, immediately after `Overview`, assesses evidence for 21 Network and 18 Range candidate profile inputs. It uses resolved evidence, including explicit not-configured states, and preserves collection and schema blockers. A compact Overview summary links to the matrix. `READY` describes an evidence input for future discovery; it does not approve a standard. See [Profile Input Readiness](docs/profile-discovery-v1.md) for candidate IDs, thresholds, denominators and deferred work.
+
 Excel tables own their AutoFilters; no worksheet filter overlaps a table. Empty inventories retain headers without creating header-only tables. The independent ZIP/OOXML validator checks serialized table ranges, headers, IDs/names, column counts and relationships. To rebuild a cumulative report twice with network access blocked, verify all tables and compare reports/RAW hashes:
 
 ```powershell

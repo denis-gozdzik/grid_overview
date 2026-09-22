@@ -15,6 +15,10 @@ from .analysis import naming_analysis
 from .models import CollectionResult
 from .dataset import combine_collections
 from .normalize import normalize_options, normalize_scalars
+from .profile_readiness import (
+    PROFILE_READINESS_HEADERS, PROFILE_SUMMARY_HEADERS,
+    build_profile_readiness, profile_readiness_summary,
+)
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -324,6 +328,48 @@ def _wire_overview_standardization_links(workbook: Workbook, link_targets: dict[
                                    location=f"'Standardization'!A{target_rows[parameter_id]}")
 
 
+def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str, Any]]) -> None:
+    """Append input readiness without moving existing evidence or hotspot links."""
+    sheet = workbook['Overview']
+    matrix = workbook['Profile_Readiness']
+    profile_column = next(cell.column for cell in matrix[1] if cell.value == 'Profile')
+    targets: dict[str, int] = {}
+    for row_number in range(2, matrix.max_row + 1):
+        profile = matrix.cell(row_number, profile_column).value
+        if profile:
+            targets.setdefault(str(profile), row_number)
+    start = sheet.max_row + 2
+    _section_title(sheet, start, 1, 9, 'Profile discovery readiness')
+    for column, label in enumerate([*PROFILE_SUMMARY_HEADERS, 'Input details'], start=1):
+        cell = sheet.cell(start + 1, column, label)
+        cell.fill = PatternFill('solid', fgColor='D9EAF7')
+        cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+    sheet.row_dimensions[start + 1].height = 30
+    for row_number, summary in enumerate(summaries, start=start + 2):
+        for column, header in enumerate(PROFILE_SUMMARY_HEADERS, start=1):
+            cell = sheet.cell(row_number, column, _excel_text(summary.get(header)))
+            if isinstance(cell.value, str):
+                cell.data_type = 's'
+            cell.alignment = Alignment(wrap_text=True, vertical='center')
+            cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+            if header == 'Ready Input %':
+                cell.number_format = '0.0"%"'
+        target = targets[str(summary['Profile'])]
+        cell = sheet.cell(row_number, 9, 'View inputs')
+        cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'Profile_Readiness'!A{target}")
+        cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+    note_row = start + len(summaries) + 2
+    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
+    cell = sheet.cell(note_row, 1,
+                      'Ready Input % = READY inputs / applicable candidate inputs; this is not object coverage. '
+                      'READY means usable evidence for future profile discovery, not an approved standard or configuration compliance.')
+    cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
+    cell.alignment = Alignment(wrap_text=True, vertical='center')
+    sheet.row_dimensions[note_row].height = 30
+    sheet.print_area = f'A1:I{note_row}'
+
+
 def _style_decision_support(sheet, name: str) -> None:
     sheet.sheet_view.showGridLines = False
     sheet.sheet_view.zoomScale = 85
@@ -353,7 +399,16 @@ def _style_decision_support(sheet, name: str) -> None:
                 value = str(sheet.cell(row, state_col).value or '')
                 if value in fills:
                     sheet.cell(row, state_col).fill = PatternFill('solid', fgColor=fills[value])
-    if name in {'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+    if name == 'Profile_Readiness':
+        fills = {'READY': 'E2F0D9', 'CONDITIONAL': 'FFF2CC', 'NOT_READY': 'F4CCCC',
+                 'NOT_APPLICABLE': 'E7E6E6'}
+        for row in range(2, sheet.max_row + 1):
+            cell = sheet.cell(row, header_map['Readiness'])
+            cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
+            for header, column in header_map.items():
+                if header.endswith('%'):
+                    sheet.cell(row, column).number_format = '0.0"%"'
+    if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
         for column in sheet.columns:
             for cell in column:
                 cell.alignment = Alignment(vertical='top', wrap_text=True)
@@ -396,6 +451,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                                       "consumer assignments outside this increment are not assessed."})
     decisions = load_decisions(decisions_path)
     standardization = build_standardization(results, coverage, all_scalars, all_options, decisions) if results else []
+    profile_readiness = build_profile_readiness(standardization)
+    profile_summaries = profile_readiness_summary(profile_readiness)
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -406,6 +463,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     manual_rows = [row for row in coverage if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
     # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
+        "Profile_Readiness": profile_readiness,
         "Standardization": standardization_excel,
         "Decisions": decisions_excel,
         "Exceptions": exceptions_excel,
@@ -442,6 +500,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row in rows)
     topology_rows = topology_excel_rows(topology_records)
     sheet_headers = {
+        'Profile_Readiness': PROFILE_READINESS_HEADERS,
         'Standardization': STANDARDIZATION_HEADERS,
         'Decisions': DECISION_HEADERS,
         'Exceptions': EXCEPTION_HEADERS,
@@ -486,11 +545,13 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
-        _write_inventory_sheet(workbook, index, name, rows, headers)
-        if name in {'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+        _write_inventory_sheet(workbook, index, name, rows, headers,
+                               preserve_order=name == 'Profile_Readiness')
+        if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
             _style_decision_support(workbook[name], name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
+        _write_overview_profile_summary(workbook, profile_summaries)
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
