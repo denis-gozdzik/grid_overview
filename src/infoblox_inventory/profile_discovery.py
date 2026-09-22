@@ -262,18 +262,26 @@ def _association_family(record: dict[str, Any]) -> str:
 def _overlay_distribution(group_keys: set[tuple[str, str]], scope: str,
                           states_cache: dict[str, tuple[dict[tuple[str, str], dict[str, Any]],
                                                         set[tuple[str, str]], str]]) -> str:
-    data: dict[str, dict[str, int]] = {}
+    """Return a bounded descriptive overlay summary for one core profile."""
+    data: dict[str, dict[str, Any]] = {}
     for spec in _specs(scope):
         if spec.input_key in CORE_INPUT_KEYS:
             continue
         states, population_keys, _basis = states_cache[spec.source_parameter_id]
         counts: Counter[str] = Counter()
+        not_applicable = 0
         for key in group_keys:
             if key not in population_keys:
-                counts["NOT_APPLICABLE"] += 1
+                not_applicable += 1
             else:
                 counts[_state_label(states[key])] += 1
-        data[spec.input_key] = dict(sorted(counts.items()))
+        top_states = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:10]
+        data[spec.input_key] = {
+            "applicable": sum(counts.values()),
+            "not_applicable": not_applicable,
+            "distinct_states": len(counts),
+            "top_states": top_states,
+        }
     return _json(data)
 
 
