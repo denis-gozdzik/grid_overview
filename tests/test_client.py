@@ -41,9 +41,26 @@ def test_pagination_collects_every_page_and_uses_get_only():
         "_paging": ["1"], "_return_as_object": ["1"], "_max_results": ["25"],
         "_return_fields": ["network,comment"], "_inheritance": ["True"], "network_view": ["default"],
     }
-    assert query(responses.calls[1]) == {"_page_id": ["page-2"]}
+    assert query(responses.calls[1]) == {"_page_id": ["page-2"], "_inheritance": ["True"]}
     assert persisted == list(enumerate(originals, start=1))
     assert records[0] == originals[0]["result"][0]
+
+
+@responses.activate
+def test_raw_pagination_does_not_add_inheritance_to_continuation():
+    pages = [
+        {"result": [{"_ref": "network/a"}], "next_page_id": "page-2"},
+        {"result": [{"_ref": "network/b"}]},
+    ]
+    for page in pages:
+        responses.add(responses.GET, BASE + "/network", json=page)
+    records = client().get_all_objects("network", ["network"], {"network_view": "default"}, max_results=25)
+    assert [record["_ref"] for record in records] == ["network/a", "network/b"]
+    assert query(responses.calls[0]) == {
+        "_paging": ["1"], "_return_as_object": ["1"], "_max_results": ["25"],
+        "_return_fields": ["network"], "network_view": ["default"],
+    }
+    assert query(responses.calls[1]) == {"_page_id": ["page-2"]}
 
 
 @responses.activate
