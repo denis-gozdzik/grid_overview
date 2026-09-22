@@ -173,6 +173,21 @@ def test_exact_network_and_range_profiles_are_deterministic_and_segmented():
     assert none_range["Profile Status"] == "NOT_APPLICABLE_TO_DHCP_PROFILE"
 
 
+def test_unknown_range_association_is_visible_not_forced_into_a_profile():
+    result = _result()
+    unknown = _range(4, "10.10.4.0/24", "FUTURE_ASSOCIATION")
+    result.records["range"].append(unknown)
+    result.effective_records["range"].append({**unknown, "options": []})
+    summary, _profiles, objects = build_profile_discovery([result], [], _core_options())
+    range_summary = next(row for row in summary if row["Profile Type"] == "Range")
+    assert range_summary["Applicable Objects"] == 3
+    assert range_summary["Unresolved Association Objects"] == 1
+    row = next(item for item in objects if item["Object Ref"] == "range/LAB/4")
+    assert row["Association Family"] == "OTHER"
+    assert row["Profile Status"] == "UNRESOLVED_ASSOCIATION"
+    assert row["Missing Inputs"] == "association_family"
+
+
 def test_fingerprint_ids_do_not_depend_on_normalized_row_order_or_source_metadata_order():
     result = _result()
     options = _core_options()
