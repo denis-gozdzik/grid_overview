@@ -14,7 +14,8 @@ from typing import Any, Iterable
 from .models import CollectionResult
 from .profile_population import (
     NETWORK_POPULATION_BASIS, RANGE_POPULATION_BASIS,
-    dhcp_relevant_networks, effective_network_keys, normalized_network_key,
+    all_range_keys, dhcp_relevant_networks, effective_network_keys,
+    effective_range_keys, effective_records_by_key, normalized_object_key,
 )
 from .standardization import PARAMETER_SPECS, ParameterSpec
 
@@ -193,13 +194,47 @@ def _profile_parameter_rows(spec: ProfileInputSpec, scalars: list[dict[str, Any]
             and row.get("parameter") == parameter.parameter]
 
 
-def _profile_evidence_counts(rows: list[dict[str, Any]], population_keys: set[tuple[str, str]]) -> tuple[int, int]:
+def _is_inheritance_wrapper(value: Any) -> bool:
+    return isinstance(value, dict) and ("inherited" in value or "multisource" in value)
+
+
+def _authoritative_effective_option_keys(record: dict[str, Any]) -> set[tuple[str, str]] | None:
+    """Return option keys only when the effective WAPI option shape is authoritative."""
+    value = record.get("options")
+    if not isinstance(value, list) or not value:
+        return None
+    keys: set[tuple[str, str]] = set()
+    for group in value:
+        if not _is_inheritance_wrapper(group):
+            return None
+        if "values" not in group:
+            if group.get("source") == "NOT_DEFINED":
+                values = []
+            else:
+                return None
+        else:
+            values = group.get("values")
+        if not isinstance(values, list):
+            return None
+        for option in values:
+            if not isinstance(option, dict):
+                return None
+            vendor = str(option.get("vendor_class") or "DHCP")
+            number = str(option.get("num", option.get("name", "")))
+            keys.add((vendor, number))
+    return keys
+
+
+def _profile_evidence_counts(spec: ProfileInputSpec, rows: list[dict[str, Any]],
+                             population_keys: set[tuple[str, str]],
+                             effective_by_key: dict[tuple[str, str], dict[str, Any]]) -> tuple[int, int]:
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        key = normalized_network_key(row)
+        key = normalized_object_key(row)
         if key in population_keys:
             grouped[key].append(row)
 
+    parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
     confirmed = 0
     explicit_not_configured = 0
     for key in population_keys:
@@ -218,18 +253,39 @@ def _profile_evidence_counts(rows: list[dict[str, Any]], population_keys: set[tu
         statuses = {row.get("status") for row in object_rows}
         if object_rows and statuses == {"NOT_CONFIGURED"}:
             explicit_not_configured += 1
+            continue
+
+        # Absence is evidence only for a recognized authoritative effective
+        # options structure. It remains local to profile-readiness accounting;
+        # normalized technical evidence is not polluted with synthetic rows.
+        if parameter.source == "option" and parameter.option_number is not None:
+            effective = effective_by_key.get(key)
+            authoritative = _authoritative_effective_option_keys(effective or {})
+            target = ("DHCP", str(parameter.option_number))
+            if authoritative is not None and target not in authoritative:
+                explicit_not_configured += 1
     return confirmed, explicit_not_configured
 
 
-def _network_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
-                             results: list[CollectionResult], scalars: list[dict[str, Any]],
-                             options: list[dict[str, Any]]) -> dict[str, Any]:
-    population_keys = set(dhcp_relevant_networks(results))
-    query_keys = effective_network_keys(results)
+def _scope_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
+                           results: list[CollectionResult], scalars: list[dict[str, Any]],
+                           options: list[dict[str, Any]]) -> dict[str, Any]:
+    object_type = spec.scope.lower()
+    if spec.scope == "Network":
+        population_keys = set(dhcp_relevant_networks(results))
+        query_keys = effective_network_keys(results)
+        basis = NETWORK_POPULATION_BASIS
+    else:
+        population_keys = all_range_keys(results)
+        query_keys = effective_range_keys(results)
+        basis = RANGE_POPULATION_BASIS
     query_objects = len(population_keys & query_keys)
     population = len(population_keys)
     rows = _profile_parameter_rows(spec, scalars, options)
-    confirmed, not_configured = _profile_evidence_counts(rows, population_keys)
+    effective_by_key = effective_records_by_key(results, object_type)
+    confirmed, not_configured = _profile_evidence_counts(
+        spec, rows, population_keys, effective_by_key
+    )
     resolved = confirmed + not_configured
     unresolved = max(population - resolved, 0)
     collection = source.get("Collection Status")
@@ -246,7 +302,7 @@ def _network_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
     else:
         evidence_status = "PARTIAL"
     return {
-        "Population Basis": NETWORK_POPULATION_BASIS,
+        "Population Basis": basis,
         "Source Population Objects": source.get("Population Objects"),
         "Population Objects": population,
         "Query Evidence Objects": query_objects,
@@ -259,7 +315,6 @@ def _network_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
         "Unresolved %": _percent(unresolved, population),
         "Evidence Status": evidence_status,
     }
-
 
 def build_profile_readiness(standardization: Iterable[dict[str, Any]],
                             specs: Iterable[ProfileInputSpec] = PROFILE_INPUT_SPECS, *,
@@ -308,8 +363,8 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
                         "Collection Status": "UNKNOWN", "Evidence Status": "INSUFFICIENT_DATA",
                         "Readiness": "NOT_READY", "Readiness Reason": "Standardization evidence unavailable"})
         else:
-            if spec.scope == "Network" and object_level_available:
-                row.update(_network_profile_metrics(spec, source, results or [], scalars or [], options or []))
+            if object_level_available:
+                row.update(_scope_profile_metrics(spec, source, results or [], scalars or [], options or []))
             if (spec.semantic_role == "COMPOSITE_LATER"
                     and not (row.get("Population Objects") == 0
                              and row.get("Source Population Objects") == 0)):
