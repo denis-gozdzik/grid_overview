@@ -45,8 +45,9 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
     assert validated['sheet_rows']['Profile_Readiness'] == 39
     workbook = load_workbook(report_path)
     try:
-        assert workbook.sheetnames[:9] == [
-            'Overview', 'Profile_Readiness', 'Profile_Populations', 'Standardization',
+        assert workbook.sheetnames[:13] == [
+            'Overview', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+            'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs', 'Standardization',
             'Decisions', 'Exceptions', 'Grid_Comparison', 'Coverage', 'Manual_Review',
         ]
         sheet = workbook['Profile_Readiness']
