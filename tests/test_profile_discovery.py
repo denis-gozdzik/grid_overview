@@ -27,6 +27,18 @@ def _option(kind, index, number, value, name):
     }
 
 
+def _scalar(kind, index, parameter, value):
+    return {
+        "grid": "LAB", "object_type": kind, "object_ref": f"{kind}/LAB/{index}",
+        "object_name": f"{kind}-{index}", "network_view": "default",
+        "parent_network": f"10.0.{index}.0/24" if kind == "network" else "10.10.0.0/24",
+        "parameter": parameter, "effective_value": value,
+        "configured_here": False, "inherited": True, "multisource": False,
+        "source_level": "Grid", "source_object": "LAB",
+        "source_ref": "grid:dhcpproperties/LAB", "status": "COMPLETE",
+    }
+
+
 def _core_options(kind, index, *, lease="3600", dns="192.0.2.53", domain="lab.example",
                   router=None):
     if router is None:
@@ -104,6 +116,25 @@ def test_network_exact_core_fingerprints_are_stable_and_not_prevalence_ids():
     assert {row["Fingerprint ID"] for row in network_fps} == {
         row["Fingerprint ID"] for row in reversed_fps if row["Profile"] == "Network Profile v1"
     }
+
+
+def test_feature_overlay_difference_does_not_split_core_profile():
+    result = _network_result()
+    result.records["network"] = result.records["network"][:2]
+    result.effective_records["network"] = result.effective_records["network"][:2]
+    result.coverage = [_coverage("network", 2, query) for query in ("raw", "effective")]
+    options = _core_options("network", 0) + _core_options("network", 1)
+    scalars = [
+        _scalar("network", 0, "enable_ddns", True),
+        _scalar("network", 1, "enable_ddns", False),
+    ]
+    fingerprints, assignments, _kpis = build_profile_fingerprints([result], scalars, options)
+    network_fps = [row for row in fingerprints if row["Profile"] == "Network Profile v1"]
+    assert len(network_fps) == 1
+    assert network_fps[0]["Object Count"] == 2
+    ids = {row["Fingerprint ID"] for row in assignments if row["Scope"] == "Network"}
+    assert len(ids) == 1
+    assert '"ddns_enabled"' in network_fps[0]["Feature Overlay Distributions"]
 
 
 def test_range_association_family_is_part_of_fingerprint_and_none_is_not_applicable():
