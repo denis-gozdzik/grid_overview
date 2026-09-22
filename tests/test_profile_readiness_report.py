@@ -107,7 +107,10 @@ def test_overview_summary_has_input_denominator_and_both_profile_drilldowns(repo
         assert 'READY inputs / applicable candidate inputs' in note
         assert 'not object coverage' in note
         assert 'not an approved standard' in note
-        assert str(header_row + 3) in str(overview.print_area)
+        assert overview.max_row >= header_row + 3
+        assert 'Observed profile discovery' in {
+            cell.value for row in overview.iter_rows() for cell in row if cell.value
+        }
     finally:
         workbook.close()
 
