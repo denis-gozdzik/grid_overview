@@ -31,9 +31,10 @@ Only explicit parameter evidence counts as `NOT_CONFIGURED`. A missing normalize
 
 Classification follows this order:
 
-1. A source row explicitly reporting population zero is `NOT_APPLICABLE`, with reason `No objects in scope`.
-2. A hard blocker makes a populated input `NOT_READY`, regardless of its percentage.
-3. Otherwise apply the thresholds below to the existing Resolved Evidence %.
+1. Population zero is `NOT_APPLICABLE` only when collection status `COMPLETE` or `EMPTY` confirms that the scope is truly empty.
+2. Population zero combined with `PARTIAL`, `ERROR` or `UNKNOWN` collection is `NOT_READY`: the population could not be established.
+3. A hard blocker makes any populated input `NOT_READY`, regardless of its percentage.
+4. Otherwise apply the thresholds below using exact evidence counts, not the rounded display percentage.
 
 | Readiness | Resolved Evidence % |
 | --- | --- |
@@ -49,7 +50,7 @@ Hard blockers are:
 
 A missing source Standardization row cannot prove zero population. It stays `NOT_READY` with a missing-evidence reason; it must not be converted to `NOT_APPLICABLE` or explicit `NOT_CONFIGURED`. Missing or invalid population/resolved metrics and unrecognized statuses are also handled conservatively as `NOT_READY`.
 
-The explicit zero-population rule takes priority even if that source row records a collection error. Its reason retains a warning that the collection status does not confirm an empty scope. This preserves the requested classification without claiming a failed collection established an empty appliance inventory.
+A failed or incomplete collection with zero captured objects does not establish an empty scope. Only authoritative `COMPLETE`/`EMPTY` collection evidence can produce `NOT_APPLICABLE` for a zero population.
 
 Every result preserves the evidence counts and denominators and includes a concise Readiness Reason. A successful object query can coexist with unresolved parameter evidence. Conversely, normalized rows do not override a collection failure.
 
@@ -60,7 +61,14 @@ Every result preserves the evidence counts and denominators and includes a conci
 | 130 | 117 | 0 | 13 | 90.0% | `CONDITIONAL` |
 | 1000 | 799 | 0 | 201 | 79.9% | `NOT_READY` |
 
-The existing Standardization layer supplies percentages rounded to one decimal place. Readiness uses that supplied metric consistently; it does not recompute a different precision for classification.
+The Standardization layer still exposes percentages rounded to one decimal place for reporting. Readiness classification does **not** use that rounded value at the 80%/95% thresholds. It recomputes the exact ratio from integer evidence counts:
+
+```text
+exact resolved ratio =
+    (Confirmed Objects + Explicit Not Configured) / Population Objects
+```
+
+This prevents, for example, an exact 94.95% result from rounding to a displayed 95.0% and being promoted to `READY`. The Readiness Reason includes the exact ratio and object counts so a rounded display value cannot hide the boundary decision.
 
 ### Existing evidence semantics retained
 
