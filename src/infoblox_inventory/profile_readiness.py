@@ -13,9 +13,11 @@ from typing import Any, Iterable
 
 from .models import CollectionResult
 from .profile_population import (
-    NETWORK_POPULATION_BASIS, RANGE_POPULATION_BASIS,
-    all_range_keys, dhcp_relevant_networks, effective_network_keys,
-    effective_range_keys, effective_records_by_key, normalized_object_key,
+    NETWORK_POPULATION_BASIS, RANGE_DHCP_ASSOCIATED_BASIS,
+    RANGE_INFOBLOX_MANAGED_BASIS,
+    dhcp_associated_range_keys, dhcp_relevant_networks, effective_network_keys,
+    effective_range_keys, effective_records_by_key, infoblox_managed_range_keys,
+    ms_server_range_keys, normalized_object_key,
 )
 from .standardization import PARAMETER_SPECS, ParameterSpec
 
@@ -78,8 +80,8 @@ PROFILE_INPUT_SPECS = (
 )
 
 _EVIDENCE_HEADERS = [
-    "Required Field", "Required Field Status", "Population Objects", "Query Evidence Objects",
-    "Query Coverage %", "Collection Status", "Confirmed Objects", "Confirmed Value %",
+    "Required Field", "Required Field Status", "Population Objects", "Excluded By Applicability",
+    "Query Evidence Objects", "Query Coverage %", "Collection Status", "Confirmed Objects", "Confirmed Value %",
     "Explicit Not Configured", "Resolved Evidence %", "Unresolved Objects", "Unresolved %", "Evidence Status",
 ]
 PROFILE_READINESS_HEADERS = [
@@ -228,6 +230,12 @@ def _authoritative_effective_option_keys(record: dict[str, Any]) -> set[tuple[st
 def _profile_evidence_counts(spec: ProfileInputSpec, rows: list[dict[str, Any]],
                              population_keys: set[tuple[str, str]],
                              effective_by_key: dict[tuple[str, str], dict[str, Any]]) -> tuple[int, int]:
+    """Count functional values independently from inheritance/source metadata.
+
+    Source level/reference/configured_here/inherited stay preserved in normalized
+    evidence, but they do not make identical effective values different for a
+    functional profile. Any multisource observation remains conservative.
+    """
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         key = normalized_object_key(row)
@@ -239,18 +247,19 @@ def _profile_evidence_counts(spec: ProfileInputSpec, rows: list[dict[str, Any]],
     explicit_not_configured = 0
     for key in population_keys:
         object_rows = grouped.get(key, [])
+        statuses = {row.get("status") for row in object_rows}
+        has_multisource = any(row.get("multisource") is True for row in object_rows)
         complete = [row for row in object_rows
                     if row.get("status") == "COMPLETE"
                     and row.get("multisource") is not True
                     and row.get("effective_value") is not None]
-        signatures = {json.dumps([
-            row.get("effective_value"), row.get("source_level"), row.get("source_ref"),
-            row.get("configured_here"), row.get("inherited"),
-        ], sort_keys=True, default=str) for row in complete}
-        if len(signatures) == 1:
+        effective_values = {
+            json.dumps(row.get("effective_value"), sort_keys=True, default=str)
+            for row in complete
+        }
+        if not has_multisource and len(effective_values) == 1 and "NOT_CONFIGURED" not in statuses:
             confirmed += 1
             continue
-        statuses = {row.get("status") for row in object_rows}
         if object_rows and statuses == {"NOT_CONFIGURED"}:
             explicit_not_configured += 1
             continue
@@ -267,21 +276,56 @@ def _profile_evidence_counts(spec: ProfileInputSpec, rows: list[dict[str, Any]],
     return confirmed, explicit_not_configured
 
 
+def _authoritative_scalar_external_keys(rows: list[dict[str, Any]],
+                                        external_keys: set[tuple[str, str]]) -> set[tuple[str, str]]:
+    """Keep externally managed ranges only when scalar evidence is authoritative.
+
+    COMPLETE or explicit NOT_CONFIGURED evidence proves that WAPI exposed a
+    parameter state for this object. PARTIAL/unresolved msserver:dhcp source
+    references do not expand the applicable denominator.
+    """
+    authoritative: set[tuple[str, str]] = set()
+    for row in rows:
+        key = normalized_object_key(row)
+        if key not in external_keys:
+            continue
+        if row.get("status") == "NOT_CONFIGURED":
+            authoritative.add(key)
+        elif row.get("status") == "COMPLETE" and row.get("effective_value") is not None:
+            authoritative.add(key)
+    return authoritative
+
+
 def _scope_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
                            results: list[CollectionResult], scalars: list[dict[str, Any]],
                            options: list[dict[str, Any]]) -> dict[str, Any]:
     object_type = spec.scope.lower()
+    rows = _profile_parameter_rows(spec, scalars, options)
+    parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
+
     if spec.scope == "Network":
         population_keys = set(dhcp_relevant_networks(results))
         query_keys = effective_network_keys(results)
         basis = NETWORK_POPULATION_BASIS
-    else:
-        population_keys = all_range_keys(results)
+    elif parameter.source == "option":
+        population_keys = dhcp_associated_range_keys(results)
         query_keys = effective_range_keys(results)
-        basis = RANGE_POPULATION_BASIS
+        basis = RANGE_DHCP_ASSOCIATED_BASIS
+    else:
+        base = infoblox_managed_range_keys(results)
+        external = ms_server_range_keys(results)
+        authoritative_external = _authoritative_scalar_external_keys(rows, external)
+        population_keys = base | authoritative_external
+        query_keys = effective_range_keys(results)
+        basis = RANGE_INFOBLOX_MANAGED_BASIS
+        if authoritative_external:
+            basis += "+AUTHORITATIVE_MS_SERVER"
+
     query_objects = len(population_keys & query_keys)
     population = len(population_keys)
-    rows = _profile_parameter_rows(spec, scalars, options)
+    source_population = source.get("Population Objects")
+    excluded = (max(source_population - population, 0)
+                if type(source_population) is int else None)
     effective_by_key = effective_records_by_key(results, object_type)
     confirmed, not_configured = _profile_evidence_counts(
         spec, rows, population_keys, effective_by_key
@@ -303,8 +347,9 @@ def _scope_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
         evidence_status = "PARTIAL"
     return {
         "Population Basis": basis,
-        "Source Population Objects": source.get("Population Objects"),
+        "Source Population Objects": source_population,
         "Population Objects": population,
+        "Excluded By Applicability": excluded,
         "Query Evidence Objects": query_objects,
         "Query Coverage %": _percent(query_objects, population),
         "Confirmed Objects": confirmed,
@@ -354,8 +399,10 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
             "Profile": spec.profile, "Input Key": spec.input_key, "Input": spec.label,
             "Semantic Role": spec.semantic_role, "Parameter ID": spec.source_parameter_id, "Scope": spec.scope,
             "Population Basis": (NETWORK_POPULATION_BASIS if spec.scope == "Network" and object_level_available
-                                 else RANGE_POPULATION_BASIS if spec.scope == "Range" else "SCOPED_STANDARDIZATION"),
+                                 else RANGE_DHCP_ASSOCIATED_BASIS if spec.scope == "Range" and object_level_available
+                                 else "SCOPED_STANDARDIZATION"),
             "Source Population Objects": (source or {}).get("Population Objects"),
+            "Excluded By Applicability": None,
             **{header: (source or {}).get(header) for header in _EVIDENCE_HEADERS},
         }
         if source is None:
