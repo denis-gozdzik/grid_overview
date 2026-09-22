@@ -156,7 +156,7 @@ def test_127_confirmed_plus_three_explicit_not_configured_are_fully_ready():
     assert row["Readiness"] == "READY"
     assert row["Resolved Evidence %"] == 100.0
     assert row["Confirmed Value %"] == 97.7
-    assert "100.0%" in row["Readiness Reason"]
+    assert "130/130 resolved evidence (100.00% exact)" in row["Readiness Reason"]
     assert list(row) == HEADERS
     assert {key: row[key] for key in EVIDENCE_HEADERS} == {
         key: evidence[key] for key in EVIDENCE_HEADERS
@@ -169,7 +169,7 @@ def test_complete_collection_with_three_unresolved_objects_is_still_ready():
     assert row["Resolved Evidence %"] == 97.7
     assert row["Unresolved Objects"] == 3
     assert row["Collection Status"] == "COMPLETE"
-    assert "97.7%" in row["Readiness Reason"]
+    assert "127/130 resolved evidence (97.69% exact)" in row["Readiness Reason"]
     assert "3/130" in row["Readiness Reason"]
     assert "unresolved" in row["Readiness Reason"].lower()
 
@@ -182,7 +182,7 @@ def test_resolved_evidence_threshold_boundaries(confirmed, expected):
     row = _one(_evidence(population=1000, confirmed=confirmed, not_configured=0,
                          evidence="PARTIAL" if confirmed < 1000 else "COMPLETE"))
     assert row["Readiness"] == expected
-    assert f"{confirmed / 10:.1f}%" in row["Readiness Reason"]
+    assert f"{confirmed}/1000 resolved evidence ({confirmed / 10:.2f}% exact)" in row["Readiness Reason"]
 
 
 def test_130_objects_with_90_percent_resolved_are_conditional():
@@ -196,7 +196,7 @@ def test_rounded_95_percent_display_does_not_promote_9495_percent_to_ready():
     assert evidence["Resolved Evidence %"] == 95.0
     row = _one(evidence)
     assert row["Readiness"] == "CONDITIONAL"
-    assert "95.0%" in row["Readiness Reason"]
+    assert "1899/2000 resolved evidence (94.95% exact)" in row["Readiness Reason"]
 
 
 def test_exact_95_percent_boundary_is_ready():
