@@ -1,15 +1,12 @@
-"""Profile-specific object population selection.
+"""Profile-specific population selection and descriptive segmentation.
 
-The current-state inventory contains many IPAM Network objects that may not
-participate in DHCP.  Network DHCP profile discovery therefore uses a bounded,
-evidence-based candidate population instead of treating every Network as a
-DHCP-configured object.
-
-This is a relevance classifier, not an assertion of appliance service state.
+Population logic is evidence-backed and deliberately separate from standards:
+it identifies which objects are applicable to future profile discovery, not
+whether any object is compliant or correctly configured.
 """
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any
 
 from .models import CollectionResult
@@ -17,11 +14,33 @@ from .models import CollectionResult
 
 NETWORK_POPULATION_BASIS = "DHCP_RELEVANT_NETWORK_CANDIDATES"
 RANGE_POPULATION_BASIS = "ALL_RANGES"
+RANGE_DHCP_ASSOCIATED_BASIS = "DHCP_ASSOCIATED_RANGES"
+RANGE_INFOBLOX_MANAGED_BASIS = "INFOBLOX_MANAGED_RANGES"
+
+RANGE_SEGMENT_MS_SERVER = "MS_SERVER"
+RANGE_SEGMENT_MEMBER = "MEMBER"
+RANGE_SEGMENT_FAILOVER = "FAILOVER"
+RANGE_SEGMENT_NONE = "NONE"
+RANGE_SEGMENT_OTHER = "OTHER"
+RANGE_SEGMENT_UNKNOWN = "UNKNOWN"
+RANGE_SEGMENTS = (
+    RANGE_SEGMENT_MS_SERVER,
+    RANGE_SEGMENT_MEMBER,
+    RANGE_SEGMENT_FAILOVER,
+    RANGE_SEGMENT_NONE,
+    RANGE_SEGMENT_OTHER,
+    RANGE_SEGMENT_UNKNOWN,
+)
 
 REASON_MEMBERS = "members"
 REASON_RANGE_PARENT = "range_parent"
 REASON_USE_FLAG = "active_use_flag"
 REASON_ACTIVE_OPTION = "active_option"
+
+PROFILE_POPULATION_HEADERS = [
+    "Profile", "Scope", "Grid", "Population Basis", "Segment",
+    "Object Count", "Share %", "Observed Association Values", "Notes",
+]
 
 
 def object_key(grid: str, row: dict[str, Any]) -> tuple[str, str]:
@@ -126,8 +145,64 @@ def effective_records_by_key(results: list[CollectionResult], object_type: str) 
     }
 
 
+def range_association_segment(record: dict[str, Any]) -> tuple[str, str]:
+    """Classify RAW Range association without inventing management semantics.
+
+    The normalized segment drives applicability. The second element preserves
+    the original non-empty value for descriptive evidence when it is unknown.
+    """
+    value = record.get("server_association_type")
+    if value is None:
+        return RANGE_SEGMENT_NONE, ""
+    if not isinstance(value, (str, int, float, bool)):
+        return RANGE_SEGMENT_UNKNOWN, repr(value)
+    raw = str(value).strip()
+    if not raw:
+        return RANGE_SEGMENT_NONE, ""
+    normalized = raw.upper().replace("-", "_").replace(" ", "_")
+    if normalized in {"NONE", "NOT_CONFIGURED"}:
+        return RANGE_SEGMENT_NONE, raw
+    if normalized == "MEMBER":
+        return RANGE_SEGMENT_MEMBER, raw
+    if normalized in {"MS_SERVER", "MSSERVER"}:
+        return RANGE_SEGMENT_MS_SERVER, raw
+    if normalized in {"FAILOVER", "FAILOVER_ASSOCIATION"}:
+        return RANGE_SEGMENT_FAILOVER, raw
+    return RANGE_SEGMENT_OTHER, raw
+
+
+def range_segments(results: list[CollectionResult]) -> dict[str, set[tuple[str, str]]]:
+    segments = {name: set() for name in RANGE_SEGMENTS}
+    for result in results:
+        for record in result.records.get("range", []):
+            segment, _raw = range_association_segment(record)
+            segments[segment].add(object_key(result.grid, record))
+    return segments
+
+
+def dhcp_associated_range_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
+    segments = range_segments(results)
+    return set().union(
+        segments[RANGE_SEGMENT_MEMBER],
+        segments[RANGE_SEGMENT_FAILOVER],
+        segments[RANGE_SEGMENT_MS_SERVER],
+    )
+
+
+def infoblox_managed_range_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
+    segments = range_segments(results)
+    return set().union(
+        segments[RANGE_SEGMENT_MEMBER],
+        segments[RANGE_SEGMENT_FAILOVER],
+    )
+
+
+def ms_server_range_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
+    return set(range_segments(results)[RANGE_SEGMENT_MS_SERVER])
+
+
 def profile_population_summary(results: list[CollectionResult]) -> list[dict[str, Any]]:
-    """Summarize candidate selection without exposing addresses or names."""
+    """Backward-compatible compact Network population summary."""
     relevant = dhcp_relevant_networks(results)
     rows: list[dict[str, Any]] = []
     totals = Counter()
@@ -171,4 +246,95 @@ def profile_population_summary(results: list[CollectionResult]) -> list[dict[str
         "Active use_* flag": totals["Active use_* flag"],
         "Active DHCP option": totals["Active DHCP option"],
     })
+    return rows
+
+
+def profile_population_rows(results: list[CollectionResult]) -> list[dict[str, Any]]:
+    """Long-form descriptive population evidence for Network and Range profiles."""
+    relevant_networks = dhcp_relevant_networks(results)
+    rows: list[dict[str, Any]] = []
+
+    for result in results:
+        network_keys = {
+            object_key(result.grid, record)
+            for record in result.records.get("network", [])
+        }
+        network_candidates = network_keys & set(relevant_networks)
+        network_total = len(network_keys)
+        rows.extend([
+            {
+                "Profile": "Network Profile v1", "Scope": "Network", "Grid": result.grid,
+                "Population Basis": "ALL_NETWORKS", "Segment": "ALL",
+                "Object Count": network_total, "Share %": 100.0 if network_total else None,
+                "Observed Association Values": "",
+                "Notes": "All IPAM Network objects; descriptive source population.",
+            },
+            {
+                "Profile": "Network Profile v1", "Scope": "Network", "Grid": result.grid,
+                "Population Basis": NETWORK_POPULATION_BASIS, "Segment": "CANDIDATE",
+                "Object Count": len(network_candidates),
+                "Share %": round(len(network_candidates) * 100.0 / network_total, 1) if network_total else None,
+                "Observed Association Values": "",
+                "Notes": "Evidence-backed DHCP-relevant candidates; not a compliance classification.",
+            },
+        ])
+
+        range_records = result.records.get("range", [])
+        range_total = len(range_records)
+        segment_counts: Counter[str] = Counter()
+        observed: dict[str, set[str]] = defaultdict(set)
+        for record in range_records:
+            segment, raw = range_association_segment(record)
+            segment_counts[segment] += 1
+            if raw:
+                observed[segment].add(raw)
+        associated = (
+            segment_counts[RANGE_SEGMENT_MEMBER]
+            + segment_counts[RANGE_SEGMENT_FAILOVER]
+            + segment_counts[RANGE_SEGMENT_MS_SERVER]
+        )
+        infoblox_managed = segment_counts[RANGE_SEGMENT_MEMBER] + segment_counts[RANGE_SEGMENT_FAILOVER]
+        rows.extend([
+            {
+                "Profile": "Range Profile v1", "Scope": "Range", "Grid": result.grid,
+                "Population Basis": RANGE_POPULATION_BASIS, "Segment": "ALL",
+                "Object Count": range_total, "Share %": 100.0 if range_total else None,
+                "Observed Association Values": "",
+                "Notes": "All collected Range objects; descriptive source population.",
+            },
+            {
+                "Profile": "Range Profile v1", "Scope": "Range", "Grid": result.grid,
+                "Population Basis": RANGE_DHCP_ASSOCIATED_BASIS, "Segment": "ASSOCIATED",
+                "Object Count": associated,
+                "Share %": round(associated * 100.0 / range_total, 1) if range_total else None,
+                "Observed Association Values": "",
+                "Notes": "MEMBER + FAILOVER + MS_SERVER; used for effective DHCP option inputs.",
+            },
+            {
+                "Profile": "Range Profile v1", "Scope": "Range", "Grid": result.grid,
+                "Population Basis": RANGE_INFOBLOX_MANAGED_BASIS, "Segment": "INFOBLOX_MANAGED",
+                "Object Count": infoblox_managed,
+                "Share %": round(infoblox_managed * 100.0 / range_total, 1) if range_total else None,
+                "Observed Association Values": "",
+                "Notes": "MEMBER + FAILOVER; base population for Infoblox scalar inputs.",
+            },
+        ])
+        for segment in RANGE_SEGMENTS:
+            count = segment_counts[segment]
+            rows.append({
+                "Profile": "Range Profile v1", "Scope": "Range", "Grid": result.grid,
+                "Population Basis": f"RANGE_SEGMENT_{segment}", "Segment": segment,
+                "Object Count": count,
+                "Share %": round(count * 100.0 / range_total, 1) if range_total else None,
+                "Observed Association Values": ", ".join(sorted(observed[segment])),
+                "Notes": (
+                    "Externally managed by Microsoft DHCP; not equivalent to NOT_CONFIGURED."
+                    if segment == RANGE_SEGMENT_MS_SERVER else
+                    "No active server association observed."
+                    if segment == RANGE_SEGMENT_NONE else
+                    "Unexpected association value retained for manual review."
+                    if segment in {RANGE_SEGMENT_OTHER, RANGE_SEGMENT_UNKNOWN} else
+                    ""
+                ),
+            })
     return rows
