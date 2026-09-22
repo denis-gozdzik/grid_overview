@@ -165,12 +165,12 @@ No Range DDNS TTL, fixed-address-update or option-81 parameter is invented: thos
 
 Each input row exposes its profile, identity, semantic role and source parameter alongside required-field status, population, query counts and coverage, confirmed and explicit not-configured counts, resolved and unresolved percentages, collection/evidence statuses, readiness and reason.
 
-A compact Overview summary reports each profile's candidate count and counts of `READY`, `CONDITIONAL`, `NOT_READY` and `NOT_APPLICABLE` inputs, with a drill-down to the matrix. The aggregate **Ready input %** means:
+A compact Overview summary reports each profile's candidate count and counts of `READY`, `CONDITIONAL`, `NOT_READY`, `DEFERRED` and `NOT_APPLICABLE` inputs, with a drill-down to the matrix. The aggregate **Ready input %** means:
 
 ```text
 READY inputs / applicable candidate inputs * 100
 
-applicable candidate inputs = candidate inputs - NOT_APPLICABLE inputs
+applicable candidate inputs = candidate inputs - NOT_APPLICABLE inputs - DEFERRED inputs
 ```
 
 This percentage measures the share of candidate inputs ready for discovery. It is not object coverage, configuration quality or a profile quality score. If no candidates are applicable, a ready-input percentage has no denominator and is not reported as zero.
