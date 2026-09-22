@@ -403,8 +403,8 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
         for row_number, item in enumerate(kpis, start=kpi_start + 2):
             values = [
                 item.get('Profile'), item.get('Applicable Objects'), item.get('Profiled Objects'),
-                item.get('Profiled %'), item.get('Distinct Profiles'), item.get('Top-1 Share %'),
-                item.get('Top-3 Share %'), item.get('Singleton Profiles'),
+                item.get('Profiled %'), item.get('Distinct Profiles'), item.get('Top-1 Share of Profiled %'),
+                item.get('Top-3 Share of Profiled %'), item.get('Singleton Profiles'),
             ]
             for column, value in enumerate(values, start=1):
                 cell = sheet.cell(row_number, column, _excel_text(value))
