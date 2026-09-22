@@ -550,10 +550,12 @@ def test_plain_effective_options_do_not_prove_absence_for_readiness():
         records={"range": [{
             "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
             "network": "10.0.0.0/24", "network_view": "default",
+            "server_association_type": "MEMBER",
         }]},
         effective_records={"range": [{
             "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
             "network": "10.0.0.0/24", "network_view": "default",
+            "server_association_type": "MEMBER",
             "options": [{"num": 51, "name": "dhcp-lease-time", "value": "14400"}],
         }]},
         schemas={"range": {"fields": [{"name": "options", "overridden_by": "use_options"}]}},
