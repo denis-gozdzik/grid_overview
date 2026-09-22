@@ -266,7 +266,8 @@ def profile_object_states(spec: ProfileInputSpec, rows: list[dict[str, Any]],
         # Absence is evidence only for a recognized authoritative effective
         # options structure. It remains local to profile-readiness accounting;
         # normalized technical evidence is not polluted with synthetic rows.
-        if parameter.source == "option" and parameter.option_number is not None:
+        if (not complete and not has_multisource
+                and parameter.source == "option" and parameter.option_number is not None):
             effective = effective_by_key.get(key)
             authoritative = _authoritative_effective_option_keys(effective or {})
             target = ("DHCP", str(parameter.option_number))
