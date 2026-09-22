@@ -259,8 +259,13 @@ class InfobloxClient:
                         page_callback: PageCallback | None = None) -> list[dict[str, Any]]:
         """Collect WAPI result envelopes and optionally preserve decoded responses.
 
-        Continuation IDs encode the initial query, including inheritance. The
-        callback precedes validation so malformed pages remain inspectable.
+        Continuation IDs preserve paging state, but NIOS 9.x does not reliably
+        preserve the _inheritance response shape on continuation requests. For
+        effective queries we therefore reassert _inheritance=True together with
+        each _page_id. This behavior was verified against NIOS 9.0.7/9.1.0 lab
+        responses and remains GET-only.
+
+        The callback precedes validation so malformed pages remain inspectable.
         Raw dictionaries are never modified by the client.
         """
         path = _object_path(object_type)
@@ -296,6 +301,12 @@ class InfobloxClient:
                 break
             seen_pages.add(next_page)
             params = {"_page_id": next_page}
+            if mode == "effective":
+                # Empirical NIOS behavior: page_id alone can drop scalar
+                # inheritance wrappers from page 2 onward even though records
+                # still return successfully. Reasserting inheritance restores
+                # the effective representation without changing query scope.
+                params["_inheritance"] = True
         return objects
 
     def schema(self, object_type: str | None = None) -> dict[str, Any]:
