@@ -402,7 +402,6 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
                                  else RANGE_DHCP_ASSOCIATED_BASIS if spec.scope == "Range" and object_level_available
                                  else "SCOPED_STANDARDIZATION"),
             "Source Population Objects": (source or {}).get("Population Objects"),
-            "Excluded By Applicability": None,
             **{header: (source or {}).get(header) for header in _EVIDENCE_HEADERS},
         }
         if source is None:
