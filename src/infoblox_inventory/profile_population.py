@@ -24,20 +24,35 @@ REASON_USE_FLAG = "active_use_flag"
 REASON_ACTIVE_OPTION = "active_option"
 
 
-def _network_key(grid: str, row: dict[str, Any]) -> tuple[str, str]:
+def object_key(grid: str, row: dict[str, Any]) -> tuple[str, str]:
+    """Stable in-memory identity for raw/effective inventory rows."""
     ref = row.get("_ref")
     if isinstance(ref, str) and ref:
         return grid, ref
-    view = str(row.get("network_view") or "default")
-    network = str(row.get("network") or "")
-    return grid, f"{view}|{network}"
+    fallback = [
+        row.get("network_view") or "default",
+        row.get("network") or "",
+        row.get("start_addr") or "",
+        row.get("end_addr") or "",
+        row.get("ipv4addr") or "",
+        row.get("name") or row.get("host_name") or "",
+    ]
+    return grid, "|".join(str(value) for value in fallback)
 
 
-def normalized_network_key(row: dict[str, Any]) -> tuple[str, str]:
+def normalized_object_key(row: dict[str, Any]) -> tuple[str, str]:
+    """Match normalized evidence back to its source object without exposing values."""
     ref = row.get("object_ref")
     if isinstance(ref, str) and ref:
         return str(row.get("grid", "")), ref
-    return str(row.get("grid", "")), f"{row.get('network_view') or 'default'}|{row.get('object_name') or ''}"
+    return str(row.get("grid", "")), "|".join(str(value or "") for value in (
+        row.get("network_view") or "default",
+        row.get("parent_network") or "",
+        "",
+        "",
+        "",
+        row.get("object_name") or "",
+    ))
 
 
 def _active_option(record: dict[str, Any]) -> bool:
@@ -75,15 +90,39 @@ def dhcp_relevant_networks(results: list[CollectionResult]) -> dict[tuple[str, s
             if _active_option(record):
                 reasons.add(REASON_ACTIVE_OPTION)
             if reasons:
-                relevant[_network_key(result.grid, record)] = reasons
+                relevant[object_key(result.grid, record)] = reasons
     return relevant
 
 
 def effective_network_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
     return {
-        _network_key(result.grid, record)
+        object_key(result.grid, record)
         for result in results
         for record in result.effective_records.get("network", [])
+    }
+
+
+def all_range_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
+    return {
+        object_key(result.grid, record)
+        for result in results
+        for record in result.records.get("range", [])
+    }
+
+
+def effective_range_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
+    return {
+        object_key(result.grid, record)
+        for result in results
+        for record in result.effective_records.get("range", [])
+    }
+
+
+def effective_records_by_key(results: list[CollectionResult], object_type: str) -> dict[tuple[str, str], dict[str, Any]]:
+    return {
+        object_key(result.grid, record): record
+        for result in results
+        for record in result.effective_records.get(object_type, [])
     }
 
 
@@ -94,7 +133,7 @@ def profile_population_summary(results: list[CollectionResult]) -> list[dict[str
     totals = Counter()
     for result in results:
         grid_keys = {
-            _network_key(result.grid, row)
+            object_key(result.grid, row)
             for row in result.records.get("network", [])
         }
         selected = {key: relevant[key] for key in grid_keys if key in relevant}
