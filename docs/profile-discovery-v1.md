@@ -186,7 +186,7 @@ No Range DDNS TTL, fixed-address-update or option-81 parameter is invented: thos
 
 ## Workbook and summary
 
-`Profile_Readiness` follows `Overview`, followed by `Profile_Populations`, then `Standardization`, `Decisions`, `Exceptions`, `Grid_Comparison`, `Coverage` and `Manual_Review`. `Profile_Populations` gives descriptive Network and Range population/segment counts and shares without compliance labels. Existing evidence sheets and Overview links to Standardization are retained. The sheets use the existing safe table-writing utilities, without overlapping worksheet and table AutoFilters.
+`Profile_Readiness` follows `Overview`, followed by `Profile_Populations`. The follow-on deterministic discovery views (`Profile_Usefulness`, `Profile_Fingerprints`, `Profile_Assignments`, `Profile_KPIs`) then precede `Standardization`, `Decisions`, `Exceptions`, `Grid_Comparison`, `Coverage` and `Manual_Review`. `Profile_Populations` gives descriptive Network and Range population/segment counts and shares without compliance labels. Existing evidence sheets and Overview links to Standardization are retained. The sheets use the existing safe table-writing utilities, without overlapping worksheet and table AutoFilters.
 
 Each input row exposes its profile, identity, semantic role and source parameter alongside required-field status, source population, parameter-applicable population, `Excluded By Applicability`, query counts and coverage, confirmed and explicit not-configured counts, resolved and unresolved percentages, collection/evidence statuses, readiness and reason. Excluded objects are not re-labeled as NOT_CONFIGURED.
 
@@ -200,24 +200,24 @@ applicable candidate inputs = candidate inputs - NOT_APPLICABLE inputs - DEFERRE
 
 This percentage measures the share of candidate inputs ready for discovery. It is not object coverage, configuration quality or a profile quality score. If no candidates are applicable, a ready-input percentage has no denominator and is not reported as zero.
 
-## Future inputs and next increment
+## Follow-on discovery and future context
 
 These items are documented only as `FUTURE_PROFILE_INPUT`; they have no fabricated readiness rows:
 
 | Future input | Current limit |
 | --- | --- |
-| Range `server_association_type` as a fingerprint field | Population segmentation is implemented; fingerprint semantics remain deferred |
+| Range `server_association_type` as a fingerprint field | Implemented as the Range association family in fingerprint v1 |
 | Range `member` association | Collected context; not yet a fingerprint field |
 | Range `failover_association` | Collected context; not yet a fingerprint field |
 | EA / organizational context | Deferred; no EA correlation in this increment |
 | Naming / organizational context | Deferred; no naming-pattern detection in this increment |
 
-Before deterministic fingerprints are implemented, two evidence gaps must be controlled:
+Two evidence gaps were controlled before fingerprint v1 was enabled:
 
 1. per-page inheritance response shapes for Network collections that exceed one WAPI page;
 2. true unresolved scalar inheritance versus explicit not-configured option absence.
 
-The paging behavior is now empirically confirmed: on NIOS 9.x, continuation requests using `_page_id` alone can drop scalar inheritance wrappers from page 2 onward. Reasserting `_inheritance=True` together with `_page_id` restores the effective scalar wrapper representation. The GET-only client therefore reasserts inheritance on every continuation page of an effective query; raw pagination remains unchanged.
+The paging behavior is empirically confirmed: on NIOS 9.x, continuation requests using `_page_id` alone can drop scalar inheritance wrappers from page 2 onward. Reasserting `_inheritance=True` together with `_page_id` restores the effective scalar wrapper representation. The GET-only client therefore reasserts inheritance on every continuation page of an effective query; raw pagination remains unchanged.
 
 The repository includes two read-only diagnostics:
 
@@ -232,8 +232,8 @@ python scripts/probe_inheritance_paging.py `
 
 The first is offline-only and prints wrapper/plain/absent counts per archived page. The second performs GET requests only and prints response-shape counts, never object values, names, refs or continuation tokens. Add `--compare-reassert-inheritance` only when explicitly testing whether reasserting `_inheritance=True` changes page-2 response shape.
 
-Deterministic Network/Range fingerprints are implemented **only after** the updated collector passes the full regression suite and a fresh real-LAB collection confirms the corrected multi-page effective evidence. Unresolved values must not enter future fingerprints.
+A fresh real-LAB collection confirmed the corrected multi-page effective evidence, enabling the deterministic follow-on implementation documented in [Profile fingerprint v1](profile-fingerprint-v1.md). Unresolved core values remain outside normal fingerprints.
 
-Readiness is still not profile usefulness. An input may be 100% resolved and invariant (for example, explicitly not configured everywhere) and therefore READY but non-discriminative for a future fingerprint. Usefulness metrics are intentionally deferred.
+Readiness is still not profile usefulness. An input may be 100% resolved and invariant (for example, explicitly not configured everywhere) and therefore READY but non-discriminative. The follow-on `Profile_Usefulness` view reports deterministic variability metrics without converting them into a weighted quality score.
 
-This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, usefulness score, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
+Neither readiness nor fingerprint discovery infers targets, automatic standards, compliance, semantic profile names or remediation. Appliance configuration remains unchanged.
