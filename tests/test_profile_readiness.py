@@ -392,6 +392,31 @@ def test_functional_value_proof_accepts_same_value_from_different_sources():
     assert {row["source_level"] for row in rows} == {"Grid", "Network"}
 
 
+def test_functional_option_value_proof_accepts_same_value_from_different_sources():
+    result = _collection(networks=1)
+    result.records["network"][0]["options"] = [
+        {"num": 51, "value": "3600", "use_option": True}
+    ]
+    first = _option("network", 0, value="3600")
+    second = deepcopy(first)
+    second.update({
+        "source_level": "Network", "source_ref": "network/LAB/0",
+        "configured_here": True, "inherited": False,
+    })
+    rows = [first, second]
+    standardization = build_standardization([result], result.coverage, [], rows, {})
+    standard_row = next(row for row in standardization if row["Parameter ID"] == "dhcp.lease_time.network")
+    assert standard_row["Confirmed Objects"] == 0
+
+    item = _find(build_profile_readiness(
+        standardization, (_spec("dhcp.lease_time.network"),),
+        results=[result], scalars=[], options=rows,
+    ), "dhcp.lease_time.network")
+    assert item["Confirmed Objects"] == 1
+    assert item["Resolved Evidence %"] == 100.0
+    assert item["Readiness"] == "READY"
+
+
 def test_functional_value_proof_keeps_conflicting_values_unresolved():
     result = _collection(networks=1)
     result.records["network"][0]["members"] = ["m1"]
