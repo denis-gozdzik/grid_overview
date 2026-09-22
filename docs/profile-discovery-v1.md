@@ -49,7 +49,7 @@ Resolved Evidence % =
     (Confirmed Objects + Explicit Not Configured) / Population Objects * 100
 ```
 
-Only explicit parameter evidence counts as `NOT_CONFIGURED`. A missing normalized scalar row remains unresolved. For the bounded assessed DHCP option set, one additional authoritative case is allowed: when a Network/Range `_inheritance=True` response contains a fully recognized effective `options` group structure, an assessed option absent from every returned group is recorded as explicit `NOT_CONFIGURED`. Malformed, plain/unwrapped, or empty option responses never trigger this inference.
+Only explicit parameter evidence counts as `NOT_CONFIGURED`. A missing normalized scalar row remains unresolved. For the bounded assessed DHCP option set, one additional authoritative case is allowed **inside Profile Input Readiness only**: when a Network/Range `_inheritance=True` response contains a fully recognized effective `options` group structure, an assessed option absent from every returned group counts as explicit `NOT_CONFIGURED` for readiness accounting. The normalized `DHCP_Options` evidence remains unchanged and contains no synthetic absence rows. Malformed, plain/unwrapped, or empty option responses never trigger this inference.
 
 Confirmed Value % alone is insufficient because an explicit not-configured state is also usable evidence.
 
@@ -106,7 +106,7 @@ Readiness consumes the final parameter-aware Collection Status. Existing Standar
 
 ## Network Profile v1 candidates
 
-Each row is a Network-scoped input. The gateway row has semantic role `DERIVED_LATER`; all others are `DIRECT`.
+Each row is a Network-scoped input. The gateway row has semantic role `DERIVED_LATER`; `pxe.lease_enabled` is `COMPOSITE_LATER`; the remaining inputs are `DIRECT`.
 
 | Input | Source parameter ID |
 | --- | --- |
@@ -134,7 +134,7 @@ Each row is a Network-scoped input. The gateway row has semantic role `DERIVED_L
 
 ## Range Profile v1 candidates
 
-Each row is a Range-scoped input. The gateway row has semantic role `DERIVED_LATER`; all others are `DIRECT`.
+Each row is a Range-scoped input. The gateway row has semantic role `DERIVED_LATER`; `pxe.lease_enabled` is `COMPOSITE_LATER`; the remaining inputs are `DIRECT`.
 
 | Input | Source parameter ID |
 | --- | --- |
