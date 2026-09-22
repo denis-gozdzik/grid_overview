@@ -513,10 +513,12 @@ def test_range_authoritative_option_absence_counts_as_explicit_not_configured_fo
         records={"range": [{
             "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
             "network": "10.0.0.0/24", "network_view": "default",
+            "server_association_type": "MEMBER",
         }]},
         effective_records={"range": [{
             "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
             "network": "10.0.0.0/24", "network_view": "default",
+            "server_association_type": "MEMBER",
             "options": [{"inherited": True, "source": "grid:dhcpproperties/LAB", "values": [
                 {"num": 51, "name": "dhcp-lease-time", "value": "14400"},
             ]}],
@@ -532,7 +534,7 @@ def test_range_authoritative_option_absence_counts_as_explicit_not_configured_fo
         standardization, (_spec("dhcp.ntp_servers.range"),),
         results=[result], scalars=[], options=options,
     ), "dhcp.ntp_servers.range")
-    assert item["Population Basis"] == "ALL_RANGES"
+    assert item["Population Basis"] == "DHCP_ASSOCIATED_RANGES"
     assert item["Population Objects"] == 1
     assert item["Confirmed Objects"] == 0
     assert item["Explicit Not Configured"] == 1
