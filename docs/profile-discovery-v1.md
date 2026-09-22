@@ -37,9 +37,34 @@ A Network enters this candidate population when at least one currently collected
 
 These signals identify candidate DHCP-relevant Networks; they do **not** prove service activation or define an approved standard. `Profile_Readiness` retains both `Source Population Objects` (all Networks in scoped Standardization) and the profile-specific `Population Objects` denominator.
 
-Range Profile v1 continues to use `ALL_RANGES`.
+Range Profile v1 is segmented by RAW `server_association_type` before parameter readiness is calculated. The descriptive segments are `MS_SERVER`, `MEMBER`, `FAILOVER`, `NONE`, `OTHER` and `UNKNOWN`. Null/empty association evidence is `NONE`; unexpected non-empty values remain `OTHER`/ `UNKNOWN` and are preserved in `Profile_Populations` rather than coerced into a known class.
+
+Range parameter families use different evidence-backed denominators:
+
+- option-based effective DHCP inputs use `DHCP_ASSOCIATED_RANGES` = MEMBER + FAILOVER + MS_SERVER;
+- Infoblox scalar inputs use `INFOBLOX_MANAGED_RANGES` = MEMBER + FAILOVER;
+- an MS_SERVER Range is added to a scalar parameter's applicable population only when that scalar has authoritative COMPLETE or explicit NOT_CONFIGURED evidence from WAPI;
+- `NONE` is retained as a visible segment and is not silently treated as an evidence failure or deviation.
+
+`MS_SERVER` means externally managed for the purpose of applicability; it does **not** mean `NOT_CONFIGURED`.
 
 If Networks exist but no DHCP-relevant candidate can be established from the available evidence, readiness is `NOT_READY`, not `NOT_APPLICABLE`.
+
+## Functional value proof vs source proof
+
+Profile readiness now separates the effective functional value from inheritance/source provenance. For one object and parameter, multiple COMPLETE non-multisource rows count as one confirmed functional value when every row resolves to the same `effective_value`, even if `source_level`, `source_ref`, `configured_here` or `inherited` differ.
+
+Example:
+
+```text
+Grid    -> 7200
+Network -> 7200
+```
+
+For a future functional profile this is one confirmed value: `7200`. The different source observations remain intact in normalized technical evidence for a future inheritance/source profile.
+
+Two or more distinct effective values remain unresolved/conflicting. Any `multisource=True` observation remains conservative and is not promoted to a confirmed functional value. This new proof is local to Profile Readiness/Profile Discovery; Standardization keeps its existing source-sensitive semantics.
+
 ## Evidence and classification
 
 The primary metric is **Resolved Evidence %**, with the scope's **Population Objects** as its denominator:
@@ -161,9 +186,9 @@ No Range DDNS TTL, fixed-address-update or option-81 parameter is invented: thos
 
 ## Workbook and summary
 
-`Profile_Readiness` follows `Overview`, before `Standardization`, `Decisions`, `Exceptions`, `Grid_Comparison`, `Coverage` and `Manual_Review`. Existing evidence sheets and Overview links to Standardization are retained. The new sheet uses the existing safe table-writing utilities, without overlapping worksheet and table AutoFilters.
+`Profile_Readiness` follows `Overview`, followed by `Profile_Populations`, then `Standardization`, `Decisions`, `Exceptions`, `Grid_Comparison`, `Coverage` and `Manual_Review`. `Profile_Populations` gives descriptive Network and Range population/segment counts and shares without compliance labels. Existing evidence sheets and Overview links to Standardization are retained. The sheets use the existing safe table-writing utilities, without overlapping worksheet and table AutoFilters.
 
-Each input row exposes its profile, identity, semantic role and source parameter alongside required-field status, population, query counts and coverage, confirmed and explicit not-configured counts, resolved and unresolved percentages, collection/evidence statuses, readiness and reason.
+Each input row exposes its profile, identity, semantic role and source parameter alongside required-field status, source population, parameter-applicable population, `Excluded By Applicability`, query counts and coverage, confirmed and explicit not-configured counts, resolved and unresolved percentages, collection/evidence statuses, readiness and reason. Excluded objects are not re-labeled as NOT_CONFIGURED.
 
 A compact Overview summary reports each profile's candidate count and counts of `READY`, `CONDITIONAL`, `NOT_READY`, `DEFERRED` and `NOT_APPLICABLE` inputs, with a drill-down to the matrix. The aggregate **Ready input %** means:
 
@@ -181,9 +206,9 @@ These items are documented only as `FUTURE_PROFILE_INPUT`; they have no fabricat
 
 | Future input | Current limit |
 | --- | --- |
-| Range `server_association_type` | No scope-specific Standardization parameter |
-| Range `member` association | No scope-specific Standardization parameter |
-| Range `failover_association` | No scope-specific Standardization parameter |
+| Range `server_association_type` as a fingerprint field | Population segmentation is implemented; fingerprint semantics remain deferred |
+| Range `member` association | Collected context; not yet a fingerprint field |
+| Range `failover_association` | Collected context; not yet a fingerprint field |
 | EA / organizational context | Deferred; no EA correlation in this increment |
 | Naming / organizational context | Deferred; no naming-pattern detection in this increment |
 
@@ -209,4 +234,6 @@ The first is offline-only and prints wrapper/plain/absent counts per archived pa
 
 Deterministic Network/Range fingerprints are implemented **only after** the updated collector passes the full regression suite and a fresh real-LAB collection confirms the corrected multi-page effective evidence. Unresolved values must not enter future fingerprints.
 
-This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
+Readiness is still not profile usefulness. An input may be 100% resolved and invariant (for example, explicitly not configured everywhere) and therefore READY but non-discriminative for a future fingerprint. Usefulness metrics are intentionally deferred.
+
+This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, usefulness score, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
