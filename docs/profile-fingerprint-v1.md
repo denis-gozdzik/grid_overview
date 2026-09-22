@@ -1,6 +1,6 @@
 # Profile fingerprint v1 design
 
-This document defines the next deterministic profile-discovery layer. It is based on the existing Profile Input Readiness model and validation against the saved `lan-full5` LAB RAW archive. The observed counts below are validation evidence only; they are not constants, standards, or compliance thresholds.
+This document defines the deterministic profile-discovery v1 layer implemented in `src/infoblox_inventory/profile_discovery.py`. It is based on the existing Profile Input Readiness model and validation against the saved `lan-full5` LAB RAW archive. The observed counts below are validation evidence only; they are not constants, standards, or compliance thresholds.
 
 ## Purpose
 
@@ -308,4 +308,11 @@ Do not add yet:
 - remediation generation;
 - attempts to resolve the two MEMBER Range PXE scalar wrappers without authoritative WAPI evidence.
 
-The next implementation increment should add deterministic usefulness reporting and exact core fingerprint generation according to this document.
+The implementation produces four workbook views:
+
+- `Profile_Usefulness`: deterministic evidence variability metrics without a weighted score;
+- `Profile_Fingerprints`: exact recurring core-profile definitions, stable IDs, prevalence and bounded feature-overlay distributions;
+- `Profile_Assignments`: object-to-profile mapping plus unresolved/not-applicable states;
+- `Profile_KPIs`: coverage, distinct-profile count, top-1/top-3 share, 80/90/95% coverage counts and singleton count.
+
+The implementation remains descriptive. It does not create approved standards, compliance states or remediation.
