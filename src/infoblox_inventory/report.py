@@ -556,7 +556,14 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
         _write_inventory_sheet(workbook, index, name, rows, headers,
-                               preserve_order=name == 'Profile_Readiness')
+                               preserve_order=name in {'Profile_Readiness', 'Profile_Populations'})
+        if name == 'Profile_Populations':
+            population_sheet = workbook[name]
+            population_headers = {cell.value: cell.column for cell in population_sheet[1]}
+            share_column = population_headers.get('Share %')
+            if share_column:
+                for row_number in range(2, population_sheet.max_row + 1):
+                    population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
             _style_decision_support(workbook[name], name)
     if results:
