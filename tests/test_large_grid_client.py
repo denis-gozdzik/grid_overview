@@ -236,7 +236,10 @@ def test_page_telemetry_retains_mode_and_size_when_continuation_has_only_token(
     assert pages == originals
     calls = api.session.get.call_args_list
     assert calls[0].kwargs["params"]["_max_results"] == 125
-    assert calls[1].kwargs["params"] == {"_page_id": "private-continuation-token"}
+    expected_continuation = {"_page_id": "private-continuation-token"}
+    if mode == "effective":
+        expected_continuation["_inheritance"] = True
+    assert calls[1].kwargs["params"] == expected_continuation
     logs = request_logs(caplog)
     assert len(logs) == 2
     for number, (record, count, elapsed) in enumerate(zip(logs, [1, 2], [1.25, 2.5]), 1):
