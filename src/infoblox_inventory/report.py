@@ -19,6 +19,7 @@ from .profile_readiness import (
     PROFILE_READINESS_HEADERS, PROFILE_SUMMARY_HEADERS,
     build_profile_readiness, profile_readiness_summary,
 )
+from .profile_population import PROFILE_POPULATION_HEADERS, profile_population_rows
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -365,7 +366,8 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
     sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
     cell = sheet.cell(note_row, 1,
                       'Ready Input % = READY inputs / applicable candidate inputs; DEFERRED semantic inputs are excluded; '
-                      'this is not object coverage. Network readiness uses DHCP-relevant candidate Networks rather than every IPAM Network. '
+                      'this is not object coverage. Network readiness uses DHCP-relevant candidate Networks; '
+                      'Range readiness uses parameter-applicable association populations. '
                       'READY means usable evidence for future profile discovery, not an approved standard or configuration compliance.')
     cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
     cell.alignment = Alignment(wrap_text=True, vertical='center')
@@ -458,6 +460,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         standardization, results=results, scalars=all_scalars, options=all_options
     )
     profile_summaries = profile_readiness_summary(profile_readiness)
+    profile_populations = profile_population_rows(results)
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -469,6 +472,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
         "Profile_Readiness": profile_readiness,
+        "Profile_Populations": profile_populations,
         "Standardization": standardization_excel,
         "Decisions": decisions_excel,
         "Exceptions": exceptions_excel,
@@ -506,6 +510,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     topology_rows = topology_excel_rows(topology_records)
     sheet_headers = {
         'Profile_Readiness': PROFILE_READINESS_HEADERS,
+        'Profile_Populations': PROFILE_POPULATION_HEADERS,
         'Standardization': STANDARDIZATION_HEADERS,
         'Decisions': DECISION_HEADERS,
         'Exceptions': EXCEPTION_HEADERS,
