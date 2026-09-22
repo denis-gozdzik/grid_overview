@@ -35,12 +35,13 @@ RANGE_IDS = {
 }
 HEADERS = [
     "Profile", "Input Key", "Input", "Semantic Role", "Parameter ID", "Scope",
+    "Population Basis", "Source Population Objects",
     "Required Field", "Required Field Status", "Population Objects", "Query Evidence Objects",
     "Query Coverage %", "Collection Status", "Confirmed Objects", "Confirmed Value %",
     "Explicit Not Configured", "Resolved Evidence %", "Unresolved Objects", "Unresolved %",
     "Evidence Status", "Readiness", "Readiness Reason",
 ]
-EVIDENCE_HEADERS = HEADERS[6:19]
+EVIDENCE_HEADERS = HEADERS[8:21]
 
 
 def _spec(parameter_id="pxe.bootserver.network"):
@@ -135,8 +136,12 @@ def test_gateway_is_marked_for_later_derivation_without_transforming_evidence():
         item = _spec(f"dhcp.router.{scope}")
         assert item.input_key == "gateway_convention"
         assert item.semantic_role == "DERIVED_LATER"
+    for scope in ("network", "range"):
+        item = _spec(f"pxe.lease_enabled.{scope}")
+        assert item.semantic_role == "COMPOSITE_LATER"
     assert all(item.semantic_role == "DIRECT" for item in PROFILE_INPUT_SPECS
-               if not item.source_parameter_id.startswith("dhcp.router."))
+               if not item.source_parameter_id.startswith("dhcp.router.")
+               and not item.source_parameter_id.startswith("pxe.lease_enabled."))
 
 
 def test_profile_input_spec_is_immutable():
@@ -148,6 +153,18 @@ def test_profile_input_model_defaults_to_direct_semantics():
     item = ProfileInputSpec("Network Profile v1", "example", "Example",
                             "pxe.bootserver.network", "Network")
     assert item.semantic_role == "DIRECT"
+
+
+def test_composite_later_input_is_deferred_and_excluded_from_applicable_rate():
+    spec = _spec("pxe.lease_enabled.network")
+    row = build_profile_readiness([_evidence(spec.source_parameter_id)], (spec,))[0]
+    assert row["Readiness"] == "DEFERRED"
+    assert "composite" in row["Readiness Reason"].lower()
+    summary = profile_readiness_summary([row])[0]
+    assert summary["Candidate Inputs"] == 1
+    assert summary["Applicable Inputs"] == 0
+    assert summary["DEFERRED"] == 1
+    assert summary["Ready Input %"] is None
 
 
 def test_127_confirmed_plus_three_explicit_not_configured_are_fully_ready():
@@ -307,6 +324,45 @@ def test_normalized_range_evidence_distinguishes_explicit_absence_from_missing_r
     assert item["Resolved Evidence %"] == (100.0 if not_configured else 97.7)
     assert item["Unresolved Objects"] == (0 if not_configured else 3)
     assert item["Readiness"] == "READY"
+
+
+def test_network_profile_object_level_readiness_uses_only_dhcp_relevant_candidates():
+    result = _collection(networks=4)
+    result.records["network"][0].update({"members": ["m1"], "network": "10.0.0.0/24", "network_view": "default"})
+    result.records["network"][1].update({"network": "10.0.1.0/24", "network_view": "default"})
+    result.records["network"][2].update({"network": "10.0.2.0/24", "network_view": "default", "use_options": True})
+    result.records["network"][3].update({"network": "10.0.3.0/24", "network_view": "default"})
+    result.records["range"] = [{"_ref": "range/LAB/0", "network": "10.0.1.0/24", "network_view": "default"}]
+    result.effective_records["network"] = deepcopy(result.records["network"])
+    result.coverage.extend([_coverage("range", 1, "raw"), _coverage("range", 1)])
+
+    rows = [_scalar("network", 0), _scalar("network", 1), _scalar("network", 2)]
+    standardization = build_standardization([result], result.coverage, rows, [], {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.network"),),
+        results=[result], scalars=rows, options=[],
+    ), "pxe.bootserver.network")
+
+    assert item["Population Basis"] == "DHCP_RELEVANT_NETWORK_CANDIDATES"
+    assert item["Source Population Objects"] == 4
+    assert item["Population Objects"] == 3
+    assert item["Query Evidence Objects"] == 3
+    assert item["Confirmed Objects"] == 3
+    assert item["Resolved Evidence %"] == 100.0
+    assert item["Readiness"] == "READY"
+
+
+def test_empty_network_candidate_population_is_not_treated_as_no_networks_in_scope():
+    result = _collection(networks=2)
+    standardization = build_standardization([result], result.coverage, [], [], {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("pxe.bootserver.network"),),
+        results=[result], scalars=[], options=[],
+    ), "pxe.bootserver.network")
+    assert item["Source Population Objects"] == 2
+    assert item["Population Objects"] == 0
+    assert item["Readiness"] == "NOT_READY"
+    assert "no dhcp-relevant" in item["Readiness Reason"].lower()
 
 
 def test_no_normalized_parameter_rows_does_not_mean_not_configured():
