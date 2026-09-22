@@ -89,7 +89,7 @@ def test_network_exact_core_fingerprints_are_stable_and_not_prevalence_ids():
     assert network_kpi["Applicable Objects"] == 3
     assert network_kpi["Profiled Objects"] == 3
     assert network_kpi["Distinct Profiles"] == 2
-    assert network_kpi["Top-1 Share %"] == 66.7
+    assert network_kpi["Top-1 Share of Profiled %"] == 66.7
 
     reversed_fps, reversed_assignments, _ = build_profile_fingerprints(
         [result], [], list(reversed(options))
