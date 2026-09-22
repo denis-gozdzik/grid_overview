@@ -19,21 +19,6 @@ _SOURCE_LEVELS = {
 }
 
 
-# Bounded option set used by current standardization/profile analysis. WAPI
-# cannot enumerate an infinite DHCP option universe as explicit "not configured"
-# rows, so absence inference is limited to the options we actually assess.
-_ASSESSED_DHCP_OPTIONS: dict[int, str] = {
-    3: "routers",
-    6: "domain-name-servers",
-    15: "domain-name",
-    42: "ntp-servers",
-    51: "dhcp-lease-time",
-    66: "tftp-server-name",
-    67: "bootfile-name",
-    119: "domain-search",
-}
-
-
 def parse_source_ref(source_ref: Any) -> dict[str, Any]:
     """Keep the original ref; decode only the human-readable suffix when present."""
     source = {"source_ref": deepcopy(source_ref), "source_level": "UNKNOWN",
@@ -170,34 +155,6 @@ def _plain_options(value: Any) -> list[dict[str, Any]]:
     return [item for item in value if isinstance(item, dict) and not _is_wrapper(item)]
 
 
-def _authoritative_option_keys(value: Any) -> set[tuple[str, str]] | None:
-    """Return effective option keys only for a fully recognized inheritance shape.
-
-    A non-empty list of inheritance groups with list-valued values is treated
-    as an authoritative effective option set. Any malformed/plain item makes the
-    shape non-authoritative, so absence is never inferred from ambiguous WAPI data.
-    """
-    if not isinstance(value, list) or not value:
-        return None
-    keys: set[tuple[str, str]] = set()
-    for group in value:
-        if not _is_wrapper(group):
-            return None
-        if "values" not in group:
-            if group.get("source") == "NOT_DEFINED":
-                values = []
-            else:
-                return None
-        else:
-            values = group.get("values")
-        if not isinstance(values, list):
-            return None
-        for option in values:
-            if not isinstance(option, dict):
-                return None
-            keys.add(_option_key(option))
-    return keys
-
 def _sort_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: tuple(str(row.get(key, "")) for key in
                   ("grid", "object_type", "object_ref", "parameter", "vendor_class", "option_number", "source_ref")))
@@ -235,7 +192,6 @@ def normalize_options(
             rows[-1]["inheritance_details"] = deepcopy(payload)
 
         options = effective.get("options")
-        authoritative_keys = _authoritative_option_keys(options)
         if isinstance(options, list):
             for group in options:
                 if not _is_wrapper(group):
@@ -255,24 +211,6 @@ def normalize_options(
                     emit_unknown(group)
         elif options is not None:
             emit_unknown(options)
-
-        # For Network/Range only, a fully recognized effective inheritance
-        # option set is authoritative for the bounded options we assess. If an
-        # assessed DHCP option is absent from every returned group, record an
-        # explicit NOT_CONFIGURED state instead of treating the missing row as
-        # unresolved. This is never applied to malformed/unwrapped responses.
-        if object_type in {"network", "range"} and authoritative_keys is not None:
-            for number, name in _ASSESSED_DHCP_OPTIONS.items():
-                key = ("DHCP", str(number))
-                if key in authoritative_keys or key in used:
-                    continue
-                absence = {
-                    "source": "NOT_DEFINED",
-                    "multisource": False,
-                    "absence_in_authoritative_options": True,
-                }
-                emit({"name": name, "num": number, "vendor_class": "DHCP"}, absence)
-
         if object_type == ROOT_DHCP_OBJECT:
             # Grid DHCP properties is the root; it has no parent override relationship.
             for option in _plain_options(options if options is not None else raw.get("options")):
