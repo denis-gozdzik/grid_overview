@@ -45,8 +45,9 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
     assert validated['sheet_rows']['Profile_Readiness'] == 39
     workbook = load_workbook(report_path)
     try:
-        assert workbook.sheetnames[:9] == [
-            'Overview', 'Profile_Readiness', 'Profile_Populations', 'Standardization',
+        assert workbook.sheetnames[:13] == [
+            'Overview', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+            'Profile_Discovery', 'Profiles', 'Profile_Objects', 'Standardization',
             'Decisions', 'Exceptions', 'Grid_Comparison', 'Coverage', 'Manual_Review',
         ]
         sheet = workbook['Profile_Readiness']
@@ -72,6 +73,16 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
                    for row in population_rows)
         assert any(row['Population Basis'] == 'DHCP_RELEVANT_NETWORK_CANDIDATES'
                    and row['Object Count'] == 1 for row in population_rows)
+        assert len(_rows(workbook['Profile_Usefulness'])) == 39
+        discovery = _rows(workbook['Profile_Discovery'])
+        assert {row['Profile Type'] for row in discovery} == {'Network', 'Range'}
+        network = next(row for row in discovery if row['Profile Type'] == 'Network')
+        assert network['Applicable Objects'] == network['Profiled Objects'] == 1
+        assert network['Distinct Profiles'] == 1
+        assert len(_rows(workbook['Profiles'])) == 1
+        assignments = _rows(workbook['Profile_Objects'])
+        assert len(assignments) == 1
+        assert assignments[0]['Profile Status'] == 'PROFILED'
     finally:
         workbook.close()
 
