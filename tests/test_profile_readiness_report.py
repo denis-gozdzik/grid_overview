@@ -45,9 +45,9 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
     assert validated['sheet_rows']['Profile_Readiness'] == 39
     workbook = load_workbook(report_path)
     try:
-        assert workbook.sheetnames[:8] == [
-            'Overview', 'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions',
-            'Grid_Comparison', 'Coverage', 'Manual_Review',
+        assert workbook.sheetnames[:9] == [
+            'Overview', 'Profile_Readiness', 'Profile_Populations', 'Standardization',
+            'Decisions', 'Exceptions', 'Grid_Comparison', 'Coverage', 'Manual_Review',
         ]
         sheet = workbook['Profile_Readiness']
         assert [cell.value for cell in sheet[1]] == list(PROFILE_READINESS_HEADERS)
@@ -64,8 +64,14 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
         assert sheet.auto_filter.ref is None
         assert len(sheet.tables) == 1
         table = next(iter(sheet.tables.values()))
-        assert table.autoFilter.ref == table.ref == 'A1:W40'
+        assert table.autoFilter.ref == table.ref == 'A1:X40'
         assert all(cell.data_type != 'f' for row in sheet for cell in row)
+        populations = workbook['Profile_Populations']
+        population_rows = _rows(populations)
+        assert any(row['Population Basis'] == 'ALL_NETWORKS' and row['Object Count'] == 1
+                   for row in population_rows)
+        assert any(row['Population Basis'] == 'DHCP_RELEVANT_NETWORK_CANDIDATES'
+                   and row['Object Count'] == 1 for row in population_rows)
     finally:
         workbook.close()
 
