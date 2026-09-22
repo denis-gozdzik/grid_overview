@@ -6,6 +6,7 @@ from dataclasses import FrozenInstanceError, replace
 import pytest
 
 from infoblox_inventory.models import CollectionResult
+from infoblox_inventory.normalize import normalize_options
 from infoblox_inventory.profile_readiness import (
     PROFILE_INPUT_SPECS,
     ProfileInputSpec,
@@ -363,6 +364,104 @@ def test_empty_network_candidate_population_is_not_treated_as_no_networks_in_sco
     assert item["Population Objects"] == 0
     assert item["Readiness"] == "NOT_READY"
     assert "no dhcp-relevant" in item["Readiness Reason"].lower()
+
+
+def test_range_authoritative_option_absence_counts_as_explicit_not_configured_for_readiness_only():
+    ref = "range/LAB/0"
+    result = CollectionResult(
+        grid="LAB",
+        records={"range": [{
+            "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
+            "network": "10.0.0.0/24", "network_view": "default",
+        }]},
+        effective_records={"range": [{
+            "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
+            "network": "10.0.0.0/24", "network_view": "default",
+            "options": [{"inherited": True, "source": "grid:dhcpproperties/LAB", "values": [
+                {"num": 51, "name": "dhcp-lease-time", "value": "14400"},
+            ]}],
+        }]},
+        schemas={"range": {"fields": [{"name": "options", "overridden_by": "use_options"}]}},
+        coverage=[_coverage("range", 1, "raw"), _coverage("range", 1)],
+    )
+    options = normalize_options(
+        result.grid, "", "2.13.7", result.records, result.effective_records, result.schemas
+    )
+    standardization = build_standardization([result], result.coverage, [], options, {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("dhcp.ntp_servers.range"),),
+        results=[result], scalars=[], options=options,
+    ), "dhcp.ntp_servers.range")
+    assert item["Population Basis"] == "ALL_RANGES"
+    assert item["Population Objects"] == 1
+    assert item["Confirmed Objects"] == 0
+    assert item["Explicit Not Configured"] == 1
+    assert item["Resolved Evidence %"] == 100.0
+    assert item["Readiness"] == "READY"
+    assert not any(row["option_number"] == 42 and row["status"] == "NOT_CONFIGURED" for row in options)
+
+
+def test_plain_effective_options_do_not_prove_absence_for_readiness():
+    ref = "range/LAB/0"
+    result = CollectionResult(
+        grid="LAB",
+        records={"range": [{
+            "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
+            "network": "10.0.0.0/24", "network_view": "default",
+        }]},
+        effective_records={"range": [{
+            "_ref": ref, "start_addr": "10.0.0.10", "end_addr": "10.0.0.20",
+            "network": "10.0.0.0/24", "network_view": "default",
+            "options": [{"num": 51, "name": "dhcp-lease-time", "value": "14400"}],
+        }]},
+        schemas={"range": {"fields": [{"name": "options", "overridden_by": "use_options"}]}},
+        coverage=[_coverage("range", 1, "raw"), _coverage("range", 1)],
+    )
+    options = normalize_options(
+        result.grid, "", "2.13.7", result.records, result.effective_records, result.schemas
+    )
+    standardization = build_standardization([result], result.coverage, [], options, {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("dhcp.ntp_servers.range"),),
+        results=[result], scalars=[], options=options,
+    ), "dhcp.ntp_servers.range")
+    assert item["Explicit Not Configured"] == 0
+    assert item["Unresolved Objects"] == 1
+    assert item["Readiness"] == "NOT_READY"
+
+
+def test_network_authoritative_option_absence_uses_dhcp_candidate_population():
+    ref = "network/LAB/0"
+    raw = {
+        "_ref": ref, "network": "10.0.0.0/24", "network_view": "default",
+        "options": [{"num": 51, "name": "dhcp-lease-time", "value": "3600", "use_option": True}],
+    }
+    effective = {
+        "_ref": ref, "network": "10.0.0.0/24", "network_view": "default",
+        "options": [{"inherited": False, "source": "", "values": [
+            {"num": 51, "name": "dhcp-lease-time", "value": "3600"},
+        ]}],
+    }
+    result = CollectionResult(
+        grid="LAB",
+        records={"network": [raw], "range": []},
+        effective_records={"network": [effective], "range": []},
+        schemas={"network": {"fields": [{"name": "options", "overridden_by": "use_options"}]}},
+        coverage=[_coverage("network", 1, "raw"), _coverage("network", 1)],
+    )
+    options = normalize_options(
+        result.grid, "", "2.13.7", result.records, result.effective_records, result.schemas
+    )
+    standardization = build_standardization([result], result.coverage, [], options, {})
+    item = _find(build_profile_readiness(
+        standardization, (_spec("dhcp.ntp_servers.network"),),
+        results=[result], scalars=[], options=options,
+    ), "dhcp.ntp_servers.network")
+    assert item["Population Basis"] == "DHCP_RELEVANT_NETWORK_CANDIDATES"
+    assert item["Source Population Objects"] == 1
+    assert item["Population Objects"] == 1
+    assert item["Explicit Not Configured"] == 1
+    assert item["Readiness"] == "READY"
 
 
 def test_no_normalized_parameter_rows_does_not_mean_not_configured():
