@@ -191,6 +191,21 @@ def test_130_objects_with_90_percent_resolved_are_conditional():
     assert row["Readiness"] == "CONDITIONAL"
 
 
+def test_rounded_95_percent_display_does_not_promote_9495_percent_to_ready():
+    evidence = _evidence(population=2000, confirmed=1899, not_configured=0, evidence="PARTIAL")
+    assert evidence["Resolved Evidence %"] == 95.0
+    row = _one(evidence)
+    assert row["Readiness"] == "CONDITIONAL"
+    assert "95.0%" in row["Readiness Reason"]
+
+
+def test_exact_95_percent_boundary_is_ready():
+    evidence = _evidence(population=2000, confirmed=1900, not_configured=0, evidence="PARTIAL")
+    assert evidence["Resolved Evidence %"] == 95.0
+    row = _one(evidence)
+    assert row["Readiness"] == "READY"
+
+
 @pytest.mark.parametrize(("field", "status", "reason_hint"), [
     ("Collection Status", "ERROR", "error"),
     ("Collection Status", "PARTIAL", "partial"),
@@ -209,14 +224,25 @@ def test_hard_blockers_override_99_percent_resolved_evidence(field, status, reas
     assert reason_hint in row["Readiness Reason"].lower()
 
 
-@pytest.mark.parametrize("collection", ["COMPLETE", "EMPTY", "PARTIAL", "ERROR", "UNKNOWN"])
-def test_zero_population_is_not_applicable_even_when_other_statuses_block(collection):
+@pytest.mark.parametrize("collection", ["COMPLETE", "EMPTY"])
+def test_zero_population_is_not_applicable_only_when_collection_confirms_empty_scope(collection):
     evidence = _evidence(population=0, confirmed=0, not_configured=0,
                          collection=collection, evidence="ERROR")
     row = _one(evidence)
     assert row["Readiness"] == "NOT_APPLICABLE"
     assert row["Resolved Evidence %"] is None
     assert "no objects" in row["Readiness Reason"].lower()
+
+
+@pytest.mark.parametrize("collection", ["PARTIAL", "ERROR", "UNKNOWN"])
+def test_zero_population_after_incomplete_collection_is_not_ready(collection):
+    evidence = _evidence(population=0, confirmed=0, not_configured=0,
+                         collection=collection, evidence="ERROR")
+    row = _one(evidence)
+    assert row["Readiness"] == "NOT_READY"
+    assert row["Resolved Evidence %"] is None
+    assert "population could not be established" in row["Readiness Reason"].lower()
+    assert collection.lower() in row["Readiness Reason"].lower()
 
 
 @pytest.mark.parametrize(("field", "value"), [
@@ -236,6 +262,18 @@ def test_invalid_or_unknown_metrics_cannot_be_ready(field, value):
     row = _one(evidence)
     assert row["Readiness"] == "NOT_READY"
     assert row["Readiness Reason"]
+
+
+@pytest.mark.parametrize(("confirmed", "not_configured"), [
+    (-1, 0), (0, -1), (131, 0), (100, 31), (True, 0), (0, True),
+])
+def test_invalid_resolved_object_counts_cannot_be_ready(confirmed, not_configured):
+    evidence = _evidence()
+    evidence["Confirmed Objects"] = confirmed
+    evidence["Explicit Not Configured"] = not_configured
+    row = _one(evidence)
+    assert row["Readiness"] == "NOT_READY"
+    assert "counts" in row["Readiness Reason"].lower()
 
 
 def test_missing_standardization_row_is_not_ready_with_unknown_population():
