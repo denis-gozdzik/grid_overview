@@ -53,8 +53,8 @@ PROFILE_ASSIGNMENT_HEADERS = [
 
 PROFILE_KPI_HEADERS = [
     "Profile", "Applicable Objects", "Profiled Objects", "Profiled %",
-    "Unresolved Profile Objects", "Unresolved %", "Distinct Profiles", "Top-1 Share %",
-    "Top-3 Share %", "Profiles for 80%", "Profiles for 90%", "Profiles for 95%",
+    "Unresolved Profile Objects", "Unresolved %", "Distinct Profiles", "Top-1 Share of Profiled %",
+    "Top-3 Share of Profiled %", "Profiles for 80%", "Profiles for 90%", "Profiles for 95%",
     "Singleton Profiles",
 ]
 
@@ -446,8 +446,8 @@ def build_profile_fingerprints(results: list[CollectionResult], scalars: list[di
             "Unresolved Profile Objects": unresolved,
             "Unresolved %": round(unresolved * 100.0 / applicable, 1) if applicable else None,
             "Distinct Profiles": len(counts),
-            "Top-1 Share %": round(counts[0] * 100.0 / profiled, 1) if counts and profiled else None,
-            "Top-3 Share %": round(sum(counts[:3]) * 100.0 / profiled, 1) if counts and profiled else None,
+            "Top-1 Share of Profiled %": round(counts[0] * 100.0 / profiled, 1) if counts and profiled else None,
+            "Top-3 Share of Profiled %": round(sum(counts[:3]) * 100.0 / profiled, 1) if counts and profiled else None,
             "Profiles for 80%": _profiles_for_threshold(counts, 80.0),
             "Profiles for 90%": _profiles_for_threshold(counts, 90.0),
             "Profiles for 95%": _profiles_for_threshold(counts, 95.0),
