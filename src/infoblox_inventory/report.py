@@ -20,6 +20,10 @@ from .profile_readiness import (
     build_profile_readiness, profile_readiness_summary,
 )
 from .profile_population import PROFILE_POPULATION_HEADERS, profile_population_rows
+from .profile_discovery import (
+    PROFILE_ASSIGNMENT_HEADERS, PROFILE_FINGERPRINT_HEADERS, PROFILE_KPI_HEADERS,
+    PROFILE_USEFULNESS_HEADERS, build_profile_discovery,
+)
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -414,10 +418,18 @@ def _style_decision_support(sheet, name: str) -> None:
             for header, column in header_map.items():
                 if header.endswith('%'):
                     sheet.cell(row, column).number_format = '0.0"%"'
-    if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+    if name in {
+        'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
+        'Profile_Assignments', 'Profile_KPIs', 'Standardization', 'Decisions',
+        'Exceptions', 'Grid_Comparison',
+    }:
         for column in sheet.columns:
             for cell in column:
                 cell.alignment = Alignment(vertical='top', wrap_text=True)
+        for header, column in header_map.items():
+            if isinstance(header, str) and header.endswith('%'):
+                for row in range(2, sheet.max_row + 1):
+                    sheet.cell(row, column).number_format = '0.0"%"'
     sheet.page_setup.orientation = 'landscape'
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
@@ -462,6 +474,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     )
     profile_summaries = profile_readiness_summary(profile_readiness)
     profile_populations = profile_population_rows(results)
+    profile_usefulness, profile_fingerprints, profile_assignments, profile_kpis = build_profile_discovery(
+        results, all_scalars, all_options, profile_readiness
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -474,6 +489,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     sheets = {
         "Profile_Readiness": profile_readiness,
         "Profile_Populations": profile_populations,
+        "Profile_Usefulness": profile_usefulness,
+        "Profile_Fingerprints": profile_fingerprints,
+        "Profile_Assignments": profile_assignments,
+        "Profile_KPIs": profile_kpis,
         "Standardization": standardization_excel,
         "Decisions": decisions_excel,
         "Exceptions": exceptions_excel,
@@ -512,6 +531,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     sheet_headers = {
         'Profile_Readiness': PROFILE_READINESS_HEADERS,
         'Profile_Populations': PROFILE_POPULATION_HEADERS,
+        'Profile_Usefulness': PROFILE_USEFULNESS_HEADERS,
+        'Profile_Fingerprints': PROFILE_FINGERPRINT_HEADERS,
+        'Profile_Assignments': PROFILE_ASSIGNMENT_HEADERS,
+        'Profile_KPIs': PROFILE_KPI_HEADERS,
         'Standardization': STANDARDIZATION_HEADERS,
         'Decisions': DECISION_HEADERS,
         'Exceptions': EXCEPTION_HEADERS,
@@ -557,7 +580,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
         _write_inventory_sheet(workbook, index, name, rows, headers,
-                               preserve_order=name in {'Profile_Readiness', 'Profile_Populations'})
+                               preserve_order=name in {
+                                   'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+                                   'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
+                               })
         if name == 'Profile_Populations':
             population_sheet = workbook[name]
             population_headers = {cell.value: cell.column for cell in population_sheet[1]}
@@ -565,7 +591,11 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             if share_column:
                 for row_number in range(2, population_sheet.max_row + 1):
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
-        if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+        if name in {
+            'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
+            'Profile_Assignments', 'Profile_KPIs', 'Standardization', 'Decisions',
+            'Exceptions', 'Grid_Comparison',
+        }:
             _style_decision_support(workbook[name], name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
