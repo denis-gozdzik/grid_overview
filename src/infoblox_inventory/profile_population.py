@@ -151,6 +151,8 @@ def range_association_segment(record: dict[str, Any]) -> tuple[str, str]:
     The normalized segment drives applicability. The second element preserves
     the original non-empty value for descriptive evidence when it is unknown.
     """
+    if "server_association_type" not in record:
+        return RANGE_SEGMENT_UNKNOWN, ""
     value = record.get("server_association_type")
     if value is None:
         return RANGE_SEGMENT_NONE, ""
