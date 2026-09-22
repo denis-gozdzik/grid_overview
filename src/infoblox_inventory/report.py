@@ -333,7 +333,8 @@ def _wire_overview_standardization_links(workbook: Workbook, link_targets: dict[
                                    location=f"'Standardization'!A{target_rows[parameter_id]}")
 
 
-def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str, Any]]) -> None:
+def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str, Any]],
+                                    kpis: list[dict[str, Any]] | None = None) -> None:
     """Append input readiness without moving existing evidence or hotspot links."""
     sheet = workbook['Overview']
     matrix = workbook['Profile_Readiness']
@@ -377,7 +378,63 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
     cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
     cell.alignment = Alignment(wrap_text=True, vertical='center')
     sheet.row_dimensions[note_row].height = 30
-    sheet.print_area = f'A1:I{note_row}'
+
+    end_row = note_row
+    if kpis:
+        kpi_start = note_row + 2
+        _section_title(sheet, kpi_start, 1, 9, 'Observed profile discovery')
+        labels = [
+            'Profile', 'Applicable', 'Profiled', 'Profiled %', 'Distinct profiles',
+            'Top-1 share %', 'Top-3 share %', 'Singleton profiles', 'Profile details',
+        ]
+        for column, label in enumerate(labels, start=1):
+            cell = sheet.cell(kpi_start + 1, column, label)
+            cell.fill = PatternFill('solid', fgColor='D9EAF7')
+            cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
+            cell.alignment = Alignment(wrap_text=True, vertical='center')
+
+        kpi_sheet = workbook['Profile_KPIs']
+        kpi_profile_column = next(cell.column for cell in kpi_sheet[1] if cell.value == 'Profile')
+        kpi_targets = {
+            str(kpi_sheet.cell(row, kpi_profile_column).value): row
+            for row in range(2, kpi_sheet.max_row + 1)
+            if kpi_sheet.cell(row, kpi_profile_column).value
+        }
+        for row_number, item in enumerate(kpis, start=kpi_start + 2):
+            values = [
+                item.get('Profile'), item.get('Applicable Objects'), item.get('Profiled Objects'),
+                item.get('Profiled %'), item.get('Distinct Profiles'), item.get('Top-1 Share %'),
+                item.get('Top-3 Share %'), item.get('Singleton Profiles'),
+            ]
+            for column, value in enumerate(values, start=1):
+                cell = sheet.cell(row_number, column, _excel_text(value))
+                if isinstance(cell.value, str):
+                    cell.data_type = 's'
+                cell.alignment = Alignment(wrap_text=True, vertical='center')
+                cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+                if column in {4, 6, 7}:
+                    cell.number_format = '0.0"%"'
+            target = kpi_targets.get(str(item.get('Profile')))
+            link_cell = sheet.cell(row_number, 9, 'View profile KPIs')
+            if target is not None:
+                link_cell.hyperlink = Hyperlink(ref=link_cell.coordinate, location=f"'Profile_KPIs'!A{target}")
+                link_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+            link_cell.alignment = Alignment(wrap_text=True, vertical='center')
+            link_cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+
+        discovery_note = kpi_start + len(kpis) + 2
+        sheet.merge_cells(start_row=discovery_note, start_column=1, end_row=discovery_note, end_column=9)
+        cell = sheet.cell(
+            discovery_note, 1,
+            'Profile prevalence is descriptive current-state evidence. The most common fingerprint is not an approved standard; '
+            'objects with unresolved core inputs remain outside normal profiles.'
+        )
+        cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+        sheet.row_dimensions[discovery_note].height = 30
+        end_row = discovery_note
+
+    sheet.print_area = f'A1:I{end_row}'
 
 
 def _style_decision_support(sheet, name: str) -> None:
@@ -600,7 +657,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             _style_decision_support(workbook[name], name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
-        _write_overview_profile_summary(workbook, profile_summaries)
+        _write_overview_profile_summary(workbook, profile_summaries, profile_kpis)
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
