@@ -1,5 +1,5 @@
-import pytest
 """DHCP Network profile population must be evidence-backed and deterministic."""
+import pytest
 from infoblox_inventory.models import CollectionResult
 from infoblox_inventory.profile_population import (
     RANGE_SEGMENT_FAILOVER, RANGE_SEGMENT_MEMBER, RANGE_SEGMENT_MS_SERVER,
