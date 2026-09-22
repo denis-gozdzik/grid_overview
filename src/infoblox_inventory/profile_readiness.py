@@ -5,11 +5,17 @@ The existing Standardization rows remain the authority for evidence accounting.
 """
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
+import json
 import math
 from typing import Any, Iterable
 
+from .models import CollectionResult
+from .profile_population import (
+    NETWORK_POPULATION_BASIS, RANGE_POPULATION_BASIS,
+    dhcp_relevant_networks, effective_network_keys, normalized_network_key,
+)
 from .standardization import PARAMETER_SPECS, ParameterSpec
 
 
@@ -56,7 +62,7 @@ _PXE_INPUTS = (
     ("pxe.tftp_server_name", "pxe_tftp_server_name", "TFTP server name", "DIRECT"),
     ("pxe.bootfile_name_option", "pxe_bootfile_name_option", "Bootfile name (option 67)", "DIRECT"),
     ("pxe.lease_time", "pxe_lease_time", "PXE lease time", "DIRECT"),
-    ("pxe.lease_enabled", "pxe_lease_enabled", "PXE lease enabled", "DIRECT"),
+    ("pxe.lease_enabled", "pxe_lease_enabled", "PXE lease enabled", "COMPOSITE_LATER"),
 )
 
 
@@ -77,11 +83,12 @@ _EVIDENCE_HEADERS = [
 ]
 PROFILE_READINESS_HEADERS = [
     "Profile", "Input Key", "Input", "Semantic Role", "Parameter ID", "Scope",
+    "Population Basis", "Source Population Objects",
     *_EVIDENCE_HEADERS, "Readiness", "Readiness Reason",
 ]
 PROFILE_SUMMARY_HEADERS = [
     "Profile", "Candidate Inputs", "Applicable Inputs", "READY", "CONDITIONAL", "NOT_READY",
-    "NOT_APPLICABLE", "Ready Input %",
+    "DEFERRED", "NOT_APPLICABLE", "Ready Input %",
 ]
 
 
@@ -117,6 +124,10 @@ def _classify(row: dict[str, Any]) -> tuple[str, str]:
         return "NOT_READY", "Population evidence unavailable or invalid"
     collection = row.get("Collection Status")
     if population == 0:
+        source_population = row.get("Source Population Objects")
+        if (row.get("Population Basis") == NETWORK_POPULATION_BASIS
+                and isinstance(source_population, int) and source_population > 0):
+            return "NOT_READY", "No DHCP-relevant Network candidates identified from current evidence"
         if collection in {"COMPLETE", "EMPTY"}:
             return "NOT_APPLICABLE", "No objects in scope"
         return "NOT_READY", (
@@ -165,25 +176,115 @@ def _classify(row: dict[str, Any]) -> tuple[str, str]:
     return readiness, reason
 
 
-def build_profile_readiness(standardization: Iterable[dict[str, Any]],
-                            specs: Iterable[ProfileInputSpec] = PROFILE_INPUT_SPECS) -> list[dict[str, Any]]:
-    """Project existing scoped evidence into a deterministic candidate matrix.
+def _percent(numerator: int, denominator: int) -> float | None:
+    return round(numerator * 100.0 / denominator, 1) if denominator else None
 
-    Missing source rows stay unknown; neither object counts nor NOT_CONFIGURED
-    states are fabricated. Percentages retain Standardization's display precision.
+
+def _profile_parameter_rows(spec: ProfileInputSpec, scalars: list[dict[str, Any]],
+                            options: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
+    if parameter.source == "option":
+        return [row for row in options
+                if row.get("object_type") == parameter.object_type
+                and str(row.get("vendor_class", "DHCP")) == "DHCP"
+                and str(row.get("option_number", "")) == str(parameter.option_number)]
+    return [row for row in scalars
+            if row.get("object_type") == parameter.object_type
+            and row.get("parameter") == parameter.parameter]
+
+
+def _profile_evidence_counts(rows: list[dict[str, Any]], population_keys: set[tuple[str, str]]) -> tuple[int, int]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        key = normalized_network_key(row)
+        if key in population_keys:
+            grouped[key].append(row)
+
+    confirmed = 0
+    explicit_not_configured = 0
+    for key in population_keys:
+        object_rows = grouped.get(key, [])
+        complete = [row for row in object_rows
+                    if row.get("status") == "COMPLETE"
+                    and row.get("multisource") is not True
+                    and row.get("effective_value") is not None]
+        signatures = {json.dumps([
+            row.get("effective_value"), row.get("source_level"), row.get("source_ref"),
+            row.get("configured_here"), row.get("inherited"),
+        ], sort_keys=True, default=str) for row in complete}
+        if len(signatures) == 1:
+            confirmed += 1
+            continue
+        statuses = {row.get("status") for row in object_rows}
+        if object_rows and statuses == {"NOT_CONFIGURED"}:
+            explicit_not_configured += 1
+    return confirmed, explicit_not_configured
+
+
+def _network_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
+                             results: list[CollectionResult], scalars: list[dict[str, Any]],
+                             options: list[dict[str, Any]]) -> dict[str, Any]:
+    population_keys = set(dhcp_relevant_networks(results))
+    query_keys = effective_network_keys(results)
+    query_objects = len(population_keys & query_keys)
+    population = len(population_keys)
+    rows = _profile_parameter_rows(spec, scalars, options)
+    confirmed, not_configured = _profile_evidence_counts(rows, population_keys)
+    resolved = confirmed + not_configured
+    unresolved = max(population - resolved, 0)
+    collection = source.get("Collection Status")
+    field_status = source.get("Required Field Status")
+    source_evidence = source.get("Evidence Status")
+    if field_status == "NOT_EXPOSED_BY_WAPI":
+        evidence_status = "NOT_EXPOSED_BY_WAPI"
+    elif collection != "COMPLETE":
+        evidence_status = source_evidence or "PARTIAL"
+    elif unresolved == 0 and population > 0:
+        evidence_status = "NOT_CONFIGURED" if confirmed == 0 and not_configured == population else "COMPLETE"
+    elif population == 0:
+        evidence_status = source_evidence or "INSUFFICIENT_DATA"
+    else:
+        evidence_status = "PARTIAL"
+    return {
+        "Population Basis": NETWORK_POPULATION_BASIS,
+        "Source Population Objects": source.get("Population Objects"),
+        "Population Objects": population,
+        "Query Evidence Objects": query_objects,
+        "Query Coverage %": _percent(query_objects, population),
+        "Confirmed Objects": confirmed,
+        "Confirmed Value %": _percent(confirmed, population),
+        "Explicit Not Configured": not_configured,
+        "Resolved Evidence %": _percent(resolved, population),
+        "Unresolved Objects": unresolved,
+        "Unresolved %": _percent(unresolved, population),
+        "Evidence Status": evidence_status,
+    }
+
+
+def build_profile_readiness(standardization: Iterable[dict[str, Any]],
+                            specs: Iterable[ProfileInputSpec] = PROFILE_INPUT_SPECS, *,
+                            results: list[CollectionResult] | None = None,
+                            scalars: list[dict[str, Any]] | None = None,
+                            options: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Project scoped evidence into candidate inputs for future profile discovery.
+
+    When object-level evidence is supplied, Network inputs use an evidence-based
+    DHCP-relevant candidate population rather than every IPAM Network object.
+    Range inputs continue to use the complete Range population.
     """
     candidates = tuple(specs)
     validate_profile_inputs(candidates)
     wanted = {spec.source_parameter_id for spec in candidates}
     indexed: dict[str, dict[str, Any]] = {}
-    for row in standardization:
-        parameter_id = row.get("Parameter ID")
+    for source_row in standardization:
+        parameter_id = source_row.get("Parameter ID")
         if parameter_id not in wanted:
             continue
         if parameter_id in indexed:
             raise ValueError(f"Duplicate Standardization Parameter ID: {parameter_id}")
-        indexed[parameter_id] = row
+        indexed[parameter_id] = source_row
     parameters = {parameter.key: parameter for parameter in PARAMETER_SPECS}
+    object_level_available = results is not None and scalars is not None and options is not None
     output = []
     for spec in candidates:
         source = indexed.get(spec.source_parameter_id)
@@ -197,6 +298,9 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
         row = {
             "Profile": spec.profile, "Input Key": spec.input_key, "Input": spec.label,
             "Semantic Role": spec.semantic_role, "Parameter ID": spec.source_parameter_id, "Scope": spec.scope,
+            "Population Basis": (NETWORK_POPULATION_BASIS if spec.scope == "Network" and object_level_available
+                                 else RANGE_POPULATION_BASIS if spec.scope == "Range" else "SCOPED_STANDARDIZATION"),
+            "Source Population Objects": (source or {}).get("Population Objects"),
             **{header: (source or {}).get(header) for header in _EVIDENCE_HEADERS},
         }
         if source is None:
@@ -204,13 +308,18 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
                         "Collection Status": "UNKNOWN", "Evidence Status": "INSUFFICIENT_DATA",
                         "Readiness": "NOT_READY", "Readiness Reason": "Standardization evidence unavailable"})
         else:
-            row["Readiness"], row["Readiness Reason"] = _classify(row)
+            if spec.scope == "Network" and object_level_available:
+                row.update(_network_profile_metrics(spec, source, results or [], scalars or [], options or []))
+            if spec.semantic_role == "COMPOSITE_LATER":
+                row["Readiness"] = "DEFERRED"
+                row["Readiness Reason"] = "Composite semantics deferred; source evidence retained for review"
+            else:
+                row["Readiness"], row["Readiness Reason"] = _classify(row)
         output.append(row)
     return output
 
-
 def profile_readiness_summary(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Count candidate inputs, never objects; exclude NOT_APPLICABLE from the rate."""
+    """Count candidate inputs, excluding semantic deferrals and empty scopes from the rate."""
     counts: dict[str, Counter[str]] = {}
     seen: set[tuple[str, str]] = set()
     for row in rows:
@@ -219,17 +328,18 @@ def profile_readiness_summary(rows: Iterable[dict[str, Any]]) -> list[dict[str, 
             raise ValueError(f"Duplicate profile readiness input: {key[0]} / {key[1]}")
         seen.add(key)
         state = row["Readiness"]
-        if state not in {"READY", "CONDITIONAL", "NOT_READY", "NOT_APPLICABLE"}:
+        if state not in {"READY", "CONDITIONAL", "NOT_READY", "DEFERRED", "NOT_APPLICABLE"}:
             raise ValueError(f"Unknown profile readiness state: {state}")
         counts.setdefault(row["Profile"], Counter())[state] += 1
     output = []
     for profile in sorted(counts):
         states = counts[profile]
         total = sum(states.values())
-        applicable = total - states["NOT_APPLICABLE"]
+        applicable = total - states["NOT_APPLICABLE"] - states["DEFERRED"]
         output.append({
             "Profile": profile, "Candidate Inputs": total, "Applicable Inputs": applicable,
-            **{state: states[state] for state in ("READY", "CONDITIONAL", "NOT_READY", "NOT_APPLICABLE")},
+            **{state: states[state] for state in
+               ("READY", "CONDITIONAL", "NOT_READY", "DEFERRED", "NOT_APPLICABLE")},
             "Ready Input %": round(states["READY"] * 100.0 / applicable, 1) if applicable else None,
         })
     return output
