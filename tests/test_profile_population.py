@@ -1,8 +1,13 @@
+import pytest
 """DHCP Network profile population must be evidence-backed and deterministic."""
 from infoblox_inventory.models import CollectionResult
 from infoblox_inventory.profile_population import (
+    RANGE_SEGMENT_FAILOVER, RANGE_SEGMENT_MEMBER, RANGE_SEGMENT_MS_SERVER,
+    RANGE_SEGMENT_NONE, RANGE_SEGMENT_OTHER, RANGE_SEGMENT_UNKNOWN,
     REASON_ACTIVE_OPTION, REASON_MEMBERS, REASON_RANGE_PARENT, REASON_USE_FLAG,
-    dhcp_relevant_networks, effective_network_keys, profile_population_summary,
+    dhcp_associated_range_keys, dhcp_relevant_networks, effective_network_keys,
+    infoblox_managed_range_keys, profile_population_rows, profile_population_summary,
+    range_association_segment, range_segments,
 )
 
 
@@ -60,3 +65,69 @@ def test_effective_network_keys_do_not_claim_missing_page_objects():
     keys = effective_network_keys([_result()])
     assert len(keys) == 4
     assert ("LAB", "network/LAB/4") not in keys
+
+
+
+@pytest.mark.parametrize(("value", "expected"), [
+    ("MS_SERVER", RANGE_SEGMENT_MS_SERVER),
+    ("ms-server", RANGE_SEGMENT_MS_SERVER),
+    ("MEMBER", RANGE_SEGMENT_MEMBER),
+    ("FAILOVER", RANGE_SEGMENT_FAILOVER),
+    ("FAILOVER_ASSOCIATION", RANGE_SEGMENT_FAILOVER),
+    ("NONE", RANGE_SEGMENT_NONE),
+    ("", RANGE_SEGMENT_NONE),
+    (None, RANGE_SEGMENT_NONE),
+    ("future-value", RANGE_SEGMENT_OTHER),
+])
+def test_range_association_classification_is_explicit_and_conservative(value, expected):
+    segment, raw = range_association_segment({"server_association_type": value})
+    assert segment == expected
+    if expected == RANGE_SEGMENT_OTHER:
+        assert raw == "future-value"
+
+
+def test_non_scalar_range_association_is_unknown_not_coerced():
+    segment, raw = range_association_segment({"server_association_type": {"future": True}})
+    assert segment == RANGE_SEGMENT_UNKNOWN
+    assert "future" in raw
+
+
+def test_range_population_segments_match_association_semantics():
+    values = ["MS_SERVER"] * 4 + ["MEMBER"] * 2 + ["FAILOVER"] + ["NONE"]
+    result = CollectionResult(
+        grid="LAB",
+        records={"range": [
+            {"_ref": f"range/LAB/{i}", "server_association_type": value}
+            for i, value in enumerate(values)
+        ]},
+    )
+    segments = range_segments([result])
+    assert len(segments[RANGE_SEGMENT_MS_SERVER]) == 4
+    assert len(segments[RANGE_SEGMENT_MEMBER]) == 2
+    assert len(segments[RANGE_SEGMENT_FAILOVER]) == 1
+    assert len(segments[RANGE_SEGMENT_NONE]) == 1
+    assert len(dhcp_associated_range_keys([result])) == 7
+    assert len(infoblox_managed_range_keys([result])) == 3
+
+
+def test_profile_population_rows_expose_network_and_range_denominators_without_quality_labels():
+    result = _result()
+    result.records["range"] = [
+        {"_ref": "range/LAB/0", "server_association_type": "MS_SERVER"},
+        {"_ref": "range/LAB/1", "server_association_type": "MEMBER"},
+        {"_ref": "range/LAB/2", "server_association_type": "NONE"},
+        {"_ref": "range/LAB/3", "server_association_type": "future-value"},
+    ]
+    rows = profile_population_rows([result])
+    by_basis = {(row["Population Basis"], row["Segment"]): row for row in rows}
+    assert by_basis[("ALL_NETWORKS", "ALL")]["Object Count"] == 5
+    assert by_basis[("DHCP_RELEVANT_NETWORK_CANDIDATES", "CANDIDATE")]["Object Count"] == 3
+    assert by_basis[("ALL_RANGES", "ALL")]["Object Count"] == 4
+    assert by_basis[("DHCP_ASSOCIATED_RANGES", "ASSOCIATED")]["Object Count"] == 2
+    assert by_basis[("INFOBLOX_MANAGED_RANGES", "INFOBLOX_MANAGED")]["Object Count"] == 1
+    assert by_basis[("RANGE_SEGMENT_MS_SERVER", "MS_SERVER")]["Object Count"] == 1
+    assert by_basis[("RANGE_SEGMENT_NONE", "NONE")]["Object Count"] == 1
+    other = by_basis[("RANGE_SEGMENT_OTHER", "OTHER")]
+    assert other["Object Count"] == 1
+    assert other["Observed Association Values"] == "future-value"
+    assert all("compliant" not in str(row).lower() for row in rows)
