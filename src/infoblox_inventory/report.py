@@ -340,7 +340,7 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
             targets.setdefault(str(profile), row_number)
     start = sheet.max_row + 2
     _section_title(sheet, start, 1, 9, 'Profile discovery readiness')
-    for column, label in enumerate([*PROFILE_SUMMARY_HEADERS, 'Input details'], start=1):
+    for column, label in enumerate(PROFILE_SUMMARY_HEADERS, start=1):
         cell = sheet.cell(start + 1, column, label)
         cell.fill = PatternFill('solid', fgColor='D9EAF7')
         cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
@@ -356,13 +356,14 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
             if header == 'Ready Input %':
                 cell.number_format = '0.0"%"'
         target = targets[str(summary['Profile'])]
-        cell = sheet.cell(row_number, 9, 'View inputs')
-        cell.hyperlink = Hyperlink(ref=cell.coordinate, location=f"'Profile_Readiness'!A{target}")
-        cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        profile_cell = sheet.cell(row_number, 1)
+        profile_cell.hyperlink = Hyperlink(ref=profile_cell.coordinate, location=f"'Profile_Readiness'!A{target}")
+        profile_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
     note_row = start + len(summaries) + 2
     sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
     cell = sheet.cell(note_row, 1,
-                      'Ready Input % = READY inputs / applicable candidate inputs; this is not object coverage. '
+                      'Ready Input % = READY inputs / applicable candidate inputs; DEFERRED semantic inputs are excluded. '
+                      'Network readiness uses DHCP-relevant candidate Networks rather than every IPAM Network. '
                       'READY means usable evidence for future profile discovery, not an approved standard or configuration compliance.')
     cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
     cell.alignment = Alignment(wrap_text=True, vertical='center')
@@ -401,7 +402,7 @@ def _style_decision_support(sheet, name: str) -> None:
                     sheet.cell(row, state_col).fill = PatternFill('solid', fgColor=fills[value])
     if name == 'Profile_Readiness':
         fills = {'READY': 'E2F0D9', 'CONDITIONAL': 'FFF2CC', 'NOT_READY': 'F4CCCC',
-                 'NOT_APPLICABLE': 'E7E6E6'}
+                 'DEFERRED': 'D9EAF7', 'NOT_APPLICABLE': 'E7E6E6'}
         for row in range(2, sheet.max_row + 1):
             cell = sheet.cell(row, header_map['Readiness'])
             cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
@@ -451,7 +452,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                                       "consumer assignments outside this increment are not assessed."})
     decisions = load_decisions(decisions_path)
     standardization = build_standardization(results, coverage, all_scalars, all_options, decisions) if results else []
-    profile_readiness = build_profile_readiness(standardization)
+    profile_readiness = build_profile_readiness(
+        standardization, results=results, scalars=all_scalars, options=all_options
+    )
     profile_summaries = profile_readiness_summary(profile_readiness)
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
