@@ -310,7 +310,9 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
         else:
             if spec.scope == "Network" and object_level_available:
                 row.update(_network_profile_metrics(spec, source, results or [], scalars or [], options or []))
-            if spec.semantic_role == "COMPOSITE_LATER":
+            if (spec.semantic_role == "COMPOSITE_LATER"
+                    and not (row.get("Population Objects") == 0
+                             and row.get("Source Population Objects") == 0)):
                 row["Readiness"] = "DEFERRED"
                 row["Readiness Reason"] = "Composite semantics deferred; source evidence retained for review"
             else:
