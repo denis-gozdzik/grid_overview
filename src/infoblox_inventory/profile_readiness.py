@@ -153,7 +153,10 @@ def _classify(row: dict[str, Any]) -> tuple[str, str]:
     readiness = ("READY" if resolved_exact >= 95.0
                  else "CONDITIONAL" if resolved_exact >= 80.0
                  else "NOT_READY")
-    reason = f"{'Only ' if readiness == 'NOT_READY' else ''}{resolved_exact:.1f}% resolved evidence"
+    reason = (
+        f"{'Only ' if readiness == 'NOT_READY' else ''}"
+        f"{resolved_count}/{population} resolved evidence ({resolved_exact:.2f}% exact)"
+    )
     unresolved = row.get("Unresolved Objects")
     if isinstance(unresolved, int) and unresolved > 0:
         reason += f"; {unresolved}/{population} unresolved"
