@@ -362,8 +362,8 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
     note_row = start + len(summaries) + 2
     sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
     cell = sheet.cell(note_row, 1,
-                      'Ready Input % = READY inputs / applicable candidate inputs; DEFERRED semantic inputs are excluded. '
-                      'Network readiness uses DHCP-relevant candidate Networks rather than every IPAM Network. '
+                      'Ready Input % = READY inputs / applicable candidate inputs; DEFERRED semantic inputs are excluded; '
+                      'this is not object coverage. Network readiness uses DHCP-relevant candidate Networks rather than every IPAM Network. '
                       'READY means usable evidence for future profile discovery, not an approved standard or configuration compliance.')
     cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
     cell.alignment = Alignment(wrap_text=True, vertical='center')
