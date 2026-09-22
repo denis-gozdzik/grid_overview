@@ -20,6 +20,10 @@ from .profile_readiness import (
     build_profile_readiness, profile_readiness_summary,
 )
 from .profile_population import PROFILE_POPULATION_HEADERS, profile_population_rows
+from .profile_fingerprint import (
+    PROFILE_DISCOVERY_HEADERS, PROFILE_HEADERS, PROFILE_OBJECT_HEADERS,
+    PROFILE_USEFULNESS_HEADERS, build_profile_discovery, build_profile_usefulness,
+)
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -376,6 +380,70 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
     sheet.print_area = f'A1:I{note_row}'
 
 
+def _write_overview_profile_discovery(workbook: Workbook, summaries: list[dict[str, Any]]) -> None:
+    """Append discovered-profile KPIs without implying an approved standard."""
+    if not summaries:
+        return
+    sheet = workbook['Overview']
+    profiles = workbook['Profiles']
+    header_map = {cell.value: cell.column for cell in profiles[1]}
+    type_column = header_map.get('Profile Type')
+    targets: dict[str, int] = {}
+    if type_column:
+        for row_number in range(2, profiles.max_row + 1):
+            profile_type = profiles.cell(row_number, type_column).value
+            if profile_type:
+                targets.setdefault(str(profile_type), row_number)
+
+    start = sheet.max_row + 2
+    _section_title(sheet, start, 1, 10, 'Observed configuration profiles')
+    headers = [
+        'Profile Type', 'Applicable', 'Profiled', 'Profiled %', 'Distinct Profiles',
+        'Top-1 %', 'Top-3 %', 'Singleton Profiles', 'Unresolved', 'Details',
+    ]
+    for column, label in enumerate(headers, start=1):
+        cell = sheet.cell(start + 1, column, label)
+        cell.fill = PatternFill('solid', fgColor='D9EAF7')
+        cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+
+    for row_number, summary in enumerate(summaries, start=start + 2):
+        values = [
+            summary.get('Profile Type'), summary.get('Applicable Objects'),
+            summary.get('Profiled Objects'), summary.get('Profiled %'),
+            summary.get('Distinct Profiles'), summary.get('Top-1 Share %'),
+            summary.get('Top-3 Share %'), summary.get('Singleton Profiles'),
+            summary.get('Unresolved Objects'),
+        ]
+        for column, value in enumerate(values, start=1):
+            cell = sheet.cell(row_number, column, _excel_text(value))
+            if isinstance(cell.value, str):
+                cell.data_type = 's'
+            cell.alignment = Alignment(wrap_text=True, vertical='center')
+            cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+            if column in {4, 6, 7}:
+                cell.number_format = '0.0"%"'
+        target = targets.get(str(summary.get('Profile Type')))
+        link_cell = sheet.cell(row_number, 10, 'View profiles')
+        if target:
+            link_cell.hyperlink = Hyperlink(ref=link_cell.coordinate, location=f"'Profiles'!A{target}")
+            link_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        link_cell.alignment = Alignment(wrap_text=True, vertical='center')
+        link_cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+
+    note_row = start + len(summaries) + 2
+    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=10)
+    cell = sheet.cell(
+        note_row, 1,
+        'Profiles are exact recurring observed functional configurations. Rank and prevalence are descriptive only; '
+        'the most common profile is not an approved standard. Stable fingerprint IDs are independent of prevalence rank.'
+    )
+    cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
+    cell.alignment = Alignment(wrap_text=True, vertical='center')
+    sheet.row_dimensions[note_row].height = 30
+    sheet.print_area = f'A1:J{note_row}'
+
+
 def _style_decision_support(sheet, name: str) -> None:
     sheet.sheet_view.showGridLines = False
     sheet.sheet_view.zoomScale = 85
@@ -414,7 +482,33 @@ def _style_decision_support(sheet, name: str) -> None:
             for header, column in header_map.items():
                 if header.endswith('%'):
                     sheet.cell(row, column).number_format = '0.0"%"'
-    if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+    if name == 'Profile_Usefulness':
+        for row in range(2, sheet.max_row + 1):
+            for header, column in header_map.items():
+                if header.endswith('%') or header in {'Resolved %', 'Unresolved %'}:
+                    sheet.cell(row, column).number_format = '0.0"%"'
+    if name in {'Profile_Discovery', 'Profiles'}:
+        for row in range(2, sheet.max_row + 1):
+            for header, column in header_map.items():
+                if header.endswith('%'):
+                    sheet.cell(row, column).number_format = '0.0"%"'
+    if name == 'Profile_Objects':
+        state_col = header_map.get('Profile Status')
+        if state_col:
+            fills = {
+                'PROFILED': 'E2F0D9',
+                'UNRESOLVED_PROFILE_INPUTS': 'FFF2CC',
+                'UNRESOLVED_ASSOCIATION': 'F4CCCC',
+                'NOT_APPLICABLE_TO_DHCP_PROFILE': 'E7E6E6',
+            }
+            for row in range(2, sheet.max_row + 1):
+                value = str(sheet.cell(row, state_col).value or '')
+                if value in fills:
+                    sheet.cell(row, state_col).fill = PatternFill('solid', fgColor=fills[value])
+    if name in {
+        'Profile_Readiness', 'Profile_Usefulness', 'Profile_Discovery', 'Profiles',
+        'Profile_Objects', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison',
+    }:
         for column in sheet.columns:
             for cell in column:
                 cell.alignment = Alignment(vertical='top', wrap_text=True)
@@ -462,6 +556,12 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     )
     profile_summaries = profile_readiness_summary(profile_readiness)
     profile_populations = profile_population_rows(results)
+    profile_usefulness = build_profile_usefulness(
+        results, all_scalars, all_options, readiness=profile_readiness
+    )
+    profile_discovery, profiles, profile_objects = build_profile_discovery(
+        results, all_scalars, all_options
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -474,6 +574,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     sheets = {
         "Profile_Readiness": profile_readiness,
         "Profile_Populations": profile_populations,
+        "Profile_Usefulness": profile_usefulness,
+        "Profile_Discovery": profile_discovery,
+        "Profiles": profiles,
+        "Profile_Objects": profile_objects,
         "Standardization": standardization_excel,
         "Decisions": decisions_excel,
         "Exceptions": exceptions_excel,
@@ -512,6 +616,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     sheet_headers = {
         'Profile_Readiness': PROFILE_READINESS_HEADERS,
         'Profile_Populations': PROFILE_POPULATION_HEADERS,
+        'Profile_Usefulness': PROFILE_USEFULNESS_HEADERS,
+        'Profile_Discovery': PROFILE_DISCOVERY_HEADERS,
+        'Profiles': PROFILE_HEADERS,
+        'Profile_Objects': PROFILE_OBJECT_HEADERS,
         'Standardization': STANDARDIZATION_HEADERS,
         'Decisions': DECISION_HEADERS,
         'Exceptions': EXCEPTION_HEADERS,
@@ -556,8 +664,13 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
-        _write_inventory_sheet(workbook, index, name, rows, headers,
-                               preserve_order=name in {'Profile_Readiness', 'Profile_Populations'})
+        _write_inventory_sheet(
+            workbook, index, name, rows, headers,
+            preserve_order=name in {
+                'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+                'Profile_Discovery', 'Profiles', 'Profile_Objects',
+            },
+        )
         if name == 'Profile_Populations':
             population_sheet = workbook[name]
             population_headers = {cell.value: cell.column for cell in population_sheet[1]}
@@ -565,11 +678,15 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             if share_column:
                 for row_number in range(2, population_sheet.max_row + 1):
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
-        if name in {'Profile_Readiness', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison'}:
+        if name in {
+            'Profile_Readiness', 'Profile_Usefulness', 'Profile_Discovery', 'Profiles',
+            'Profile_Objects', 'Standardization', 'Decisions', 'Exceptions', 'Grid_Comparison',
+        }:
             _style_decision_support(workbook[name], name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
         _write_overview_profile_summary(workbook, profile_summaries)
+        _write_overview_profile_discovery(workbook, profile_discovery)
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
