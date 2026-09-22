@@ -77,6 +77,7 @@ def test_overview_summary_has_input_denominator_and_both_profile_drilldowns(repo
         title = next(cell for row in overview for cell in row if cell.value == 'Profile discovery readiness')
         header_row = title.row + 1
         assert [overview.cell(header_row, column).value for column in range(1, 10)] == list(PROFILE_SUMMARY_HEADERS)
+        assert overview.cell(header_row, 10).value == 'Input details'
         summaries = [dict(zip(PROFILE_SUMMARY_HEADERS,
                               [overview.cell(row, column).value for column in range(1, 10)]))
                      for row in range(header_row + 1, header_row + 3)]
@@ -91,7 +92,7 @@ def test_overview_summary_has_input_denominator_and_both_profile_drilldowns(repo
         assert summaries[1]['DEFERRED'] == 0
         assert summaries[1]['Ready Input %'] is None
         for row_number, expected_target in ((header_row + 1, 2), (header_row + 2, 23)):
-            link = overview.cell(row_number, 1).hyperlink
+            link = overview.cell(row_number, 10).hyperlink
             assert link.location == f"'Profile_Readiness'!A{expected_target}"
             assert link.target is None
             assert workbook['Profile_Readiness'].cell(expected_target, 1).value == overview.cell(row_number, 1).value
