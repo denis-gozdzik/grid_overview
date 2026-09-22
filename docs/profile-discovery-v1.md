@@ -232,8 +232,8 @@ python scripts/probe_inheritance_paging.py `
 
 The first is offline-only and prints wrapper/plain/absent counts per archived page. The second performs GET requests only and prints response-shape counts, never object values, names, refs or continuation tokens. Add `--compare-reassert-inheritance` only when explicitly testing whether reasserting `_inheritance=True` changes page-2 response shape.
 
-Deterministic Network/Range fingerprints are implemented **only after** the updated collector passes the full regression suite and a fresh real-LAB collection confirms the corrected multi-page effective evidence. Unresolved values must not enter future fingerprints.
+The corrected multi-page effective evidence was subsequently validated on a fresh real-LAB archive. The next layer now implements deterministic usefulness metrics and exact Network/Range fingerprints while retaining this readiness layer as the evidence gate. Unresolved required core inputs do not enter normal fingerprints.
 
-Readiness is still not profile usefulness. An input may be 100% resolved and invariant (for example, explicitly not configured everywhere) and therefore READY but non-discriminative for a future fingerprint. Usefulness metrics are intentionally deferred.
+Readiness is still not profile usefulness. An input may be 100% resolved and invariant (for example, explicitly not configured everywhere) and therefore READY but non-discriminative for a fingerprint. Usefulness metrics are reported separately and do not create a weighted quality score.
 
-This increment creates no fingerprints, clustering, generated profile IDs, profile comparisons, usefulness score, gateway transformations, inferred targets, automatic standards or remediation. It changes no appliance configuration.
+This readiness layer does not infer targets, automatic standards or remediation. The implemented fingerprint layer is documented in [Profile fingerprint v1](profile-fingerprint-v1.md); it remains descriptive and changes no appliance configuration.
