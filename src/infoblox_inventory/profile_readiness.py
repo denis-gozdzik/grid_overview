@@ -370,7 +370,7 @@ def build_profile_readiness(standardization: Iterable[dict[str, Any]],
 
     When object-level evidence is supplied, Network inputs use an evidence-based
     DHCP-relevant candidate population rather than every IPAM Network object.
-    Range inputs continue to use the complete Range population.
+    Range inputs use association-aware populations selected by parameter family.
     """
     candidates = tuple(specs)
     validate_profile_inputs(candidates)
