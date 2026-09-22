@@ -754,6 +754,20 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     )
     if not changed:
         summary.append("No standardization differences identified in the currently confirmed parameter set.")
+    if profile_discovery:
+        summary.extend(["", "## Observed configuration profiles", "",
+                        "Exact functional fingerprints describe recurring current-state models; prevalence does not approve a standard.", "",
+                        "| Profile type | Applicable | Profiled | Profiled % | Distinct profiles | Top-1 % | Top-3 % |",
+                        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"])
+        for row in profile_discovery:
+            summary.append(
+                f"| {_markdown_value(row.get('Profile Type'))} | {_markdown_value(row.get('Applicable Objects'))} | "
+                f"{_markdown_value(row.get('Profiled Objects'))} | {_markdown_value(row.get('Profiled %'))} | "
+                f"{_markdown_value(row.get('Distinct Profiles'))} | {_markdown_value(row.get('Top-1 Share %'))} | "
+                f"{_markdown_value(row.get('Top-3 Share %'))} |"
+            )
+        summary.append("")
+        summary.append("Stable fingerprint IDs are independent of prevalence rank. See workbook sheets Profile_Discovery, Profiles and Profile_Objects.")
     candidates = [row for row in all_options + all_scalars
                   if row["configured_here"] is True and row["object_type"] != "grid:dhcpproperties"]
     summary.extend(["", "## Local exception candidates", "",
