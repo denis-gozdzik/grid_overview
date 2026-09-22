@@ -475,6 +475,27 @@ def _style_decision_support(sheet, name: str) -> None:
             for header, column in header_map.items():
                 if header.endswith('%'):
                     sheet.cell(row, column).number_format = '0.0"%"'
+    if name == 'Profile_Assignments':
+        fills = {
+            'PROFILED': 'E2F0D9',
+            'UNRESOLVED_PROFILE_INPUTS': 'FFF2CC',
+            'UNRESOLVED_ASSOCIATION': 'FFF2CC',
+            'NOT_APPLICABLE_TO_DHCP_PROFILE': 'E7E6E6',
+        }
+        status_column = header_map.get('Population Status')
+        if status_column:
+            for row in range(2, sheet.max_row + 1):
+                cell = sheet.cell(row, status_column)
+                if str(cell.value) in fills:
+                    cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
+    if name == 'Profile_Usefulness':
+        role_column = header_map.get('Fingerprint Role')
+        role_fills = {'CORE': 'E2F0D9', 'DERIVED_CORE': 'D9EAF7', 'OVERLAY': 'FFF2CC', 'DEFERRED': 'E7E6E6'}
+        if role_column:
+            for row in range(2, sheet.max_row + 1):
+                cell = sheet.cell(row, role_column)
+                if str(cell.value) in role_fills:
+                    cell.fill = PatternFill('solid', fgColor=role_fills[str(cell.value)])
     if name in {
         'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
         'Profile_Assignments', 'Profile_KPIs', 'Standardization', 'Decisions',
