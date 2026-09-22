@@ -71,7 +71,7 @@ PROFILE_USEFULNESS_HEADERS = [
 
 PROFILE_DISCOVERY_HEADERS = [
     "Profile Type", "Applicable Objects", "Profiled Objects", "Profiled %",
-    "Unresolved Objects", "Not Applicable Objects", "Distinct Profiles",
+    "Unresolved Objects", "Unresolved Association Objects", "Not Applicable Objects", "Distinct Profiles",
     "Top-1 Share %", "Top-3 Share %", "Profiles for 80%", "Profiles for 90%",
     "Profiles for 95%", "Singleton Profiles",
 ]
@@ -617,6 +617,7 @@ def build_profile_discovery(
                 row["Profile Rank"] = rank_by_fingerprint[row["Fingerprint ID"]]
 
         not_applicable = 0
+        unresolved_association = 0
         if scope == "Range":
             for key, raw in sorted(raw_range.items()):
                 if key in range_population:
@@ -627,6 +628,7 @@ def build_profile_discovery(
                     not_applicable += 1
                 else:
                     status = "UNRESOLVED_ASSOCIATION"
+                    unresolved_association += 1
                 object_rows.append({
                     "Profile Type": scope,
                     "Grid": key[0],
@@ -652,6 +654,7 @@ def build_profile_discovery(
             "Profiled Objects": profiled,
             "Profiled %": _percent(profiled, len(population)),
             "Unresolved Objects": unresolved_count,
+            "Unresolved Association Objects": unresolved_association,
             "Not Applicable Objects": not_applicable,
             "Distinct Profiles": len(ordered_profiles),
             "Top-1 Share %": _percent(sum(counts[:1]), profiled),
