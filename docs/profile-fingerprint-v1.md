@@ -308,4 +308,19 @@ Do not add yet:
 - remediation generation;
 - attempts to resolve the two MEMBER Range PXE scalar wrappers without authoritative WAPI evidence.
 
-The next implementation increment should add deterministic usefulness reporting and exact core fingerprint generation according to this document.
+## Implemented workbook outputs
+
+This design is implemented in `src/infoblox_inventory/profile_fingerprint.py` and is generated entirely from existing normalized/offline evidence.
+
+The workbook now adds:
+
+- `Profile_Usefulness` — deterministic per-input evidence metrics, distinct-state counts, dominant-state prevalence, invariant/variable observation, readiness, and whether the input participates in core fingerprint v1;
+- `Profile_Discovery` — profile-level KPIs for Network and Range populations, including profiled coverage, distinct profile count, Top-1/Top-3 share, coverage concentration, singletons, unresolved core inputs, and unresolved Range associations;
+- `Profiles` — one row per exact fingerprint with stable hash ID, rank, core field states, canonical payload, context summary, and feature-overlay distributions;
+- `Profile_Objects` — deterministic object-to-profile assignments plus explicit `UNRESOLVED_PROFILE_INPUTS`, `UNRESOLVED_ASSOCIATION`, and `NOT_APPLICABLE_TO_DHCP_PROFILE` states.
+
+The Overview contains a compact observed-profile section. These metrics remain descriptive and do not approve a standard.
+
+The implementation intentionally preserves explicit empty strings as configured values. For example an effective DHCP option with `value=""` is a resolved value state, not `NOT_CONFIGURED`; the display uses `EMPTY_STRING` while the canonical fingerprint payload retains the exact empty string.
+
+No new WAPI requests are introduced by this increment.
