@@ -183,7 +183,7 @@ def _percent(numerator: int, denominator: int) -> float | None:
     return round(numerator * 100.0 / denominator, 1) if denominator else None
 
 
-def _profile_parameter_rows(spec: ProfileInputSpec, scalars: list[dict[str, Any]],
+def profile_parameter_rows(spec: ProfileInputSpec, scalars: list[dict[str, Any]],
                             options: list[dict[str, Any]]) -> list[dict[str, Any]]:
     parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
     if parameter.source == "option":
@@ -311,7 +311,7 @@ def profile_population_for_spec(spec: ProfileInputSpec, results: list[Collection
                                     set[tuple[str, str]], set[tuple[str, str]], str
                                 ]:
     """Return applicable object keys, effective-query keys and population basis."""
-    rows = _profile_parameter_rows(spec, scalars, options)
+    rows = profile_parameter_rows(spec, scalars, options)
     parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
     if spec.scope == "Network":
         return set(dhcp_relevant_networks(results)), effective_network_keys(results), NETWORK_POPULATION_BASIS
@@ -331,7 +331,7 @@ def _scope_profile_metrics(spec: ProfileInputSpec, source: dict[str, Any],
                            results: list[CollectionResult], scalars: list[dict[str, Any]],
                            options: list[dict[str, Any]]) -> dict[str, Any]:
     object_type = spec.scope.lower()
-    rows = _profile_parameter_rows(spec, scalars, options)
+    rows = profile_parameter_rows(spec, scalars, options)
     population_keys, query_keys, basis = profile_population_for_spec(spec, results, scalars, options)
 
     query_objects = len(population_keys & query_keys)
