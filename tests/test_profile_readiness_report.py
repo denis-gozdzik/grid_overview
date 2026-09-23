@@ -48,9 +48,15 @@ def test_matrix_sheet_order_candidate_order_and_serialized_table_validity(report
         assert workbook.sheetnames[:16] == [
             'Overview', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
             'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs', 'Profile_Context',
-            'Profile_Relationships', 'Profile_Relationship_Assignments', 'Standardization',
+            'Profile_Relationships', 'Profile_Rel_Assignments', 'Standardization',
             'Decisions', 'Exceptions', 'Grid_Comparison', 'Coverage', 'Manual_Review',
         ]
+        assert all(len(title) <= 31 for title in workbook.sheetnames)
+        assert 'Profile_Rel_Assignments' in workbook.sheetnames
+        assert 'Profile_Relationship_Assignments' not in workbook.sheetnames
+        relationship_assignments = workbook['Profile_Rel_Assignments']
+        assert relationship_assignments.sheet_view.showGridLines is False
+        assert relationship_assignments.freeze_panes == 'A2'
         sheet = workbook['Profile_Readiness']
         assert [cell.value for cell in sheet[1]] == list(PROFILE_READINESS_HEADERS)
         rows = _rows(sheet)

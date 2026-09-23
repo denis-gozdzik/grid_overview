@@ -86,10 +86,30 @@ def _effective_query_summary(result, object_type):
                    "No separate effective response was captured; this does not imply absent configuration.")}
 
 
+SHEET_TITLE_OVERRIDES = {
+    "Profile_Relationship_Assignments": "Profile_Rel_Assignments",
+}
+
+
+def _excel_sheet_title(workbook: Workbook, logical_name: str) -> str:
+    """Return a deterministic Excel-safe worksheet title for a logical report name."""
+    configured = SHEET_TITLE_OVERRIDES.get(logical_name, logical_name)
+    base = re.sub(r"[\[\]:*?/\\]", "_", str(configured)).strip().strip("'") or "Sheet"
+    base = base[:31]
+    existing = {sheet.title.casefold() for sheet in workbook.worksheets}
+    title = base
+    suffix = 2
+    while title.casefold() in existing:
+        ending = f"_{suffix}"
+        title = f"{base[:31 - len(ending)]}{ending}"
+        suffix += 1
+    return title
+
+
 def _write_inventory_sheet(workbook: Workbook, index: int, name: str,
                            rows: list[dict[str, Any]], headers: list[str], *,
-                           preserve_order: bool = False) -> None:
-    sheet = workbook.create_sheet(name[:31])
+                           preserve_order: bool = False):
+    sheet = workbook.create_sheet(_excel_sheet_title(workbook, name))
     # Excel table headers must be nonempty strings and unique ignoring case.
     # Keep source keys separate so display-name repairs never move or lose data.
     labels: list[str] = []
@@ -124,6 +144,7 @@ def _write_inventory_sheet(workbook: Workbook, index: int, name: str,
         # this range causes Microsoft Excel to repair/reject the table parts.
         sheet.add_table(table)
     # An empty inventory keeps its headers but has neither a table nor filter.
+    return sheet
 
 
 def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
@@ -747,15 +768,17 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
-        _write_inventory_sheet(workbook, index, name, rows, headers,
-                               preserve_order=name in {
-                                   'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
-                                   'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
-                                   'Profile_Context', 'Profile_Relationships',
-                                   'Profile_Relationship_Assignments',
-                               })
+        inventory_sheet = _write_inventory_sheet(
+            workbook, index, name, rows, headers,
+            preserve_order=name in {
+                'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+                'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
+                'Profile_Context', 'Profile_Relationships',
+                'Profile_Relationship_Assignments',
+            },
+        )
         if name == 'Profile_Populations':
-            population_sheet = workbook[name]
+            population_sheet = inventory_sheet
             population_headers = {cell.value: cell.column for cell in population_sheet[1]}
             share_column = population_headers.get('Share %')
             if share_column:
@@ -767,7 +790,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             'Profile_Relationship_Assignments', 'Standardization', 'Decisions',
             'Exceptions', 'Grid_Comparison',
         }:
-            _style_decision_support(workbook[name], name)
+            _style_decision_support(inventory_sheet, name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
         _write_overview_profile_summary(
