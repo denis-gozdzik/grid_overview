@@ -9,7 +9,8 @@ import responses
 
 from infoblox_inventory import cli
 from infoblox_inventory.client import InfobloxClient
-from infoblox_inventory.collectors.core import collect_grid
+from infoblox_inventory.collectors.core import OBJECTS, collect_grid
+from infoblox_inventory.collectors.topology import TOPOLOGY_OBJECTS
 from infoblox_inventory.config import GridConfig
 from infoblox_inventory.models import CollectionResult
 from infoblox_inventory.normalize import normalize_options
@@ -58,6 +59,66 @@ def test_core_selection_queries_only_the_six_existing_lab_objects():
     assert len(responses.calls) == 13  # One root schema and schema/data for six objects.
     assert {urlsplit(call.request.url).path.removeprefix("/wapi/v2.13.7/") for call in responses.calls} == {"", *expected}
     assert all(call.request.method == "GET" for call in responses.calls)
+
+
+@responses.activate
+def test_template_collector_requests_profile_comparable_ddns_and_schema_use_flags():
+    objects = ("networktemplate", "rangetemplate", "fixedaddresstemplate")
+    add_root(list(objects))
+    overrides = {
+        "networktemplate": {
+            "enable_ddns": "use_enable_ddns",
+            "ddns_domainname": "use_ddns_domainname",
+            "ddns_generate_hostname": "use_ddns_generate_hostname",
+            "ddns_ttl": "use_ddns_ttl",
+            "ddns_update_fixed_addresses": "use_ddns_update_fixed_addresses",
+            "ddns_use_option81": "use_ddns_use_option81",
+            "update_dns_on_lease_renewal": "use_update_dns_on_lease_renewal",
+        },
+        "rangetemplate": {
+            "enable_ddns": "use_enable_ddns",
+            "ddns_domainname": "use_ddns_domainname",
+            "ddns_generate_hostname": "use_ddns_generate_hostname",
+            "update_dns_on_lease_renewal": "use_update_dns_on_lease_renewal",
+        },
+        "fixedaddresstemplate": {
+            "enable_ddns": "use_enable_ddns",
+            "ddns_domainname": "use_ddns_domainname",
+        },
+    }
+    for object_type in objects:
+        requested = TOPOLOGY_OBJECTS[object_type][2]
+        flags = list(overrides[object_type].values())
+        responses.add(
+            responses.GET, BASE + "/" + object_type,
+            json=schema(*requested, *flags, overrides=overrides[object_type]),
+        )
+        responses.add(responses.GET, BASE + "/" + object_type, json={"result": []})
+
+    with client() as connection:
+        result = collect_grid(connection, only="templates")
+
+    assert not result.errors
+    data_queries = {}
+    for call in responses.calls:
+        query = parse_qs(urlsplit(call.request.url).query)
+        if "_return_fields" not in query:
+            continue
+        object_type = urlsplit(call.request.url).path.rsplit("/", 1)[-1]
+        data_queries[object_type] = set(query["_return_fields"][0].split(","))
+
+    assert set(data_queries) == set(objects)
+    for object_type in objects:
+        assert set(overrides[object_type]) <= data_queries[object_type]
+        assert set(overrides[object_type].values()) <= data_queries[object_type]
+    assert "ddns_ttl" in data_queries["networktemplate"]
+    assert "ddns_ttl" not in data_queries["rangetemplate"]
+    assert "ddns_hostname" in data_queries["fixedaddresstemplate"]
+    assert all(
+        row["Collection Status"] == "EMPTY"
+        for row in result.coverage
+        if row.get("Object") in objects and row.get("Query") == "raw"
+    )
 
 
 @responses.activate
@@ -170,6 +231,54 @@ def test_live_cli_collects_all_dhcp_levels_and_offline_report_replays_same_evide
         assert sheet.freeze_panes == "A2"
     live_book.close()
     offline_book.close()
+
+
+@responses.activate
+def test_write_only_network_template_origin_is_coverage_only_not_collection_partial():
+    add_root(["network"])
+    requested = OBJECTS["network"][2]
+    responses.add(
+        responses.GET, BASE + "/network",
+        json=schema(*requested, "template", unreadable={"template"}),
+    )
+    responses.add(responses.GET, BASE + "/network", json={"result": []})
+
+    with client() as connection:
+        result = collect_grid(connection, only="network")
+
+    raw = next(row for row in result.coverage
+               if row.get("Object") == "network" and row.get("Query") == "raw")
+    assert raw["Collection Status"] == "EMPTY"
+    origin = next(row for row in result.coverage
+                  if row.get("Object") == "network" and row.get("Field") == "template")
+    assert origin["Collection Status"] == "NOT_EXPOSED_BY_WAPI"
+    query = parse_qs(urlsplit(responses.calls[-1].request.url).query)
+    assert "template" not in set(query["_return_fields"][0].split(","))
+
+
+@responses.activate
+def test_readable_network_template_origin_is_preserved_without_becoming_required():
+    add_root(["network"])
+    requested = OBJECTS["network"][2]
+    responses.add(responses.GET, BASE + "/network", json=schema(*requested, "template"))
+    responses.add(
+        responses.GET, BASE + "/network",
+        json={"result": [{"_ref": "network/a", "network": "10.0.0.0/24",
+                           "template": "Branch_LAN"}]},
+    )
+
+    with client() as connection:
+        result = collect_grid(connection, only="network")
+
+    assert result.records["network"][0]["template"] == "Branch_LAN"
+    assert not any(
+        row.get("Object") == "network"
+        and row.get("Field") == "template"
+        and row.get("Collection Status") == "NOT_EXPOSED_BY_WAPI"
+        for row in result.coverage
+    )
+    query = parse_qs(urlsplit(responses.calls[-1].request.url).query)
+    assert "template" in set(query["_return_fields"][0].split(","))
 
 
 @responses.activate
