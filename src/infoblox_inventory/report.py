@@ -470,8 +470,7 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
                 cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
             for column in (6,):
                 sheet.cell(row_number, column).number_format = '0.0"%"'
-        sheet.cell(relationship_start + 2, 3).number_format = '0.0"%"'
-        sheet.cell(relationship_start + 2, 5).number_format = '0.0"%"'
+        sheet.cell(relationship_start + 2, 4).number_format = '0.0"%"'
         link_cell = sheet.cell(relationship_start + 1, 9)
         link_cell.value = 'View relationships'
         link_cell.hyperlink = Hyperlink(ref=link_cell.coordinate, location="'Profile_Relationships'!A2")
