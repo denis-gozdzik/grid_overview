@@ -190,6 +190,33 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert "RAW_CONFIGURATION" in summary and "raw-query coverage" in summary
 
 
+def test_optional_null_template_fields_do_not_mark_record_partial():
+    result = CollectionResult(grid="LAB", records={
+        "networktemplate": [{
+            "_ref": "networktemplate/nulls:one",
+            "name": "null-safe",
+            "netmask": 24,
+            "members": [{"name": "member-a", "ipv4addr": "10.0.0.10", "ipv6addr": None}],
+            "delegated_member": None,
+        }],
+        "rangetemplate": [{
+            "_ref": "rangetemplate/nulls:one",
+            "name": "range-null-safe",
+            "offset": 10,
+            "number_of_addresses": 20,
+            "member": {"name": "member-a", "ipv4addr": "10.0.0.10", "ipv6addr": None},
+            "ms_server": None,
+        }],
+    })
+
+    records = normalize_topology(result)
+    by_type = {record.object_type: record for record in records}
+    assert by_type["networktemplate"].status == "COMPLETE"
+    assert by_type["rangetemplate"].status == "COMPLETE"
+    assert by_type["networktemplate"].issues == []
+    assert by_type["rangetemplate"].issues == []
+
+
 def test_core_only_report_does_not_gain_topology_sheets(tmp_path):
     write_reports([CollectionResult(grid="CORE", records={"networkview": [{"name": "default"}]})], tmp_path)
     workbook = load_workbook(tmp_path / "current_state_inventory.xlsx")

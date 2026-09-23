@@ -305,6 +305,16 @@ def _parse_fields(raw: dict[str, Any], cls: type, issues: list[str], path: str =
         # The failover ms_server is a string; range-template ms_server is a struct.
         if name == "ms_server" and cls is RangeTemplateRecord:
             nested = (MSServerAssociation, False)
+
+        # Optional scalar fields and optional single nested structs may be
+        # returned explicitly as null. Array-valued fields still require an
+        # array; null options/members/exclusions remain a type error.
+        if value is None and not (
+            (nested and nested[1]) or name in _STRING_ARRAY_FIELDS
+        ):
+            values[name] = None
+            continue
+
         if nested:
             nested_cls, array = nested
             if array:
