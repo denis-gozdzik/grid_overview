@@ -385,7 +385,7 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
         _section_title(sheet, kpi_start, 1, 9, 'Observed profile discovery')
         labels = [
             'Profile', 'Applicable', 'Profiled', 'Profiled %', 'Distinct profiles',
-            'Top-1 share %', 'Top-3 share %', 'Singleton profiles', 'Profile details',
+            'Top-1 share of profiled %', 'Top-3 share of profiled %', 'Singleton profiles', 'Profile details',
         ]
         for column, label in enumerate(labels, start=1):
             cell = sheet.cell(kpi_start + 1, column, label)
@@ -730,13 +730,32 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                         "no policy meaning. Consumers outside this collection are not assessed. "
                         "DDNS/EA fields are retained solely as reservation metadata. For superhostchild, "
                         "an empty complete parent inventory means no child request; Coverage records that dependency."])
+    if profile_kpis:
+        summary.extend([
+            "", "## Observed profile discovery", "",
+            "Fingerprint prevalence is descriptive current-state evidence. The most common fingerprint is not an approved standard. "
+            "Objects with unresolved required core inputs remain outside normal profiles.", "",
+            "| Profile | Applicable | Profiled | Profiled % | Unresolved | Distinct profiles | Top-1 share of profiled % | Top-3 share of profiled % | Singletons |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ])
+        for item in profile_kpis:
+            summary.append(
+                f"| {_markdown_value(item.get('Profile'))} | {_markdown_value(item.get('Applicable Objects'))} | "
+                f"{_markdown_value(item.get('Profiled Objects'))} | {_markdown_value(item.get('Profiled %'))} | "
+                f"{_markdown_value(item.get('Unresolved Profile Objects'))} | {_markdown_value(item.get('Distinct Profiles'))} | "
+                f"{_markdown_value(item.get('Top-1 Share of Profiled %'))} | "
+                f"{_markdown_value(item.get('Top-3 Share of Profiled %'))} | "
+                f"{_markdown_value(item.get('Singleton Profiles'))} |"
+            )
+
     changed = [row for row in differences if row.get("Classification") not in {"CONSISTENT", "NOT_CONFIGURED", "NO_OBJECTS_IN_SCOPE"}]
     summary.extend(["", "## Standardization observations", "",
                     "Observed differences and common values are descriptive. They are not approved standards. "
                     "Use Standardization and Decisions to record human review, then Exceptions for actionable deviations. "
                     "Additional DDNS/EA/DNS collection depth and broader policy interpretation remain to be implemented.", ""])
     summary.extend(
-        f"- {_markdown_value(row.get('Parameter'))}: {_markdown_value(row.get('Observed Values') or row.get('Classification'))}; "
+        f"- {_markdown_value(row.get('Parameter'))} [{_markdown_value(row.get('Scope'))}]: "
+        f"{_markdown_value(row.get('Observed Values') or row.get('Classification'))}; "
         f"classification={_markdown_value(row.get('Classification'))}, local overrides={_markdown_value(row.get('Local Overrides'))}."
         for row in changed[:20]
     )
