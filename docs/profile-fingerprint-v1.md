@@ -50,7 +50,7 @@ An input may be READY and still be invariant or non-discriminative.
 Population:
 
 ```text
-DHCP_RELEVANT_NETWORK_CANDIDATES
+DHCP_PROFILE_NETWORK_CANDIDATES
 ```
 
 ### Core fingerprint fields
@@ -217,7 +217,8 @@ Saved `lan-full5` RAW contains:
 
 ```text
 598 Networks
-62 DHCP-relevant Network candidates
+62 broad DHCP/topology-relevant Networks
+55 functional DHCP_PROFILE_NETWORK_CANDIDATES
 52 Ranges
 49 DHCP-associated Ranges
 47 MS_SERVER
@@ -227,21 +228,25 @@ Saved `lan-full5` RAW contains:
 
 ### Network core
 
-Of the 62 DHCP-relevant Networks, 55 have all four proposed core inputs resolved.
+The broad relevance population contains 62 Networks, but real-data validation showed that 7 are context-only rather than functional Network profile candidates:
+
+- 3 are only parents of `NONE` ranges;
+- 2 are parents/associations for externally managed `MS_SERVER` ranges without direct Network-level profile evidence;
+- 2 have container `use_options=true` but no active `use_option=true`.
+
+The narrower functional population therefore contains 55 Networks, and all 55 have the four core inputs resolved.
 
 Exact core fingerprinting produces:
 
 ```text
+55 applicable objects
 55 profiled objects
 8 distinct core profiles
-largest profile: 44 / 55 = 80.0% of profiled objects
-largest profile: 44 / 62 = 71.0% of the candidate population
+largest profile: 44 / 55 = 80.0%
 4 singleton profiles
 ```
 
-The dominant profile contains 44 objects, all in the default Network View and all with the same observed DHCP-relevance signature: members + Range parent + active DHCP option.
-
-The current option-evidence limitation leaves 7 Network candidates outside normal profiles because their effective `options` response is an empty list. They remain unresolved by design.
+The dominant profile contains 44 objects, all in the default Network View and all with direct DHCP evidence. Broad topology relevance remains reported separately instead of being converted into artificial unresolved profiles.
 
 ### Gateway evidence
 
@@ -253,7 +258,6 @@ Network gateway convention after derivation:
 3 LAST_USABLE
 4 NOT_CONFIGURED
 1 EMPTY_VALUE
-7 UNRESOLVED
 ```
 
 Range gateway convention:

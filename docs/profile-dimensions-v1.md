@@ -136,8 +136,10 @@ This keeps evidence applicability separate from configuration absence.
 Network functional dimensions use:
 
 ```text
-DHCP_RELEVANT_NETWORK_CANDIDATES
+DHCP_PROFILE_NETWORK_CANDIDATES
 ```
+
+The broader `DHCP_RELEVANT_NETWORK_CANDIDATES` population remains available for topology/context reporting and can be larger than the functional profile denominator.
 
 Range functional dimensions use:
 

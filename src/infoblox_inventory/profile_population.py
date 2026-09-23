@@ -12,7 +12,8 @@ from typing import Any
 from .models import CollectionResult
 
 
-NETWORK_POPULATION_BASIS = "DHCP_RELEVANT_NETWORK_CANDIDATES"
+NETWORK_RELEVANCE_BASIS = "DHCP_RELEVANT_NETWORK_CANDIDATES"
+NETWORK_POPULATION_BASIS = "DHCP_PROFILE_NETWORK_CANDIDATES"
 RANGE_POPULATION_BASIS = "ALL_RANGES"
 RANGE_DHCP_ASSOCIATED_BASIS = "DHCP_ASSOCIATED_RANGES"
 RANGE_INFOBLOX_MANAGED_BASIS = "INFOBLOX_MANAGED_RANGES"
@@ -36,6 +37,21 @@ REASON_MEMBERS = "members"
 REASON_RANGE_PARENT = "range_parent"
 REASON_USE_FLAG = "active_use_flag"
 REASON_ACTIVE_OPTION = "active_option"
+
+REASON_INFOBLOX_MEMBER = "infoblox_dhcp_member"
+REASON_INFOBLOX_RANGE_PARENT = "infoblox_range_parent"
+REASON_PROFILE_USE_FLAG = "profile_active_use_flag"
+
+# Functional Network profile applicability is deliberately narrower than broad
+# DHCP/topology relevance. Container-level use_options is handled by per-option
+# use_option evidence and must not qualify a Network by itself.
+PROFILE_RELEVANT_USE_FLAGS = {
+    "use_bootfile", "use_bootserver", "use_nextserver", "use_pxe_lease_time",
+    "use_deny_bootp", "use_enable_ddns", "use_ddns_domainname",
+    "use_ddns_generate_hostname", "use_ddns_ttl",
+    "use_ddns_update_fixed_addresses", "use_ddns_use_option81",
+    "use_update_dns_on_lease_renewal",
+}
 
 PROFILE_POPULATION_HEADERS = [
     "Profile", "Scope", "Grid", "Population Basis", "Segment",
@@ -89,6 +105,27 @@ def _active_use_flag(record: dict[str, Any]) -> bool:
     )
 
 
+def _profile_active_use_flag(record: dict[str, Any]) -> bool:
+    return any(record.get(name) is True for name in PROFILE_RELEVANT_USE_FLAGS)
+
+
+def _infoblox_dhcp_member(record: dict[str, Any]) -> bool:
+    members = record.get("members")
+    return isinstance(members, list) and any(
+        isinstance(member, dict) and member.get("_struct") == "dhcpmember"
+        for member in members
+    )
+
+
+def _infoblox_managed_parent_networks(result: CollectionResult) -> set[tuple[str, str]]:
+    return {
+        (str(record.get("network_view") or "default"), str(record.get("network") or ""))
+        for record in result.records.get("range", [])
+        if record.get("network")
+        and range_association_segment(record)[0] in {RANGE_SEGMENT_MEMBER, RANGE_SEGMENT_FAILOVER}
+    }
+
+
 def dhcp_relevant_networks(results: list[CollectionResult]) -> dict[tuple[str, str], set[str]]:
     """Return evidence-backed Network candidates and the reasons each was selected."""
     relevant: dict[tuple[str, str], set[str]] = {}
@@ -111,6 +148,38 @@ def dhcp_relevant_networks(results: list[CollectionResult]) -> dict[tuple[str, s
             if reasons:
                 relevant[object_key(result.grid, record)] = reasons
     return relevant
+
+
+def dhcp_profile_networks(results: list[CollectionResult]) -> dict[tuple[str, str], set[str]]:
+    """Return Networks applicable to functional Network profile discovery.
+
+    Broad topology relevance remains available through dhcp_relevant_networks().
+    A functional profile candidate needs direct DHCP evidence that can define
+    Network-level behavior: an active DHCP option, a profile-relevant scalar use
+    flag, an Infoblox DHCP member, or an Infoblox-managed child Range.
+
+    Parent-only Networks for NONE/MS_SERVER ranges and container use_options
+    without an active option are intentionally excluded.
+    """
+    candidates: dict[tuple[str, str], set[str]] = {}
+    for result in results:
+        infoblox_parents = _infoblox_managed_parent_networks(result)
+        for record in result.records.get("network", []):
+            reasons: set[str] = set()
+            if _infoblox_dhcp_member(record):
+                reasons.add(REASON_INFOBLOX_MEMBER)
+            if (
+                str(record.get("network_view") or "default"),
+                str(record.get("network") or ""),
+            ) in infoblox_parents:
+                reasons.add(REASON_INFOBLOX_RANGE_PARENT)
+            if _profile_active_use_flag(record):
+                reasons.add(REASON_PROFILE_USE_FLAG)
+            if _active_option(record):
+                reasons.add(REASON_ACTIVE_OPTION)
+            if reasons:
+                candidates[object_key(result.grid, record)] = reasons
+    return candidates
 
 
 def effective_network_keys(results: list[CollectionResult]) -> set[tuple[str, str]]:
@@ -254,6 +323,7 @@ def profile_population_summary(results: list[CollectionResult]) -> list[dict[str
 def profile_population_rows(results: list[CollectionResult]) -> list[dict[str, Any]]:
     """Long-form descriptive population evidence for Network and Range profiles."""
     relevant_networks = dhcp_relevant_networks(results)
+    profile_networks = dhcp_profile_networks(results)
     rows: list[dict[str, Any]] = []
 
     for result in results:
@@ -261,7 +331,8 @@ def profile_population_rows(results: list[CollectionResult]) -> list[dict[str, A
             object_key(result.grid, record)
             for record in result.records.get("network", [])
         }
-        network_candidates = network_keys & set(relevant_networks)
+        relevant_candidates = network_keys & set(relevant_networks)
+        network_candidates = network_keys & set(profile_networks)
         network_total = len(network_keys)
         rows.extend([
             {
@@ -273,11 +344,19 @@ def profile_population_rows(results: list[CollectionResult]) -> list[dict[str, A
             },
             {
                 "Profile": "Network Profile v1", "Scope": "Network", "Grid": result.grid,
+                "Population Basis": NETWORK_RELEVANCE_BASIS, "Segment": "RELEVANT",
+                "Object Count": len(relevant_candidates),
+                "Share %": round(len(relevant_candidates) * 100.0 / network_total, 1) if network_total else None,
+                "Observed Association Values": "",
+                "Notes": "Broad DHCP/topology relevance; includes parent-only and externally managed context.",
+            },
+            {
+                "Profile": "Network Profile v1", "Scope": "Network", "Grid": result.grid,
                 "Population Basis": NETWORK_POPULATION_BASIS, "Segment": "CANDIDATE",
                 "Object Count": len(network_candidates),
                 "Share %": round(len(network_candidates) * 100.0 / network_total, 1) if network_total else None,
                 "Observed Association Values": "",
-                "Notes": "Evidence-backed DHCP-relevant candidates; not a compliance classification.",
+                "Notes": "Functional Network profile candidates with direct Infoblox DHCP evidence; not a compliance classification.",
             },
         ])
 

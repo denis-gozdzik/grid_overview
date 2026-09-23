@@ -54,7 +54,7 @@ def _core_options(kind, index, *, lease="3600", dns="192.0.2.53", domain="lab.ex
 def _network_result():
     networks = [
         {"_ref": f"network/LAB/{i}", "network": f"10.0.{i}.0/24", "network_view": "default",
-         "members": ["m1"]}
+         "members": [{"_struct": "dhcpmember", "name": "m1"}]}
         for i in range(3)
     ]
     return CollectionResult(

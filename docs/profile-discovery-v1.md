@@ -22,20 +22,25 @@ The specification contains **21 Network Profile v1 inputs** and **18 Range Profi
 
 ## Profile population
 
-Network readiness no longer assumes that every IPAM `network` object participates in DHCP. The Network Profile uses an evidence-backed candidate population named:
+Network readiness no longer assumes that every IPAM `network` object participates in DHCP. Two populations are retained deliberately:
 
 ```text
 DHCP_RELEVANT_NETWORK_CANDIDATES
+DHCP_PROFILE_NETWORK_CANDIDATES
 ```
 
-A Network enters this candidate population when at least one currently collected signal is present:
+`DHCP_RELEVANT_NETWORK_CANDIDATES` is broad topology/context evidence. It can include a parent-only Network, an externally managed Microsoft DHCP parent, or a Network with a generic active `use_*` flag.
 
-- a non-empty `members` association;
-- it is the parent Network of an observed DHCP Range;
-- at least one collected `use_*` flag is explicitly true;
+`DHCP_PROFILE_NETWORK_CANDIDATES` is the narrower denominator used by Network fingerprint/readiness/dimension discovery. A Network enters this functional population only when at least one direct Infoblox DHCP signal exists:
+
+- an Infoblox `dhcpmember` association;
+- it is the parent of a MEMBER/FAILOVER Range;
+- a profile-relevant scalar `use_*` flag is explicitly true;
 - at least one stored DHCP option has `use_option=true`.
 
-These signals identify candidate DHCP-relevant Networks; they do **not** prove service activation or define an approved standard. `Profile_Readiness` retains both `Source Population Objects` (all Networks in scoped Standardization) and the profile-specific `Population Objects` denominator.
+A parent of a `NONE` or `MS_SERVER` Range does not qualify by parenthood alone. A container-level `use_options=true` does not qualify by itself when no option has `use_option=true`.
+
+This separation keeps topology relevance visible without turning context-only Networks into artificial unresolved profiles. `Profile_Readiness` retains both `Source Population Objects` (all Networks in scoped Standardization) and the profile-specific `Population Objects` denominator.
 
 Range Profile v1 is segmented by RAW `server_association_type` before parameter readiness is calculated. The descriptive segments are `MS_SERVER`, `MEMBER`, `FAILOVER`, `NONE`, `OTHER` and `UNKNOWN`. Null/empty association evidence is `NONE`; unexpected non-empty values remain `OTHER`/ `UNKNOWN` and are preserved in `Profile_Populations` rather than coerced into a known class.
 
@@ -48,7 +53,7 @@ Range parameter families use different evidence-backed denominators:
 
 `MS_SERVER` means externally managed for the purpose of applicability; it does **not** mean `NOT_CONFIGURED`.
 
-If Networks exist but no DHCP-relevant candidate can be established from the available evidence, readiness is `NOT_READY`, not `NOT_APPLICABLE`.
+If Networks exist but no functional DHCP profile candidate can be established from the available evidence, readiness is `NOT_READY`, not `NOT_APPLICABLE`.
 
 ## Functional value proof vs source proof
 

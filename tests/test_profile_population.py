@@ -5,7 +5,8 @@ from infoblox_inventory.profile_population import (
     RANGE_SEGMENT_FAILOVER, RANGE_SEGMENT_MEMBER, RANGE_SEGMENT_MS_SERVER,
     RANGE_SEGMENT_NONE, RANGE_SEGMENT_OTHER, RANGE_SEGMENT_UNKNOWN,
     REASON_ACTIVE_OPTION, REASON_MEMBERS, REASON_RANGE_PARENT, REASON_USE_FLAG,
-    dhcp_associated_range_keys, dhcp_relevant_networks, effective_network_keys,
+    REASON_INFOBLOX_MEMBER, REASON_INFOBLOX_RANGE_PARENT, REASON_PROFILE_USE_FLAG,
+    dhcp_associated_range_keys, dhcp_profile_networks, dhcp_relevant_networks, effective_network_keys,
     infoblox_managed_range_keys, profile_population_rows, profile_population_summary,
     range_association_segment, range_segments,
 )
@@ -14,7 +15,7 @@ from infoblox_inventory.profile_population import (
 def _result():
     networks = [
         {"_ref": "network/LAB/0", "network": "10.0.0.0/24", "network_view": "default",
-         "members": ["m1"]},
+         "members": [{"_struct": "dhcpmember", "name": "m1"}]},
         {"_ref": "network/LAB/1", "network": "10.0.1.0/24", "network_view": "default"},
         {"_ref": "network/LAB/2", "network": "10.0.2.0/24", "network_view": "default",
          "use_options": True},
@@ -59,6 +60,52 @@ def test_profile_population_summary_exposes_source_and_candidate_denominators():
     assert total["Grid"] == "ALL"
     assert total["All Networks"] == 5
     assert total["DHCP-Relevant Candidates"] == 4
+
+
+def test_functional_profile_candidates_exclude_topology_only_external_and_container_use_options():
+    result = CollectionResult(
+        grid="LAB",
+        records={
+            "network": [
+                {"_ref": "network/LAB/member", "network": "10.1.0.0/24", "network_view": "default",
+                 "members": [{"_struct": "dhcpmember", "name": "ib-member"}]},
+                {"_ref": "network/LAB/ms", "network": "10.2.0.0/24", "network_view": "default",
+                 "members": [{"_struct": "msdhcpserver", "ipv4addr": "ms.example"}]},
+                {"_ref": "network/LAB/none-parent", "network": "10.3.0.0/24", "network_view": "default"},
+                {"_ref": "network/LAB/use-options", "network": "10.4.0.0/24", "network_view": "default",
+                 "use_options": True,
+                 "options": [{"num": 51, "value": "43200", "use_option": False}]},
+                {"_ref": "network/LAB/active-option", "network": "10.5.0.0/24", "network_view": "default",
+                 "options": [{"num": 51, "value": "3600", "use_option": True}]},
+                {"_ref": "network/LAB/ddns", "network": "10.6.0.0/24", "network_view": "default",
+                 "use_enable_ddns": True},
+                {"_ref": "network/LAB/member-parent", "network": "10.7.0.0/24", "network_view": "default"},
+            ],
+            "range": [
+                {"_ref": "range/LAB/ms", "network": "10.2.0.0/24", "network_view": "default",
+                 "server_association_type": "MS_SERVER"},
+                {"_ref": "range/LAB/none", "network": "10.3.0.0/24", "network_view": "default",
+                 "server_association_type": "NONE"},
+                {"_ref": "range/LAB/member", "network": "10.7.0.0/24", "network_view": "default",
+                 "server_association_type": "MEMBER"},
+            ],
+        },
+    )
+
+    candidates = dhcp_profile_networks([result])
+    assert set(candidates) == {
+        ("LAB", "network/LAB/member"),
+        ("LAB", "network/LAB/active-option"),
+        ("LAB", "network/LAB/ddns"),
+        ("LAB", "network/LAB/member-parent"),
+    }
+    assert candidates[("LAB", "network/LAB/member")] == {REASON_INFOBLOX_MEMBER}
+    assert candidates[("LAB", "network/LAB/active-option")] == {REASON_ACTIVE_OPTION}
+    assert candidates[("LAB", "network/LAB/ddns")] == {REASON_PROFILE_USE_FLAG}
+    assert candidates[("LAB", "network/LAB/member-parent")] == {REASON_INFOBLOX_RANGE_PARENT}
+    assert ("LAB", "network/LAB/ms") not in candidates
+    assert ("LAB", "network/LAB/none-parent") not in candidates
+    assert ("LAB", "network/LAB/use-options") not in candidates
 
 
 def test_effective_network_keys_do_not_claim_missing_page_objects():
@@ -127,7 +174,8 @@ def test_profile_population_rows_expose_network_and_range_denominators_without_q
     rows = profile_population_rows([result])
     by_basis = {(row["Population Basis"], row["Segment"]): row for row in rows}
     assert by_basis[("ALL_NETWORKS", "ALL")]["Object Count"] == 5
-    assert by_basis[("DHCP_RELEVANT_NETWORK_CANDIDATES", "CANDIDATE")]["Object Count"] == 3
+    assert by_basis[("DHCP_RELEVANT_NETWORK_CANDIDATES", "RELEVANT")]["Object Count"] == 3
+    assert by_basis[("DHCP_PROFILE_NETWORK_CANDIDATES", "CANDIDATE")]["Object Count"] == 2
     assert by_basis[("ALL_RANGES", "ALL")]["Object Count"] == 4
     assert by_basis[("DHCP_ASSOCIATED_RANGES", "ASSOCIATED")]["Object Count"] == 2
     assert by_basis[("INFOBLOX_MANAGED_RANGES", "INFOBLOX_MANAGED")]["Object Count"] == 1

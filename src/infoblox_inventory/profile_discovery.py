@@ -15,7 +15,7 @@ from .models import CollectionResult
 from .profile_population import (
     RANGE_SEGMENT_FAILOVER, RANGE_SEGMENT_MEMBER, RANGE_SEGMENT_MS_SERVER,
     RANGE_SEGMENT_NONE, RANGE_SEGMENT_OTHER, RANGE_SEGMENT_UNKNOWN,
-    dhcp_associated_range_keys, dhcp_relevant_networks, object_key,
+    dhcp_associated_range_keys, dhcp_profile_networks, object_key,
     range_association_segment,
 )
 from .profile_readiness import (
@@ -319,10 +319,10 @@ def build_profile_fingerprints(results: list[CollectionResult], scalars: list[di
         }
 
         if scope == "Network":
-            applicable_keys = set(dhcp_relevant_networks(results))
+            applicable_keys = set(dhcp_profile_networks(results))
             not_applicable_keys: set[tuple[str, str]] = set()
             unresolved_association_keys: set[tuple[str, str]] = set()
-            relevance = dhcp_relevant_networks(results)
+            relevance = dhcp_profile_networks(results)
         else:
             applicable_keys = dhcp_associated_range_keys(results)
             all_keys = set(raw_by_key)

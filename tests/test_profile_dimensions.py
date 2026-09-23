@@ -40,7 +40,7 @@ def _network_result(count=2):
     networks = [
         {
             "_ref": f"network/LAB/{i}", "network": f"10.0.{i}.0/24",
-            "network_view": "default", "members": ["m1"],
+            "network_view": "default", "members": [{"_struct": "dhcpmember", "name": "m1"}],
         }
         for i in range(count)
     ]

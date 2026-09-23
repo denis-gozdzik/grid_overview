@@ -23,7 +23,7 @@ from .profile_population import (
     RANGE_SEGMENT_OTHER,
     RANGE_SEGMENT_UNKNOWN,
     dhcp_associated_range_keys,
-    dhcp_relevant_networks,
+    dhcp_profile_networks,
     object_key,
     range_association_segment,
 )
@@ -163,7 +163,7 @@ def _specs_for_dimension(scope: str, input_keys: tuple[str, ...]) -> list[Profil
 
 def _dimension_population(scope: str, results: list[CollectionResult]) -> tuple[set[tuple[str, str]], str]:
     if scope == "Network":
-        return set(dhcp_relevant_networks(results)), NETWORK_POPULATION_BASIS
+        return set(dhcp_profile_networks(results)), NETWORK_POPULATION_BASIS
     return dhcp_associated_range_keys(results), RANGE_DHCP_ASSOCIATED_BASIS
 
 
