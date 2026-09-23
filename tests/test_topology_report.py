@@ -155,6 +155,27 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert {(row["grid"], row["stored_value"]) for row in options} == {("A", "43200"), ("B", "86400")}
     assert all(row["data_representation"] == "RAW_CONFIGURATION" and row["use_options"] is False for row in options)
     assert all("effective_value" not in row for row in options)
+    assert {"Template_Models", "Template_Grid_Matrix", "Template_Assignments",
+            "Template_Semantics"} <= set(workbook.sheetnames)
+    assert workbook["Template_Semantics"].sheet_state == "hidden"
+    assert workbook["Overview"]["A9"].value == "Template models"
+    assert workbook["Overview"]["B9"].value == 2
+    assert workbook["Overview"]["B9"].hyperlink.location == "'Template_Models'!A1"
+    model_rows = rows(workbook["Template_Models"])
+    assert len(model_rows) == 2  # one Network shape and one Range shape; Fixed Address is out of scope
+    network_models = [row for row in model_rows if row["Template Type"] == "networktemplate"]
+    assert len(network_models) == 1
+    # Stored lease values differ, but use_options=False makes them inactive; inactive literals
+    # must not split the reusable shape.
+    assert network_models[0]["Template Count"] == 2
+    assert network_models[0]["Grid Count"] == 2
+    assignments = rows(workbook["Template_Assignments"])
+    assert {(row["Grid"], row["Template Type"]) for row in assignments} >= {
+        ("A", "networktemplate"), ("B", "networktemplate"),
+        ("A", "rangetemplate"), ("B", "rangetemplate"),
+    }
+    matrix_rows = rows(workbook["Template_Grid_Matrix"])
+    assert {"A", "B"} <= {cell.value for cell in workbook["Template_Grid_Matrix"][1]}
     assert all(json.loads(row["extra_fields"])["future_option"] == ["opaque"] for row in options)
     assert workbook["DHCP_Effective"].max_row == 1
     assert workbook["DHCP_Options"].max_row == 1
