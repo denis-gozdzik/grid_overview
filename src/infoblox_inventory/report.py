@@ -24,6 +24,10 @@ from .profile_discovery import (
     PROFILE_ASSIGNMENT_HEADERS, PROFILE_FINGERPRINT_HEADERS, PROFILE_KPI_HEADERS,
     PROFILE_USEFULNESS_HEADERS, build_profile_discovery,
 )
+from .profile_context import (
+    PROFILE_CONTEXT_HEADERS, PROFILE_RELATIONSHIP_ASSIGNMENT_HEADERS,
+    PROFILE_RELATIONSHIP_HEADERS, build_profile_context, build_profile_relationships,
+)
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -556,6 +560,14 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         build_profile_discovery(results, all_scalars, all_options, profile_readiness)
         if results else ([], [], [], [])
     )
+    profile_context = (
+        build_profile_context(results, all_scalars, all_options, profile_assignments)
+        if results else []
+    )
+    profile_relationships, profile_relationship_assignments = (
+        build_profile_relationships(results, profile_assignments)
+        if results else ([], [])
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -572,6 +584,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         "Profile_Fingerprints": profile_fingerprints,
         "Profile_Assignments": profile_assignments,
         "Profile_KPIs": profile_kpis,
+        "Profile_Context": profile_context,
+        "Profile_Relationships": profile_relationships,
+        "Profile_Relationship_Assignments": profile_relationship_assignments,
         "Standardization": standardization_excel,
         "Decisions": decisions_excel,
         "Exceptions": exceptions_excel,
@@ -614,6 +629,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         'Profile_Fingerprints': PROFILE_FINGERPRINT_HEADERS,
         'Profile_Assignments': PROFILE_ASSIGNMENT_HEADERS,
         'Profile_KPIs': PROFILE_KPI_HEADERS,
+        'Profile_Context': PROFILE_CONTEXT_HEADERS,
+        'Profile_Relationships': PROFILE_RELATIONSHIP_HEADERS,
+        'Profile_Relationship_Assignments': PROFILE_RELATIONSHIP_ASSIGNMENT_HEADERS,
         'Standardization': STANDARDIZATION_HEADERS,
         'Decisions': DECISION_HEADERS,
         'Exceptions': EXCEPTION_HEADERS,
@@ -662,6 +680,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                                preserve_order=name in {
                                    'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
                                    'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
+                                   'Profile_Context', 'Profile_Relationships',
+                                   'Profile_Relationship_Assignments',
                                })
         if name == 'Profile_Populations':
             population_sheet = workbook[name]
@@ -672,7 +692,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {
             'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
-            'Profile_Assignments', 'Profile_KPIs', 'Standardization', 'Decisions',
+            'Profile_Assignments', 'Profile_KPIs', 'Profile_Context', 'Profile_Relationships',
+            'Profile_Relationship_Assignments', 'Standardization', 'Decisions',
             'Exceptions', 'Grid_Comparison',
         }:
             _style_decision_support(workbook[name], name)
