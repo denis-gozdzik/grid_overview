@@ -35,6 +35,10 @@ from .profile_dimensions import (
 )
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
+from .template_semantics import (
+    TEMPLATE_ASSIGNMENT_HEADERS, TEMPLATE_MODEL_HEADERS, TEMPLATE_SEMANTIC_HEADERS,
+    build_template_semantic_model,
+)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
                            reservation_excel_rows, reservation_headers, reservation_option_rows,
                            reservation_relationship_rows)
@@ -163,7 +167,8 @@ def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
 
 def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult],
                               coverage: list[dict[str, Any]], standardization: list[dict[str, Any]],
-                              exceptions: list[dict[str, Any]]) -> dict[int, str]:
+                              exceptions: list[dict[str, Any]],
+                              template_models: list[dict[str, Any]] | None = None) -> dict[int, str]:
     """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
     sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
@@ -197,6 +202,8 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         ('Network Views', object_count('networkview'), 'Reservations', object_count('fixedaddress')),
         ('Templates', object_count('networktemplate', 'rangetemplate', 'fixedaddresstemplate'),
          'Filters', object_count('filtermac', 'filteroption', 'filterrelayagent', 'filterfingerprint', 'filternac')),
+        ('Template models', len(template_models or []), 'Cross-Grid models',
+         sum((row.get('Grid Count') or 0) > 1 for row in (template_models or []))),
     ]
     classifications = Counter(str(row.get('Consistency Classification', '')) for row in standardization)
     decisions = Counter(str(row.get('Decision Status', 'PENDING')) for row in standardization)
@@ -217,6 +224,10 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
             cell.font = Font(name='Calibri', size=11, bold=col in {2, 4})
             if col in {2, 4}:
                 cell.fill = PatternFill('solid', fgColor='EAF2F8')
+    if template_models:
+        model_cell = sheet.cell(9, 2)
+        model_cell.hyperlink = Hyperlink(ref=model_cell.coordinate, location="'Template_Models'!A1")
+        model_cell.font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
     for offset, (left_label, left_value, right_label, right_value) in enumerate(standard, start=5):
         for col, value in ((5, left_label), (6, left_value), (7, right_label), (8, right_value)):
             cell = sheet.cell(offset, col, value)
@@ -697,6 +708,11 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         build_profile_relationships(results, profile_assignments)
         if results else ([], [])
     )
+    template_models, template_assignments, template_grid_matrix, template_semantics, template_grid_headers = (
+        build_template_semantic_model(topology_records, [result.grid for result in results])
+        if any(record.object_type in {"networktemplate", "rangetemplate"} for record in topology_records)
+        else ([], [], [], [], ["Model ID", "Template Type", "Dimension", "Parameter", "Parameterization Role"])
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -707,6 +723,12 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     manual_rows = [row for row in coverage if row.get("Collection Status") == "MANUAL_REVIEW_REQUIRED"]
     # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
+        **({
+            "Template_Models": template_models,
+            "Template_Grid_Matrix": template_grid_matrix,
+            "Template_Assignments": template_assignments,
+            "Template_Semantics": template_semantics,
+        } if template_models or template_assignments else {}),
         "Profile_Readiness": profile_readiness,
         "Profile_Populations": profile_populations,
         "Profile_Usefulness": profile_usefulness,
@@ -756,6 +778,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row in rows)
     topology_rows = topology_excel_rows(topology_records)
     sheet_headers = {
+        'Template_Models': TEMPLATE_MODEL_HEADERS,
+        'Template_Grid_Matrix': template_grid_headers,
+        'Template_Assignments': TEMPLATE_ASSIGNMENT_HEADERS,
+        'Template_Semantics': TEMPLATE_SEMANTIC_HEADERS,
         'Profile_Readiness': PROFILE_READINESS_HEADERS,
         'Profile_Populations': PROFILE_POPULATION_HEADERS,
         'Profile_Usefulness': PROFILE_USEFULNESS_HEADERS,
@@ -809,14 +835,17 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     workbook.remove(workbook.active)
     overview_links: dict[int, str] = {}
     if results:
-        overview_links = _write_overview_dashboard(workbook, results, coverage, standardization, exceptions_excel)
+        overview_links = _write_overview_dashboard(
+            workbook, results, coverage, standardization, exceptions_excel, template_models
+        )
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
         headers = sheet_headers.get(name) or sorted({key for row in rows for key in row}) or ["Status"]
         inventory_sheet = _write_inventory_sheet(
             workbook, index, name, rows, headers,
             preserve_order=name in {
-                'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
+                'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
+                'Template_Semantics', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
                 'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
                 'Profile_Dimensions', 'Profile_Dimension_Assignments',
                 'Profile_Dimension_KPIs', 'Profile_Compositions',
@@ -832,6 +861,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row_number in range(2, population_sheet.max_row + 1):
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {
+            'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
             'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
             'Profile_Assignments', 'Profile_KPIs', 'Profile_Dimensions',
             'Profile_Dimension_Assignments', 'Profile_Dimension_KPIs',
@@ -840,6 +870,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             'Exceptions', 'Grid_Comparison',
         }:
             _style_decision_support(inventory_sheet, name)
+    if 'Template_Semantics' in workbook.sheetnames:
+        workbook['Template_Semantics'].sheet_state = 'hidden'
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
         _write_overview_profile_summary(
