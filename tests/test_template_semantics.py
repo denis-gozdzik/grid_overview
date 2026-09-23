@@ -12,7 +12,7 @@ from infoblox_inventory.topology import normalize_topology
 def _network_template(grid, *, lease="7200", dns="10.0.0.10,10.0.0.11",
                       domain="a.example", gateway="10.1.0.3",
                       ddns_enabled=True, ddns_domain="a.example",
-                      member_name="m-a", dns_use=True):
+                      member_name="m-a", member_struct="dhcpmember", dns_use=True):
     return CollectionResult(
         grid=grid,
         records={
@@ -38,7 +38,7 @@ def _network_template(grid, *, lease="7200", dns="10.0.0.10,10.0.0.11",
                 "use_ddns_generate_hostname": True,
                 "netmask": 24,
                 "allow_any_netmask": False,
-                "members": [{"name": member_name}],
+                "members": [{"name": member_name, "_struct": member_struct}],
             }],
             "rangetemplate": [],
         },
@@ -87,6 +87,27 @@ def test_grid_local_values_collapse_to_one_network_template_shape():
     assert dns_matrix["Activity State"] == ACTIVE
     assert "10.1.1.10" in dns_matrix["GRID-A"]
     assert "10.2.2.10" in dns_matrix["GRID-B"]
+
+
+def test_reference_family_difference_splits_template_shape_but_reference_value_does_not():
+    infoblox = _network_template(
+        "GRID-A", member_name="ib-a", member_struct="dhcpmember"
+    )
+    microsoft = _network_template(
+        "GRID-B", member_name="ms-b", member_struct="msdhcpserver"
+    )
+
+    models, assignments, _matrix, semantics, _headers = build_template_semantic_model(
+        _records(infoblox, microsoft), ["GRID-A", "GRID-B"]
+    )
+
+    assert len(models) == 2
+    assert len({row["Model ID"] for row in assignments}) == 2
+    member_rows = [row for row in semantics if row["Parameter"] == "structure.members"]
+    assert {
+        tuple(row["Shape Value"].get("reference_types", []))
+        for row in member_rows
+    } == {("dhcpmember",), ("msdhcpserver",)}
 
 
 def test_policy_literal_difference_creates_different_template_shapes():
