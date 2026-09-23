@@ -22,7 +22,7 @@ TEMPLATE_BUNDLE_HEADERS = [
 ]
 
 TEMPLATE_BUNDLE_MODEL_HEADERS = [
-    "Bundle Model ID", "Provisioning Family", "Bundle Count", "Grid Count", "Grid Coverage %",
+    "Bundle Model ID", "Model Signature", "Provisioning Family", "Bundle Count", "Grid Count", "Grid Coverage %",
     "Grids", "Network Prefixes", "Pattern Summary", "Network Templates", "Range Templates",
     "Attention", "Review Flags",
     "Network Models", "Range Models", "Geometry Signature", "Canonical Shape", "Full SHA256",
@@ -301,6 +301,57 @@ def _geometry_summary(signature: dict[str, Any] | None) -> str:
     return f"{start_text} → {end_text}; {exclusion_text}"
 
 
+def _model_signature(
+    provisioning_family: str,
+    prefixes: list[str],
+    geometry: dict[str, Any] | None,
+) -> str:
+    """Short deterministic human-readable label; identity remains Bundle Model ID."""
+    prefix_text = ",".join(prefixes) if prefixes else "range-only"
+    if not geometry:
+        geometry_text = "no-range"
+    elif geometry.get("status") == "UNRESOLVED":
+        geometry_text = "geometry-unresolved"
+    else:
+        start = geometry.get("start")
+        if start == "FIRST_USABLE":
+            start_text = "+1"
+        elif isinstance(start, dict) and "host_offset" in start:
+            start_text = f"+{start['host_offset']}"
+        else:
+            start_text = str(start)
+
+        end = geometry.get("end")
+        if end == "LAST_USABLE":
+            end_text = "LAST_USABLE"
+        elif isinstance(end, dict) and "broadcast_margin" in end:
+            end_text = f"BCAST-{end['broadcast_margin']}"
+        elif isinstance(end, dict) and "host_offset" in end:
+            end_text = f"+{end['host_offset']}"
+        else:
+            end_text = str(end)
+
+        exclusions = geometry.get("exclusions") or []
+        if not exclusions:
+            exclusion_text = "no-excl"
+        elif len(exclusions) == 1 and isinstance(exclusions[0], dict):
+            item = exclusions[0]
+            if item.get("anchor") == "END":
+                exclusion_text = f"excl{item.get('length')}@tail-{item.get('margin')}"
+            elif item.get("anchor") == "START":
+                exclusion_text = f"excl{item.get('length')}@+{item.get('offset')}"
+            else:
+                exclusion_text = "1-excl"
+        else:
+            total = sum(
+                int(item.get("length") or 0)
+                for item in exclusions if isinstance(item, dict)
+            )
+            exclusion_text = f"{len(exclusions)}-excl/{total}-addr"
+        geometry_text = f"{start_text}→{end_text}; {exclusion_text}"
+    return f"{provisioning_family} | {prefix_text} | {geometry_text}"
+
+
 def _bundle_shape(
     network_model: str,
     range_model: str,
@@ -436,14 +487,21 @@ def build_template_bundle_models(
                 if flag.strip()
             }))
         attention = "REVIEW" if any(str(row.get("Attention") or "") == "REVIEW" for row in rows) else "OK"
+        prefixes = sorted({
+            str(row.get("Network Prefix") or "")
+            for row in rows if row.get("Network Prefix")
+        })
+        family = str(rows[0].get("Provisioning Family") or "")
+        geometry = shape.get("range_geometry") if isinstance(shape, dict) else None
         output.append({
             "Bundle Model ID": model_id,
-            "Provisioning Family": rows[0].get("Provisioning Family"),
+            "Model Signature": _model_signature(family, prefixes, geometry),
+            "Provisioning Family": family,
             "Bundle Count": len(rows),
             "Grid Count": len(model_grids),
             "Grid Coverage %": round(len(model_grids) * 100.0 / total_grids, 1) if total_grids else None,
             "Grids": ", ".join(model_grids),
-            "Network Prefixes": ", ".join(sorted({str(row.get("Network Prefix") or "") for row in rows if row.get("Network Prefix")})),
+            "Network Prefixes": ", ".join(prefixes),
             "Pattern Summary": _geometry_summary(shape.get("range_geometry") if isinstance(shape, dict) else None),
             "Network Templates": ", ".join(sorted({str(row.get("Network Template") or "") for row in rows if row.get("Network Template")})),
             "Range Templates": ", ".join(sorted({str(row.get("Range Template") or "") for row in rows if row.get("Range Template")})),

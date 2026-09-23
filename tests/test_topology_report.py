@@ -192,6 +192,7 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert "Decisions" not in visible
     assert "Exceptions" not in visible
     assert "Errors" not in visible
+    assert "Manual_Review" not in visible
     assert workbook["Network_Templates"].sheet_state == "hidden"
     assert workbook["Profile_Dimensions"].sheet_state == "hidden"
     index_rows = rows(workbook["Data_Index"])
@@ -201,6 +202,10 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert index_by_sheet["DHCP_Raw"]["Open"] == "Unhide for drill-down"
     assert index_by_sheet["Standardization"]["Category"] == "Decision workflow"
     assert index_by_sheet["Standardization"]["Open"] == "Unhide for decisions"
+    assert workbook["Overview"]["A12"].value == "Model Signature"
+    assert "Model Signature" in {
+        cell.value for cell in workbook["Template_Bundle_Models"][1]
+    }
     bundle_model_headers = {cell.value: cell.column for cell in workbook["Template_Bundle_Models"][1]}
     for technical in ("Network Models", "Range Models", "Geometry Signature", "Canonical Shape", "Full SHA256"):
         assert workbook["Template_Bundle_Models"].column_dimensions[
