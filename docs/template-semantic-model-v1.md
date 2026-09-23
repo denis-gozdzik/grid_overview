@@ -67,7 +67,14 @@ Two Grids can therefore use different addresses/domains while still sharing one 
 
 The literal value is topology-specific and does not enter shape identity directly.
 
-V1 uses this role for DHCP router/gateway option 3. Because a Network Template has no concrete instantiated subnet, an exact `HOST_OFFSET_N` cannot be derived from a literal router address at template-definition time. The shape therefore preserves activity, type and cardinality while retaining the stored value separately.
+V1 uses this role for values whose literal number/address depends on the instantiated topology:
+
+- DHCP router/gateway option 3;
+- Network Template prefix length;
+- Range offset and address count;
+- Range exclusion geometry.
+
+These values remain available as evidence and parameters but do not split a semantic template model by their raw literal. Relative Range geometry is normalized later in Template Bundle Models, where the NetworkTemplate prefix is available as context.
 
 ### STRUCTURE_LITERAL
 
@@ -75,10 +82,10 @@ Template structure is part of identity.
 
 Examples:
 
-- Network template netmask / allow-any-netmask;
-- Range offset / number of addresses;
-- Range association family;
-- Range exclusions.
+- Network `allow_any_netmask`;
+- Range association family.
+
+Prefix length and raw Range geometry are intentionally topology-derived rather than structure literals.
 
 ### REFERENCE_LOCAL
 
@@ -113,6 +120,8 @@ For DHCP options both `use_options` and per-option `use_option` are considered.
 
 A stored literal under an inactive option remains visible as evidence but does not enter shape identity.
 
+For canonical shape identity, `INACTIVE` and `NOT_CONFIGURED` normalize to the same `DISABLED` state. Their original evidence states remain distinct in `Template_Semantics` and assignments. This prevents a template that merely retains an unused historical value from becoming a separate reusable model.
+
 Example:
 
 ```text
@@ -143,7 +152,7 @@ Known DHCP option semantics are mapped only in the standard DHCP vendor class:
 
 A colliding code in another vendor/option space remains a separate generic option and is conservatively treated as `POLICY_LITERAL`.
 
-Unknown active options are never silently dropped from model identity.
+Unknown active options are never silently dropped from model identity. Unknown options that are explicitly inactive remain visible in technical evidence but are excluded from shape identity.
 
 ## Stable model identity
 

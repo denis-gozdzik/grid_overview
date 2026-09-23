@@ -1,6 +1,8 @@
 """Template bundle analysis exposes provisioning relationships without losing evidence."""
 from infoblox_inventory.models import CollectionResult
-from infoblox_inventory.template_bundles import build_template_bundles
+from infoblox_inventory.template_bundles import (
+    build_template_bundle_models, build_template_bundles,
+)
 from infoblox_inventory.template_semantics import build_template_semantic_model
 from infoblox_inventory.topology import normalize_topology
 
@@ -53,6 +55,50 @@ def test_linked_ms_bundle_derives_geometry_and_disabled_option_flag():
     assert row["Options State"] == "DISABLED (use_options=False)"
     assert row["Stored Enabled Options"] == "dhcp-lease-time"
     assert "STORED_OPTIONS_DISABLED_BY_CONTAINER" in row["Review Flags"]
+
+
+def test_relative_geometry_collapses_24_and_27_but_keeps_28_variant():
+    def bundle(prefix, offset, count, ex_offset):
+        records = {
+            "networktemplate": [{
+                "_ref": f"networktemplate/{prefix}",
+                "name": f"wifi-{prefix}",
+                "netmask": prefix,
+                "members": [{"_struct": "msdhcpserver", "ipv4addr": "ms.example"}],
+                "range_templates": [f"wifi-{prefix}-range"],
+            }],
+            "rangetemplate": [{
+                "_ref": f"rangetemplate/{prefix}",
+                "name": f"wifi-{prefix}-range",
+                "offset": offset,
+                "number_of_addresses": count,
+                "server_association_type": "MS_SERVER",
+                "ms_server": {"_struct": "msdhcpserver", "ipv4addr": "ms.example"},
+                "exclude": [{"offset": ex_offset, "number_of_addresses": 3}],
+            }],
+        }
+        result = CollectionResult(grid=f"G{prefix}", records=records)
+        topology = normalize_topology(result)
+        _models, assignments, _matrix, _semantics, _headers = build_template_semantic_model(
+            topology, [f"G{prefix}"]
+        )
+        return build_template_bundles(topology, assignments)[0]
+
+    row24 = bundle(24, 4, 251, 248)
+    row27 = bundle(27, 4, 27, 24)
+    row28 = bundle(28, 2, 13, 10)
+
+    assert row24["Geometry Signature"] == row27["Geometry Signature"]
+    assert row24["Bundle Model ID"] == row27["Bundle Model ID"]
+    assert row28["Geometry Signature"] != row24["Geometry Signature"]
+    assert row28["Bundle Model ID"] != row24["Bundle Model ID"]
+
+    rows = [row24, row27, row28]
+    models = build_template_bundle_models(rows, ["G24", "G27", "G28"])
+    common = next(row for row in models if row["Bundle Model ID"] == row24["Bundle Model ID"])
+    assert common["Bundle Count"] == 2
+    assert common["Grid Count"] == 2
+    assert common["Grid Coverage %"] == 66.7
 
 
 def test_none_association_with_member_reference_is_flagged():

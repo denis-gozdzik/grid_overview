@@ -144,6 +144,44 @@ def test_inactive_local_value_does_not_split_shape_or_look_active():
     assert "10.2.2.10" in dns_matrix["GRID-B"]
 
 
+def test_inactive_and_absent_known_option_share_disabled_shape():
+    inactive = _network_template("GRID-A", dns="10.1.1.10", dns_use=False)
+    absent = _network_template("GRID-B")
+    absent.records["networktemplate"][0]["options"] = [
+        option for option in absent.records["networktemplate"][0]["options"]
+        if option["num"] != 6
+    ]
+
+    models, assignments, _matrix, semantics, _headers = build_template_semantic_model(
+        _records(inactive, absent), ["GRID-A", "GRID-B"]
+    )
+
+    assert len(models) == 1
+    assert len({row["Model ID"] for row in assignments}) == 1
+    dns_states = {
+        row["Grid"]: row["Activity State"]
+        for row in semantics if row["Parameter"] == "dhcp.dns_servers"
+    }
+    assert dns_states == {"GRID-A": INACTIVE, "GRID-B": "NOT_CONFIGURED"}
+
+
+def test_network_prefix_is_parameterized_not_a_model_split():
+    a = _network_template("GRID-A")
+    b = _network_template("GRID-B")
+    a.records["networktemplate"][0]["netmask"] = 24
+    b.records["networktemplate"][0]["netmask"] = 27
+
+    models, assignments, _matrix, semantics, _headers = build_template_semantic_model(
+        _records(a, b), ["GRID-A", "GRID-B"]
+    )
+
+    assert len(models) == 1
+    assert len({row["Model ID"] for row in assignments}) == 1
+    netmask_rows = [row for row in semantics if row["Parameter"] == "structure.netmask"]
+    assert {row["Parameterization Role"] for row in netmask_rows} == {TOPOLOGY_DERIVED}
+    assert {row["Shape Value"]["cardinality"] for row in netmask_rows} == {1}
+
+
 def test_non_dhcp_option_code_collision_stays_generic():
     result = _network_template("GRID-A")
     raw = result.records["networktemplate"][0]
