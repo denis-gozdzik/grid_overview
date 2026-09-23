@@ -843,6 +843,28 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 f"{_markdown_value(item.get('Singleton Profiles'))} |"
             )
 
+    if profile_relationships:
+        associated = sum(int(row.get("Range Count") or 0) for row in profile_relationships)
+        paired_rows = [row for row in profile_relationships if row.get("Relationship Status") == "PROFILE_PAIR"]
+        paired = sum(int(row.get("Range Count") or 0) for row in paired_rows)
+        summary.extend([
+            "", "## Observed Network↔Range profile relationships", "",
+            "Relationships describe current topology/context only; recurring pairs are not approved standards.", "",
+            f"Associated ranges: {associated}; ranges with both parent Network and Range fingerprint resolved: {paired}.", "",
+            "| Relationship | Network fingerprint | Range fingerprint | Association | Range count | Share associated % | Share paired-profiled % |",
+            "| --- | --- | --- | --- | ---: | ---: | ---: |",
+        ])
+        for row in profile_relationships[:20]:
+            summary.append(
+                f"| {_markdown_value(row.get('Relationship Status'))} | "
+                f"{_markdown_value(row.get('Network Fingerprint ID'))} | "
+                f"{_markdown_value(row.get('Range Fingerprint ID'))} | "
+                f"{_markdown_value(row.get('Association Family'))} | "
+                f"{_markdown_value(row.get('Range Count'))} | "
+                f"{_markdown_value(row.get('Share of Associated Ranges %'))} | "
+                f"{_markdown_value(row.get('Share of Paired Profiled Ranges %'))} |"
+            )
+
     changed = [row for row in differences if row.get("Classification") not in {"CONSISTENT", "NOT_CONFIGURED", "NO_OBJECTS_IN_SCOPE"}]
     summary.extend(["", "## Standardization observations", "",
                     "Observed differences and common values are descriptive. They are not approved standards. "
