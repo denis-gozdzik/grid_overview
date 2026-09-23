@@ -338,7 +338,8 @@ def _wire_overview_standardization_links(workbook: Workbook, link_targets: dict[
 
 
 def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str, Any]],
-                                    kpis: list[dict[str, Any]] | None = None) -> None:
+                                    kpis: list[dict[str, Any]] | None = None,
+                                    relationships: list[dict[str, Any]] | None = None) -> None:
     """Append input readiness without moving existing evidence or hotspot links."""
     sheet = workbook['Overview']
     matrix = workbook['Profile_Readiness']
@@ -438,6 +439,60 @@ def _write_overview_profile_summary(workbook: Workbook, summaries: list[dict[str
         sheet.row_dimensions[discovery_note].height = 30
         end_row = discovery_note
 
+    if relationships:
+        relationship_start = end_row + 2
+        _section_title(sheet, relationship_start, 1, 9, 'Observed Network↔Range profile relationships')
+        paired_rows = [row for row in relationships if row.get('Relationship Status') == 'PROFILE_PAIR']
+        associated = sum(int(row.get('Range Count') or 0) for row in relationships)
+        paired = sum(int(row.get('Range Count') or 0) for row in paired_rows)
+        top_pair = sorted(
+            paired_rows,
+            key=lambda row: (-int(row.get('Range Count') or 0),
+                             str(row.get('Network Fingerprint ID') or ''),
+                             str(row.get('Range Fingerprint ID') or '')),
+        )[0] if paired_rows else {}
+        values = [
+            ['Associated ranges', associated, 'Paired profiled ranges', paired,
+             'Paired %', round(paired * 100.0 / associated, 1) if associated else None,
+             'Distinct profiled pairs', len(paired_rows), 'Relationship details'],
+            ['Top pair count', top_pair.get('Range Count'),
+             'Top pair % associated', top_pair.get('Share of Associated Ranges %'),
+             'Top pair % paired', top_pair.get('Share of Paired Profiled Ranges %'),
+             'Association family', top_pair.get('Association Family'), 'View relationships'],
+        ]
+        for offset, row_values in enumerate(values, start=1):
+            row_number = relationship_start + offset
+            for column, value in enumerate(row_values, start=1):
+                cell = sheet.cell(row_number, column, _excel_text(value))
+                if isinstance(cell.value, str):
+                    cell.data_type = 's'
+                cell.alignment = Alignment(wrap_text=True, vertical='center')
+                cell.border = Border(bottom=Side(style='thin', color='D9E2F3'))
+            for column in (6,):
+                sheet.cell(row_number, column).number_format = '0.0"%"'
+        sheet.cell(relationship_start + 2, 3).number_format = '0.0"%"'
+        sheet.cell(relationship_start + 2, 5).number_format = '0.0"%"'
+        link_cell = sheet.cell(relationship_start + 1, 9)
+        link_cell.value = 'View relationships'
+        link_cell.hyperlink = Hyperlink(ref=link_cell.coordinate, location="'Profile_Relationships'!A2")
+        link_cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        link_cell2 = sheet.cell(relationship_start + 2, 9)
+        link_cell2.value = 'View relationships'
+        link_cell2.hyperlink = Hyperlink(ref=link_cell2.coordinate, location="'Profile_Relationships'!A2")
+        link_cell2.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+
+        relationship_note = relationship_start + 4
+        sheet.merge_cells(start_row=relationship_note, start_column=1, end_row=relationship_note, end_column=9)
+        cell = sheet.cell(
+            relationship_note, 1,
+            'A recurring Network↔Range pair is descriptive topology/context evidence only. '
+            'It does not make either fingerprint an approved standard.'
+        )
+        cell.font = Font(name='Calibri', size=10, italic=True, color='666666')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+        sheet.row_dimensions[relationship_note].height = 30
+        end_row = relationship_note
+
     sheet.print_area = f'A1:I{end_row}'
 
 
@@ -500,9 +555,26 @@ def _style_decision_support(sheet, name: str) -> None:
                 cell = sheet.cell(row, role_column)
                 if str(cell.value) in role_fills:
                     cell.fill = PatternFill('solid', fgColor=role_fills[str(cell.value)])
+    if name in {'Profile_Relationships', 'Profile_Relationship_Assignments'}:
+        status_column = header_map.get('Relationship Status')
+        relationship_fills = {
+            'PROFILE_PAIR': 'E2F0D9',
+            'PARENT_PROFILE_UNRESOLVED': 'FFF2CC',
+            'PARENT_NOT_PROFILE_CANDIDATE': 'FFF2CC',
+            'PARENT_NETWORK_NOT_FOUND': 'F4CCCC',
+            'RANGE_PROFILE_UNRESOLVED': 'FFF2CC',
+            'RANGE_ASSOCIATION_UNRESOLVED': 'FFF2CC',
+            'RANGE_NOT_APPLICABLE': 'E7E6E6',
+        }
+        if status_column:
+            for row in range(2, sheet.max_row + 1):
+                cell = sheet.cell(row, status_column)
+                if str(cell.value) in relationship_fills:
+                    cell.fill = PatternFill('solid', fgColor=relationship_fills[str(cell.value)])
     if name in {
         'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
-        'Profile_Assignments', 'Profile_KPIs', 'Standardization', 'Decisions',
+        'Profile_Assignments', 'Profile_KPIs', 'Profile_Context', 'Profile_Relationships',
+        'Profile_Relationship_Assignments', 'Standardization', 'Decisions',
         'Exceptions', 'Grid_Comparison',
     }:
         for column in sheet.columns:
@@ -699,7 +771,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             _style_decision_support(workbook[name], name)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
-        _write_overview_profile_summary(workbook, profile_summaries, profile_kpis)
+        _write_overview_profile_summary(
+            workbook, profile_summaries, profile_kpis, profile_relationships
+        )
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
