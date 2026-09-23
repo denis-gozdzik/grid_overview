@@ -73,7 +73,10 @@ def _state_label(state: dict[str, Any]) -> str:
 def _display_state(state: dict[str, Any]) -> Any:
     status = state.get("status")
     if status == "VALUE":
-        return state.get("value")
+        value = state.get("value")
+        if isinstance(value, str) and not value.strip():
+            return "EMPTY_VALUE"
+        return value
     return status
 
 
