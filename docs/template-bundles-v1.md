@@ -78,15 +78,16 @@ WAPI exposes both:
 - object-level `use_options`, the use flag for the `options` field;
 - per-option `use_option`.
 
-If one or more stored options have `use_option=true` while the owning template has `use_options=false`, the bundle is flagged:
+If one or more stored options have `use_option=true` while the owning template has `use_options=false`, the bundle reports:
 
 ```text
-STORED_OPTIONS_DISABLED_BY_CONTAINER
+Options State = DISABLED (use_options=False)
+Stored Enabled Options = <observed option names>
 ```
 
-The stored values remain evidence, but they are not promoted to active template behavior.
+This is evidence state, not automatically a review defect. The stored values remain visible but are not promoted to active template behavior.
 
-This distinction is important for legacy templates that may contain historical option values.
+Review attention is reserved for construction issues such as missing/orphan relationships or Network/Range association mismatches.
 
 ## Association review
 
@@ -109,6 +110,15 @@ NETWORK_RANGE_ASSOCIATION_MISMATCH
 ```
 
 These are review flags, not automatic defects or remediation instructions.
+
+## Attention signal
+
+Human-facing bundle rows expose a compact `Attention` value:
+
+- `OK` — no construction inconsistency or unresolved relationship detected;
+- `REVIEW` — relationship/association construction requires review, including missing linked RangeTemplate, orphan RangeTemplate or explicit Network/Range association mismatch.
+
+Informational evidence such as a disabled option container stays in its dedicated state columns and does not inflate the review count.
 
 ## Workbook UX
 

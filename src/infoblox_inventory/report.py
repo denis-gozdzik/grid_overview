@@ -169,6 +169,190 @@ def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
     sheet.row_dimensions[row].height = 24
 
 
+def _write_template_overview_dashboard(
+    workbook: Workbook,
+    results: list[CollectionResult],
+    coverage: list[dict[str, Any]],
+    template_models: list[dict[str, Any]],
+    template_bundles: list[dict[str, Any]],
+    template_bundle_models: list[dict[str, Any]],
+) -> dict[int, str]:
+    """Template-first landing page for discovery across multiple Grids."""
+    sheet = workbook.create_sheet('Overview')
+    sheet.sheet_view.showGridLines = False
+    sheet.sheet_view.zoomScale = 90
+    sheet.freeze_panes = 'A2'
+    widths = {'A': 24, 'B': 18, 'C': 15, 'D': 13, 'E': 15, 'F': 18, 'G': 24, 'H': 16, 'I': 34}
+    for column, width in widths.items():
+        sheet.column_dimensions[column].width = width
+
+    sheet.merge_cells('A1:I1')
+    sheet['A1'] = 'Infoblox DHCP Template & Current-State Assessment'
+    sheet['A1'].fill = PatternFill('solid', fgColor='0F243E')
+    sheet['A1'].font = Font(name='Calibri', size=18, bold=True, color='FFFFFF')
+    sheet['A1'].alignment = Alignment(vertical='center')
+    sheet.row_dimensions[1].height = 34
+    sheet.merge_cells('A2:I2')
+    sheet['A2'] = (
+        'Start with reusable provisioning models. Grid-local IPs, domains and server names remain '
+        'parameters; policy and construction differences define separate models.'
+    )
+    sheet['A2'].font = Font(name='Calibri', size=10, italic=True, color='666666')
+    sheet['A2'].alignment = Alignment(wrap_text=True, vertical='top')
+    sheet.row_dimensions[2].height = 30
+
+    def object_count(*types: str) -> int:
+        return sum(len(result.records.get(kind, [])) for result in results for kind in types)
+
+    thin = Side(style='thin', color='D9E2F3')
+    bundle_status = Counter(str(row.get('Bundle Status') or '') for row in template_bundles)
+    bundle_family = Counter(str(row.get('Provisioning Family') or '') for row in template_bundles)
+    model_attention = Counter(str(row.get('Attention') or '') for row in template_bundle_models)
+    bundle_attention = Counter(str(row.get('Attention') or '') for row in template_bundles)
+
+    _section_title(sheet, 4, 1, 4, 'Environment')
+    _section_title(sheet, 4, 5, 9, 'Template discovery')
+    environment = [
+        ('Grids', len(results), 'Networks', object_count('network')),
+        ('Templates', object_count('networktemplate', 'rangetemplate', 'fixedaddresstemplate'),
+         'Ranges', object_count('range')),
+        ('Network Templates', object_count('networktemplate'),
+         'Range Templates', object_count('rangetemplate')),
+        ('Template semantic models', len(template_models),
+         'Provisioning bundles', len(template_bundles)),
+        ('Bundle models', len(template_bundle_models),
+         'Network Views', object_count('networkview')),
+    ]
+    discovery = [
+        ('Linked bundles', bundle_status['LINKED'], 'Orphan ranges', bundle_status['ORPHAN_RANGE_TEMPLATE']),
+        ('Models needing review', model_attention['REVIEW'], 'Bundles needing review', bundle_attention['REVIEW']),
+        ('MS_SERVER bundles', bundle_family['MS_SERVER'], 'INFOBLOX bundles', bundle_family['INFOBLOX']),
+        ('Cross-Grid models', sum((row.get('Grid Count') or 0) > 1 for row in template_bundle_models),
+         'Collected Grids', len(results)),
+        ('Missing linked ranges', bundle_status['MISSING_RANGE_TEMPLATE'],
+         'Network-only bundles', bundle_status['NETWORK_ONLY']),
+    ]
+    for offset, row_values in enumerate(environment, start=5):
+        for col, value in zip((1, 2, 3, 4), row_values):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.font = Font(name='Calibri', size=11, bold=col in {2, 4})
+            if col in {2, 4}:
+                cell.fill = PatternFill('solid', fgColor='EAF2F8')
+    for offset, row_values in enumerate(discovery, start=5):
+        for col, value in zip((5, 6, 7, 8), row_values):
+            cell = sheet.cell(offset, col, value)
+            cell.border = Border(bottom=thin)
+            cell.alignment = Alignment(vertical='center', wrap_text=True)
+            cell.font = Font(name='Calibri', size=11, bold=col in {6, 8})
+            if col in {6, 8}:
+                cell.fill = PatternFill('solid', fgColor='EAF2F8')
+
+    sheet['B9'].hyperlink = Hyperlink(ref='B9', location="'Template_Bundle_Models'!A1")
+    sheet['B9'].font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
+
+    _section_title(sheet, 11, 1, 9, 'Provisioning model catalog')
+    headers = [
+        'Bundle Model', 'Family', 'Bundles', 'Grids', 'Grid coverage %',
+        'Prefixes', 'Construction pattern', 'Attention', 'Templates',
+    ]
+    for column, label in enumerate(headers, start=1):
+        cell = sheet.cell(12, column, label)
+        cell.fill = PatternFill('solid', fgColor='D9EAF7')
+        cell.font = Font(name='Calibri', size=10, bold=True, color='17365D')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+
+    ordered_models = sorted(
+        template_bundle_models,
+        key=lambda row: (
+            -int(row.get('Grid Count') or 0),
+            -int(row.get('Bundle Count') or 0),
+            str(row.get('Bundle Model ID') or ''),
+        ),
+    )
+    for row_number, item in enumerate(ordered_models[:12], start=13):
+        templates = item.get('Network Templates') or item.get('Range Templates') or ''
+        values = [
+            item.get('Bundle Model ID'), item.get('Provisioning Family'),
+            item.get('Bundle Count'), item.get('Grid Count'), item.get('Grid Coverage %'),
+            item.get('Network Prefixes'), item.get('Pattern Summary'), item.get('Attention'),
+            templates,
+        ]
+        for column, value in enumerate(values, start=1):
+            cell = sheet.cell(row_number, column, _excel_text(value))
+            if isinstance(cell.value, str):
+                cell.data_type = 's'
+            cell.alignment = Alignment(wrap_text=True, vertical='top')
+            cell.border = Border(bottom=Side(style='hair', color='E7E6E6'))
+        sheet.cell(row_number, 1).hyperlink = Hyperlink(
+            ref=sheet.cell(row_number, 1).coordinate, location="'Template_Bundle_Models'!A1"
+        )
+        sheet.cell(row_number, 1).font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        sheet.cell(row_number, 5).number_format = '0.0"%"'
+        attention_cell = sheet.cell(row_number, 8)
+        if attention_cell.value == 'REVIEW':
+            attention_cell.fill = PatternFill('solid', fgColor='FFF2CC')
+            attention_cell.font = Font(name='Calibri', size=10, bold=True, color='9C6500')
+        elif attention_cell.value == 'OK':
+            attention_cell.fill = PatternFill('solid', fgColor='E2F0D9')
+
+    catalog_end = 12 + min(len(ordered_models), 12)
+    if ordered_models:
+        table = Table(displayName='OverviewBundleModels', ref=f'A12:I{catalog_end}')
+        table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium2', showRowStripes=True)
+        sheet.add_table(table)
+
+    nav_row = catalog_end + 2
+    _section_title(sheet, nav_row, 1, 9, 'Navigate')
+    navigation = [
+        ('Bundle model catalog', "'Template_Bundle_Models'!A1"),
+        ('Bundle assignments', "'Template_Bundles'!A1"),
+        ('Grid-local parameters', "'Template_Grid_Matrix'!A1"),
+        ('All sheets / evidence index', "'Data_Index'!A1"),
+    ]
+    for offset, (label, location) in enumerate(navigation, start=nav_row + 1):
+        cell = sheet.cell(offset, 1, label)
+        cell.hyperlink = Hyperlink(ref=cell.coordinate, location=location)
+        cell.font = Font(name='Calibri', size=10, color='0563C1', underline='single')
+        cell.alignment = Alignment(vertical='center')
+    coverage_counts = Counter(str(row.get('Collection Status', 'PARTIAL')) for row in coverage)
+    collection_row = nav_row + 1
+    sheet.cell(collection_row, 5, 'Collection errors')
+    sheet.cell(collection_row, 6, sum(len(result.errors) for result in results))
+    sheet.cell(collection_row + 1, 5, 'Complete observations')
+    sheet.cell(collection_row + 1, 6, coverage_counts['COMPLETE'])
+    sheet.cell(collection_row + 2, 5, 'Partial observations')
+    sheet.cell(collection_row + 2, 6, coverage_counts['PARTIAL'])
+    sheet.cell(collection_row + 3, 5, 'Manual review observations')
+    sheet.cell(collection_row + 3, 6, coverage_counts['MANUAL_REVIEW_REQUIRED'])
+    for row_number in range(collection_row, collection_row + 4):
+        sheet.cell(row_number, 5).border = Border(bottom=thin)
+        sheet.cell(row_number, 6).border = Border(bottom=thin)
+        sheet.cell(row_number, 6).font = Font(name='Calibri', size=10, bold=True)
+
+    note_row = nav_row + 6
+    sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
+    sheet.cell(
+        note_row, 1,
+        'Model prevalence is descriptive evidence, not an approved standard. Review flags identify '
+        'construction inconsistencies or unresolved relationships; disabled option containers remain '
+        'visible as option state, not as automatic defects.'
+    )
+    sheet.cell(note_row, 1).fill = PatternFill('solid', fgColor='EAF2F8')
+    sheet.cell(note_row, 1).font = Font(name='Calibri', size=10, italic=True, color='17365D')
+    sheet.cell(note_row, 1).alignment = Alignment(wrap_text=True, vertical='center')
+    sheet.row_dimensions[note_row].height = 34
+
+    sheet.print_area = f'A1:I{note_row}'
+    sheet.page_setup.orientation = 'landscape'
+    sheet.page_setup.paperSize = sheet.PAPERSIZE_A3
+    sheet.page_setup.fitToWidth = 1
+    sheet.page_setup.fitToHeight = 0
+    sheet.sheet_properties.pageSetUpPr.fitToPage = True
+    return {}
+
+
 def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult],
                               coverage: list[dict[str, Any]], standardization: list[dict[str, Any]],
                               exceptions: list[dict[str, Any]],
@@ -176,6 +360,11 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
                               template_bundles: list[dict[str, Any]] | None = None,
                               template_bundle_models: list[dict[str, Any]] | None = None) -> dict[int, str]:
     """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
+    if template_bundle_models:
+        return _write_template_overview_dashboard(
+            workbook, results, coverage, template_models or [],
+            template_bundles or [], template_bundle_models,
+        )
     sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
     sheet.sheet_view.zoomScale = 90
@@ -879,21 +1068,45 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         )
         if name in {'Template_Models', 'Template_Bundle_Models'}:
             template_header_map = {cell.value: cell.column for cell in inventory_sheet[1]}
-            for technical_header in ('Canonical Shape', 'Full SHA256'):
+            technical_headers = ['Canonical Shape', 'Full SHA256']
+            if name == 'Template_Bundle_Models':
+                technical_headers.extend(['Network Models', 'Range Models', 'Geometry Signature'])
+            for technical_header in technical_headers:
                 technical_column = template_header_map.get(technical_header)
                 if technical_column:
                     inventory_sheet.column_dimensions[
                         inventory_sheet.cell(1, technical_column).column_letter
                     ].hidden = True
-        if name == 'Template_Bundles':
+        if name in {'Template_Bundles', 'Template_Bundle_Models'}:
             bundle_headers = {cell.value: cell.column for cell in inventory_sheet[1]}
+            attention_column = bundle_headers.get('Attention')
             review_column = bundle_headers.get('Review Flags')
+            if attention_column:
+                for row_number in range(2, inventory_sheet.max_row + 1):
+                    cell = inventory_sheet.cell(row_number, attention_column)
+                    if cell.value == 'REVIEW':
+                        cell.fill = PatternFill('solid', fgColor='FFF2CC')
+                        cell.font = Font(name='Calibri', size=10, bold=True, color='9C6500')
+                    elif cell.value == 'OK':
+                        cell.fill = PatternFill('solid', fgColor='E2F0D9')
             if review_column:
                 for row_number in range(2, inventory_sheet.max_row + 1):
                     cell = inventory_sheet.cell(row_number, review_column)
                     if cell.value:
                         cell.fill = PatternFill('solid', fgColor='FFF2CC')
                         cell.font = Font(name='Calibri', size=10, bold=True, color='9C6500')
+        if name == 'Template_Bundles':
+            bundle_headers = {cell.value: cell.column for cell in inventory_sheet[1]}
+            for technical_header in (
+                'Network Model ID', 'Network Member Family', 'Range Model ID',
+                'Range Association', 'Range Addresses', 'Geometry Signature',
+                'Fixed Address Templates', 'Stored Enabled Options',
+            ):
+                technical_column = bundle_headers.get(technical_header)
+                if technical_column:
+                    inventory_sheet.column_dimensions[
+                        inventory_sheet.cell(1, technical_column).column_letter
+                    ].hidden = True
         if name == 'Profile_Populations':
             population_sheet = inventory_sheet
             population_headers = {cell.value: cell.column for cell in population_sheet[1]}
@@ -914,12 +1127,20 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             _style_decision_support(inventory_sheet, name)
     # Keep the workbook navigable at nine-Grid scale: decision/catalog views stay
     # visible, while detailed evidence remains in the same workbook as drill-down.
-    user_facing_sheets = {
-        'Overview', 'Data_Index', 'Template_Bundle_Models', 'Template_Bundles',
-        'Template_Models', 'Template_Grid_Matrix',
-        'Template_Assignments', 'Standardization', 'Decisions', 'Exceptions',
-        'Grid_Summary', 'Manual_Review', 'Errors',
-    }
+    if template_bundle_models:
+        user_facing_sheets = {
+            'Overview', 'Data_Index', 'Template_Bundle_Models', 'Template_Bundles',
+            'Template_Models', 'Template_Grid_Matrix', 'Grid_Summary',
+        }
+        if sheets.get('Manual_Review'):
+            user_facing_sheets.add('Manual_Review')
+        if any(result.errors for result in results):
+            user_facing_sheets.add('Errors')
+    else:
+        user_facing_sheets = {
+            'Overview', 'Data_Index', 'Standardization', 'Decisions', 'Exceptions',
+            'Grid_Summary', 'Manual_Review', 'Errors',
+        }
     for worksheet in workbook.worksheets:
         if worksheet.title not in user_facing_sheets:
             worksheet.sheet_state = 'hidden'
@@ -958,14 +1179,22 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             if worksheet.title in {'Overview', 'Data_Index'}:
                 continue
             visible = worksheet.sheet_state == 'visible'
-            category = 'Primary analysis' if visible else 'Technical evidence'
+            if visible:
+                category = 'Primary analysis'
+            elif worksheet.title in {'Standardization', 'Decisions', 'Exceptions'}:
+                category = 'Decision workflow'
+            else:
+                category = 'Technical evidence'
             values = [
                 category,
                 worksheet.title,
                 max(worksheet.max_row - 1, 0),
                 'VISIBLE' if visible else 'HIDDEN',
                 purposes.get(worksheet.title, 'Supporting inventory/evidence view.'),
-                'Open' if visible else 'Unhide for drill-down',
+                'Open' if visible else (
+                    'Unhide for decisions' if category == 'Decision workflow'
+                    else 'Unhide for drill-down'
+                ),
             ]
             for column, value in enumerate(values, start=1):
                 cell = data_index.cell(index_row, column, value)
@@ -986,9 +1215,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             data_index.add_table(index_table)
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
-        _write_overview_profile_summary(
-            workbook, profile_summaries, profile_kpis, profile_relationships
-        )
+        if not template_bundle_models:
+            _write_overview_profile_summary(
+                workbook, profile_summaries, profile_kpis, profile_relationships
+            )
     workbook.save(output / "current_state_inventory.xlsx")
     if results:
         write_decision_template(standardization, output / "standardization_decisions.template.yaml")
@@ -1030,16 +1260,17 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                         "extra_fields and complete responses remain in the raw archive."])
     if template_bundles:
         bundle_status = Counter(str(row.get("Bundle Status") or "") for row in template_bundles)
-        flagged_bundles = sum(bool(row.get("Review Flags")) for row in template_bundles)
+        review_bundles = sum(str(row.get("Attention") or "") == "REVIEW" for row in template_bundles)
         summary.extend([
             "", "## Template provisioning overview", "",
             f"Provisioning bundles: {len(template_bundles)}; linked: {bundle_status['LINKED']}; "
             f"network-only: {bundle_status['NETWORK_ONLY']}; missing linked RangeTemplate: "
             f"{bundle_status['MISSING_RANGE_TEMPLATE']}; orphan RangeTemplate: "
-            f"{bundle_status['ORPHAN_RANGE_TEMPLATE']}; bundles with review flags: {flagged_bundles}.",
+            f"{bundle_status['ORPHAN_RANGE_TEMPLATE']}; bundles needing review: {review_bundles}.",
             "",
-            "Start with Template_Bundles for NetworkTemplate→RangeTemplate relationships, then "
-            "Template_Models for reusable shapes and Template_Grid_Matrix for local parameter values. "
+            "Start with Template_Bundle_Models for normalized provisioning patterns, then "
+            "Template_Bundles for concrete NetworkTemplate→RangeTemplate assignments and "
+            "Template_Grid_Matrix for local parameter values. "
             "Detailed template evidence remains in hidden technical sheets.",
         ])
 

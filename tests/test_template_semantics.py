@@ -87,6 +87,28 @@ def test_grid_local_values_collapse_to_one_network_template_shape():
     assert dns_matrix["Activity State"] == ACTIVE
     assert "10.1.1.10" in dns_matrix["GRID-A"]
     assert "10.2.2.10" in dns_matrix["GRID-B"]
+    netmask_matrix = next(row for row in matrix if row["Parameter"] == "structure.netmask")
+    assert "/24" in netmask_matrix["GRID-A"]
+    member_matrix = next(row for row in matrix if row["Parameter"] == "structure.members")
+    assert "member-a" in member_matrix["GRID-A"]
+
+
+def test_empty_local_reference_is_hidden_from_human_grid_matrix():
+    result = _network_template("GRID-A")
+    result.records["networktemplate"][0]["fixed_address_templates"] = []
+
+    _models, _assignments, matrix, semantics, _headers = build_template_semantic_model(
+        _records(result), ["GRID-A"]
+    )
+
+    assert any(
+        row["Parameter"] == "structure.fixed_address_templates"
+        for row in semantics
+    )
+    assert not any(
+        row["Parameter"] == "structure.fixed_address_templates"
+        for row in matrix
+    )
 
 
 def test_reference_family_difference_splits_template_shape_but_reference_value_does_not():

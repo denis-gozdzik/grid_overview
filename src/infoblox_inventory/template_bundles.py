@@ -14,17 +14,18 @@ BUNDLE_HASH_LENGTH = 12
 
 TEMPLATE_BUNDLE_HEADERS = [
     "Grid", "Bundle Model ID", "Bundle Status", "Provisioning Family",
-    "Network Template", "Network Model ID", "Network Prefix", "Network Member Family",
-    "Range Template", "Range Model ID", "Range Association",
-    "Range Start", "Range Addresses", "Range End", "Geometry Signature", "Exclusion Pattern",
-    "Fixed Address Templates", "Options State", "Stored Enabled Options",
-    "Review Flags", "Notes",
+    "Network Template", "Network Prefix", "Range Template",
+    "Range Start", "Range End", "Exclusion Pattern", "Options State",
+    "Attention", "Review Flags", "Notes",
+    "Network Model ID", "Network Member Family", "Range Model ID", "Range Association",
+    "Range Addresses", "Geometry Signature", "Fixed Address Templates", "Stored Enabled Options",
 ]
 
 TEMPLATE_BUNDLE_MODEL_HEADERS = [
     "Bundle Model ID", "Provisioning Family", "Bundle Count", "Grid Count", "Grid Coverage %",
-    "Grids", "Network Models", "Range Models", "Geometry Signature",
-    "Network Templates", "Range Templates", "Review Flags", "Canonical Shape", "Full SHA256",
+    "Grids", "Network Prefixes", "Pattern Summary", "Network Templates", "Range Templates",
+    "Attention", "Review Flags",
+    "Network Models", "Range Models", "Geometry Signature", "Canonical Shape", "Full SHA256",
 ]
 
 
@@ -214,17 +215,15 @@ def _range_geometry(
     )
 
 
-def _options_summary(record: DHCPTemplateRecord | None) -> tuple[str, str, list[str]]:
+def _options_summary(record: DHCPTemplateRecord | None) -> tuple[str, str]:
     if record is None:
-        return "", "", []
+        return "", ""
     enabled = [
         option for option in (record.options or [])
         if option.use_option is True and option.value not in (None, "")
     ]
     option_labels = [str(option.name or option.num or "?") for option in enabled]
-    flags: list[str] = []
     if record.use_options is False and enabled:
-        flags.append("STORED_OPTIONS_DISABLED_BY_CONTAINER")
         state = "DISABLED (use_options=False)"
     elif record.use_options is True:
         state = "ENABLED"
@@ -232,15 +231,14 @@ def _options_summary(record: DHCPTemplateRecord | None) -> tuple[str, str, list[
         state = "DISABLED"
     else:
         state = "UNKNOWN"
-    return state, ", ".join(option_labels), flags
+    return state, ", ".join(option_labels)
 
 
 def _bundle_flags(
     network: NetworkTemplateRecord | None,
     range_record: RangeTemplateRecord | None,
-    option_flags: list[str],
 ) -> list[str]:
-    flags = list(option_flags)
+    flags: list[str] = []
     if network is not None and range_record is not None:
         if _provisioning_family(network, range_record) == "MIXED_OR_INCONSISTENT":
             flags.append("NETWORK_RANGE_ASSOCIATION_MISMATCH")
@@ -252,6 +250,55 @@ def _bundle_flags(
         ):
             flags.append("ASSOCIATION_NONE_WITH_SERVER_REFERENCE")
     return sorted(set(flags))
+
+
+def _attention(status: str, flags: list[str]) -> str:
+    if flags or status in {"MISSING_RANGE_TEMPLATE", "ORPHAN_RANGE_TEMPLATE"}:
+        return "REVIEW"
+    return "OK"
+
+
+def _geometry_summary(signature: dict[str, Any] | None) -> str:
+    if not signature:
+        return "No linked RangeTemplate"
+    if signature.get("status") == "UNRESOLVED":
+        return "Range geometry unresolved"
+
+    start = signature.get("start")
+    if start == "FIRST_USABLE":
+        start_text = "start first usable"
+    elif isinstance(start, dict) and "host_offset" in start:
+        start_text = f"start +{start['host_offset']}"
+    else:
+        start_text = f"start {start}"
+
+    end = signature.get("end")
+    if end == "LAST_USABLE":
+        end_text = "end last usable"
+    elif isinstance(end, dict) and "broadcast_margin" in end:
+        end_text = f"end {end['broadcast_margin']} before broadcast"
+    elif isinstance(end, dict) and "host_offset" in end:
+        end_text = f"end +{end['host_offset']}"
+    else:
+        end_text = f"end {end}"
+
+    exclusions = signature.get("exclusions") or []
+    exclusion_parts: list[str] = []
+    for item in exclusions:
+        if not isinstance(item, dict):
+            exclusion_parts.append(str(item))
+            continue
+        length = item.get("length")
+        if item.get("anchor") == "END":
+            exclusion_parts.append(
+                f"exclude {length} ending {item.get('margin')} before broadcast"
+            )
+        elif item.get("anchor") == "START":
+            exclusion_parts.append(f"exclude {length} at +{item.get('offset')}")
+        else:
+            exclusion_parts.append("exclusion unresolved")
+    exclusion_text = "; ".join(exclusion_parts) if exclusion_parts else "no exclusions"
+    return f"{start_text} → {end_text}; {exclusion_text}"
 
 
 def _bundle_shape(
@@ -298,8 +345,8 @@ def build_template_bundles(
         requested_range_name: str = "",
     ) -> None:
         option_record = range_record or network
-        option_state, enabled_options, option_flags = _options_summary(option_record)
-        flags = _bundle_flags(network, range_record, option_flags)
+        option_state, enabled_options = _options_summary(option_record)
+        flags = _bundle_flags(network, range_record)
         start, addresses, end, geometry_text, exclusions = _range_geometry(network, range_record)
         network_model = model_by_key.get(_record_key(network), "") if network else ""
         range_model = model_by_key.get(_record_key(range_record), "") if range_record else ""
@@ -322,22 +369,23 @@ def build_template_bundles(
             "Bundle Status": status,
             "Provisioning Family": family,
             "Network Template": network.name or "" if network else "",
-            "Network Model ID": network_model,
             "Network Prefix": f"/{network.netmask}" if network and network.netmask is not None else "",
-            "Network Member Family": _member_family(network.members) if network else "",
             "Range Template": range_record.name or "" if range_record else requested_range_name,
-            "Range Model ID": range_model,
-            "Range Association": _range_reference_family(range_record) if range_record else "",
             "Range Start": start,
-            "Range Addresses": addresses,
             "Range End": end,
-            "Geometry Signature": geometry_text,
             "Exclusion Pattern": exclusions,
-            "Fixed Address Templates": fixed_templates,
             "Options State": option_state,
-            "Stored Enabled Options": enabled_options,
+            "Attention": _attention(status, flags),
             "Review Flags": ", ".join(flags),
             "Notes": "; ".join(notes),
+            "Network Model ID": network_model,
+            "Network Member Family": _member_family(network.members) if network else "",
+            "Range Model ID": range_model,
+            "Range Association": _range_reference_family(range_record) if range_record else "",
+            "Range Addresses": addresses,
+            "Geometry Signature": geometry_text,
+            "Fixed Address Templates": fixed_templates,
+            "Stored Enabled Options": enabled_options,
             "_bundle_shape": payload,
             "_bundle_sha256": digest,
         })
@@ -381,6 +429,13 @@ def build_template_bundle_models(
         hashes = {str(row.get("_bundle_sha256") or "") for row in rows}
         if len(hashes) != 1:
             raise ValueError(f"Bundle model {model_id} has inconsistent SHA256 evidence")
+        review_flags = ", ".join(sorted({
+                flag.strip()
+                for row in rows
+                for flag in str(row.get("Review Flags") or "").split(",")
+                if flag.strip()
+            }))
+        attention = "REVIEW" if any(str(row.get("Attention") or "") == "REVIEW" for row in rows) else "OK"
         output.append({
             "Bundle Model ID": model_id,
             "Provisioning Family": rows[0].get("Provisioning Family"),
@@ -388,17 +443,15 @@ def build_template_bundle_models(
             "Grid Count": len(model_grids),
             "Grid Coverage %": round(len(model_grids) * 100.0 / total_grids, 1) if total_grids else None,
             "Grids": ", ".join(model_grids),
+            "Network Prefixes": ", ".join(sorted({str(row.get("Network Prefix") or "") for row in rows if row.get("Network Prefix")})),
+            "Pattern Summary": _geometry_summary(shape.get("range_geometry") if isinstance(shape, dict) else None),
+            "Network Templates": ", ".join(sorted({str(row.get("Network Template") or "") for row in rows if row.get("Network Template")})),
+            "Range Templates": ", ".join(sorted({str(row.get("Range Template") or "") for row in rows if row.get("Range Template")})),
+            "Attention": attention,
+            "Review Flags": review_flags,
             "Network Models": ", ".join(sorted({str(row.get("Network Model ID") or "") for row in rows if row.get("Network Model ID")})),
             "Range Models": ", ".join(sorted({str(row.get("Range Model ID") or "") for row in rows if row.get("Range Model ID")})),
             "Geometry Signature": str(rows[0].get("Geometry Signature") or ""),
-            "Network Templates": ", ".join(sorted({str(row.get("Network Template") or "") for row in rows if row.get("Network Template")})),
-            "Range Templates": ", ".join(sorted({str(row.get("Range Template") or "") for row in rows if row.get("Range Template")})),
-            "Review Flags": ", ".join(sorted({
-                flag.strip()
-                for row in rows
-                for flag in str(row.get("Review Flags") or "").split(",")
-                if flag.strip()
-            })),
             "Canonical Shape": _json(shape),
             "Full SHA256": next(iter(hashes)),
         })

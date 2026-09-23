@@ -16,7 +16,7 @@ def _build(records):
     return build_template_bundles(topology, assignments)
 
 
-def test_linked_ms_bundle_derives_geometry_and_disabled_option_flag():
+def test_linked_ms_bundle_keeps_disabled_options_as_state_not_review_flag():
     rows = _build({
         "networktemplate": [{
             "_ref": "networktemplate/ms:one",
@@ -54,7 +54,8 @@ def test_linked_ms_bundle_derives_geometry_and_disabled_option_flag():
     assert "offset 248, count 3" in row["Exclusion Pattern"]
     assert row["Options State"] == "DISABLED (use_options=False)"
     assert row["Stored Enabled Options"] == "dhcp-lease-time"
-    assert "STORED_OPTIONS_DISABLED_BY_CONTAINER" in row["Review Flags"]
+    assert row["Review Flags"] == ""
+    assert row["Attention"] == "OK"
 
 
 def test_relative_geometry_collapses_24_and_27_but_keeps_28_variant():
@@ -99,6 +100,11 @@ def test_relative_geometry_collapses_24_and_27_but_keeps_28_variant():
     assert common["Bundle Count"] == 2
     assert common["Grid Count"] == 2
     assert common["Grid Coverage %"] == 66.7
+    assert common["Network Prefixes"] == "/24, /27"
+    assert common["Pattern Summary"] == (
+        "start +4 → end last usable; exclude 3 ending 5 before broadcast"
+    )
+    assert common["Attention"] == "OK"
 
 
 def test_none_association_with_member_reference_is_flagged():
@@ -125,6 +131,7 @@ def test_none_association_with_member_reference_is_flagged():
     assert row["Provisioning Family"] == "MIXED_OR_INCONSISTENT"
     assert "NETWORK_RANGE_ASSOCIATION_MISMATCH" in row["Review Flags"]
     assert "ASSOCIATION_NONE_WITH_SERVER_REFERENCE" in row["Review Flags"]
+    assert row["Attention"] == "REVIEW"
 
 
 def test_orphan_range_template_remains_visible():
@@ -146,6 +153,7 @@ def test_orphan_range_template_remains_visible():
     assert row["Network Template"] == ""
     assert row["Range Template"] == "orphan-range"
     assert "not referenced" in row["Notes"]
+    assert row["Attention"] == "REVIEW"
 
 
 def test_missing_linked_range_is_not_silently_dropped():
@@ -164,3 +172,4 @@ def test_missing_linked_range_is_not_silently_dropped():
     assert row["Bundle Status"] == "MISSING_RANGE_TEMPLATE"
     assert row["Range Template"] == "missing-range"
     assert "not collected/found" in row["Notes"]
+    assert row["Attention"] == "REVIEW"
