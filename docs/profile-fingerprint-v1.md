@@ -308,11 +308,21 @@ Do not add yet:
 - remediation generation;
 - attempts to resolve the two MEMBER Range PXE scalar wrappers without authoritative WAPI evidence.
 
-The implementation produces four workbook views:
+The implementation produces the core discovery views:
 
 - `Profile_Usefulness`: deterministic evidence variability metrics without a weighted score;
 - `Profile_Fingerprints`: exact recurring core-profile definitions, stable IDs, prevalence and bounded feature-overlay distributions;
 - `Profile_Assignments`: object-to-profile mapping plus unresolved/not-applicable states;
 - `Profile_KPIs`: coverage, distinct-profile count, top-1/top-3 share, 80/90/95% coverage counts and singleton count.
+
+A separate context layer intentionally does not change fingerprint identity:
+
+- `Profile_Context`: bounded Network View, association-family, DHCP-relevance, EA key/value, comment and core source-signature distributions for each resolved fingerprint;
+- `Profile_Relationships`: aggregated parent Network↔Range fingerprint pairs with explicit associated-range and paired-profiled denominators;
+- `Profile_Relationship_Assignments`: one row per Range preserving parent profile status, Range profile status and unresolved/not-applicable relationship states.
+
+Source signatures summarize observed provenance such as `Grid+Network`; they are evidence about inheritance/source management, not part of the functional fingerprint.
+
+Parent Network↔Range pair prevalence is descriptive topology/context evidence. A dominant pair does not become an approved standard and is not given an inferred semantic name.
 
 The implementation remains descriptive. It does not create approved standards, compliance states or remediation.
