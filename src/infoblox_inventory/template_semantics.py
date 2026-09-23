@@ -474,6 +474,36 @@ def _shape_payload(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _matrix_display(parameter: str, value: Any) -> str:
+    if value in (None, "", [], {}):
+        return ""
+    if parameter == "structure.netmask":
+        return f"/{value}"
+    if parameter in {"structure.range_templates", "structure.fixed_address_templates"}:
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value)
+    if parameter == "structure.members" and isinstance(value, list):
+        items: list[str] = []
+        for item in value:
+            if not isinstance(item, dict):
+                items.append(str(item))
+                continue
+            name = item.get("name")
+            address = item.get("ipv4addr")
+            if name and address:
+                items.append(f"{name} ({address})")
+            elif name or address:
+                items.append(str(name or address))
+            else:
+                items.append(_json(item))
+        return ", ".join(items)
+    if parameter.startswith("association.") and isinstance(value, dict):
+        return str(value.get("name") or value.get("ipv4addr") or _json(value))
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return str(value)
+
+
 def build_template_semantic_model(
     records: list[Any], grids: list[str]
 ) -> tuple[
@@ -574,14 +604,14 @@ def build_template_semantic_model(
         if row["Activity State"] == NOT_CONFIGURED:
             continue
         stored_value = row.get("Stored Value")
-        if row["Activity State"] == INACTIVE and stored_value in (None, "", [], {}):
+        if stored_value in (None, "", [], {}):
             continue
         index_key = (
             str(row["Model ID"]), str(row["Template Type"]), str(row["Dimension"]),
             str(row["Parameter"]), str(row["Parameterization Role"]),
             str(row["Activity State"]),
         )
-        display = _json(row["Stored Value"])
+        display = _matrix_display(str(row["Parameter"]), row["Stored Value"])
         name = str(row["Template Name"] or row["Template Ref"])
         local_index[index_key][str(row["Grid"])].append(f"{name}={display}")
 
