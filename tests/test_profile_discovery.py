@@ -137,6 +137,20 @@ def test_feature_overlay_difference_does_not_split_core_profile():
     assert '"ddns_enabled"' in network_fps[0]["Feature Overlay Distributions"]
 
 
+def test_empty_core_value_is_visible_but_kept_literal_in_canonical_payload():
+    result = _network_result()
+    result.records["network"] = result.records["network"][:1]
+    result.effective_records["network"] = result.effective_records["network"][:1]
+    result.coverage = [_coverage("network", 1, query) for query in ("raw", "effective")]
+    options = _core_options("network", 0, dns="")
+    fingerprints, assignments, _kpis = build_profile_fingerprints([result], [], options)
+    network_fp = next(row for row in fingerprints if row["Profile"] == "Network Profile v1")
+    assert network_fp["DNS Servers"] == "EMPTY_VALUE"
+    assert '"dns_servers":{"status":"VALUE","value":""}' in network_fp["Canonical Payload"]
+    assignment = next(row for row in assignments if row["Scope"] == "Network")
+    assert assignment["DNS Servers"] == "EMPTY_VALUE"
+
+
 def test_range_association_family_is_part_of_fingerprint_and_none_is_not_applicable():
     ranges = [
         {"_ref": "range/LAB/0", "start_addr": "10.10.0.10", "end_addr": "10.10.0.20",
