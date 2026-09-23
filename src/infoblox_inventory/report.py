@@ -39,6 +39,7 @@ from .template_semantics import (
     TEMPLATE_ASSIGNMENT_HEADERS, TEMPLATE_MODEL_HEADERS, TEMPLATE_SEMANTIC_HEADERS,
     build_template_semantic_model,
 )
+from .template_bundles import TEMPLATE_BUNDLE_HEADERS, build_template_bundles
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
                            reservation_excel_rows, reservation_headers, reservation_option_rows,
                            reservation_relationship_rows)
@@ -168,7 +169,8 @@ def _section_title(sheet, row: int, start: int, end: int, title: str) -> None:
 def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult],
                               coverage: list[dict[str, Any]], standardization: list[dict[str, Any]],
                               exceptions: list[dict[str, Any]],
-                              template_models: list[dict[str, Any]] | None = None) -> dict[int, str]:
+                              template_models: list[dict[str, Any]] | None = None,
+                              template_bundles: list[dict[str, Any]] | None = None) -> dict[int, str]:
     """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
     sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
@@ -202,8 +204,8 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         ('Network Views', object_count('networkview'), 'Reservations', object_count('fixedaddress')),
         ('Templates', object_count('networktemplate', 'rangetemplate', 'fixedaddresstemplate'),
          'Filters', object_count('filtermac', 'filteroption', 'filterrelayagent', 'filterfingerprint', 'filternac')),
-        ('Template models', len(template_models or []), 'Cross-Grid models',
-         sum((row.get('Grid Count') or 0) > 1 for row in (template_models or []))),
+        ('Template models', len(template_models or []), 'Provisioning bundles',
+         len(template_bundles or [])),
     ]
     classifications = Counter(str(row.get('Consistency Classification', '')) for row in standardization)
     decisions = Counter(str(row.get('Decision Status', 'PENDING')) for row in standardization)
@@ -228,6 +230,10 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
         model_cell = sheet.cell(9, 2)
         model_cell.hyperlink = Hyperlink(ref=model_cell.coordinate, location="'Template_Models'!A1")
         model_cell.font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
+    if template_bundles:
+        bundle_cell = sheet.cell(9, 4)
+        bundle_cell.hyperlink = Hyperlink(ref=bundle_cell.coordinate, location="'Template_Bundles'!A1")
+        bundle_cell.font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
     for offset, (left_label, left_value, right_label, right_value) in enumerate(standard, start=5):
         for col, value in ((5, left_label), (6, left_value), (7, right_label), (8, right_value)):
             cell = sheet.cell(offset, col, value)
@@ -713,6 +719,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         if any(record.object_type in {"networktemplate", "rangetemplate"} for record in topology_records)
         else ([], [], [], [], ["Model ID", "Template Type", "Dimension", "Parameter", "Parameterization Role"])
     )
+    template_bundles = (
+        build_template_bundles(topology_records, template_assignments)
+        if template_assignments else []
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -724,6 +734,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
         **({
+            "Template_Bundles": template_bundles,
             "Template_Models": template_models,
             "Template_Grid_Matrix": template_grid_matrix,
             "Template_Assignments": template_assignments,
@@ -778,6 +789,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row in rows)
     topology_rows = topology_excel_rows(topology_records)
     sheet_headers = {
+        'Template_Bundles': TEMPLATE_BUNDLE_HEADERS,
         'Template_Models': TEMPLATE_MODEL_HEADERS,
         'Template_Grid_Matrix': template_grid_headers,
         'Template_Assignments': TEMPLATE_ASSIGNMENT_HEADERS,
@@ -836,7 +848,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     overview_links: dict[int, str] = {}
     if results:
         overview_links = _write_overview_dashboard(
-            workbook, results, coverage, standardization, exceptions_excel, template_models
+            workbook, results, coverage, standardization, exceptions_excel,
+            template_models, template_bundles
         )
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
@@ -844,7 +857,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         inventory_sheet = _write_inventory_sheet(
             workbook, index, name, rows, headers,
             preserve_order=name in {
-                'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
+                'Template_Bundles', 'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
                 'Template_Semantics', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
                 'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
                 'Profile_Dimensions', 'Profile_Dimension_Assignments',
@@ -853,6 +866,23 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 'Profile_Relationship_Assignments',
             },
         )
+        if name == 'Template_Models':
+            template_header_map = {cell.value: cell.column for cell in inventory_sheet[1]}
+            for technical_header in ('Canonical Shape', 'Full SHA256'):
+                technical_column = template_header_map.get(technical_header)
+                if technical_column:
+                    inventory_sheet.column_dimensions[
+                        inventory_sheet.cell(1, technical_column).column_letter
+                    ].hidden = True
+        if name == 'Template_Bundles':
+            bundle_headers = {cell.value: cell.column for cell in inventory_sheet[1]}
+            review_column = bundle_headers.get('Review Flags')
+            if review_column:
+                for row_number in range(2, inventory_sheet.max_row + 1):
+                    cell = inventory_sheet.cell(row_number, review_column)
+                    if cell.value:
+                        cell.fill = PatternFill('solid', fgColor='FFF2CC')
+                        cell.font = Font(name='Calibri', size=10, bold=True, color='9C6500')
         if name == 'Profile_Populations':
             population_sheet = inventory_sheet
             population_headers = {cell.value: cell.column for cell in population_sheet[1]}
@@ -861,7 +891,7 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row_number in range(2, population_sheet.max_row + 1):
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {
-            'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
+            'Template_Bundles', 'Template_Models', 'Template_Grid_Matrix', 'Template_Assignments',
             'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
             'Profile_Assignments', 'Profile_KPIs', 'Profile_Dimensions',
             'Profile_Dimension_Assignments', 'Profile_Dimension_KPIs',
@@ -870,8 +900,16 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             'Exceptions', 'Grid_Comparison',
         }:
             _style_decision_support(inventory_sheet, name)
-    if 'Template_Semantics' in workbook.sheetnames:
-        workbook['Template_Semantics'].sheet_state = 'hidden'
+    # Keep the workbook navigable at nine-Grid scale: decision/catalog views stay
+    # visible, while detailed evidence remains in the same workbook as drill-down.
+    user_facing_sheets = {
+        'Overview', 'Template_Bundles', 'Template_Models', 'Template_Grid_Matrix',
+        'Template_Assignments', 'Standardization', 'Decisions', 'Exceptions',
+        'Grid_Summary', 'Manual_Review', 'Errors',
+    }
+    for worksheet in workbook.worksheets:
+        if worksheet.title not in user_facing_sheets:
+            worksheet.sheet_state = 'hidden'
     if results:
         _wire_overview_standardization_links(workbook, overview_links)
         _write_overview_profile_summary(
@@ -916,6 +954,21 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                         "Normalization coverage describes parsed records only; raw-query coverage "
                         "remains authoritative for collection completeness. Unknown fields remain in "
                         "extra_fields and complete responses remain in the raw archive."])
+    if template_bundles:
+        bundle_status = Counter(str(row.get("Bundle Status") or "") for row in template_bundles)
+        flagged_bundles = sum(bool(row.get("Review Flags")) for row in template_bundles)
+        summary.extend([
+            "", "## Template provisioning overview", "",
+            f"Provisioning bundles: {len(template_bundles)}; linked: {bundle_status['LINKED']}; "
+            f"network-only: {bundle_status['NETWORK_ONLY']}; missing linked RangeTemplate: "
+            f"{bundle_status['MISSING_RANGE_TEMPLATE']}; orphan RangeTemplate: "
+            f"{bundle_status['ORPHAN_RANGE_TEMPLATE']}; bundles with review flags: {flagged_bundles}.",
+            "",
+            "Start with Template_Bundles for NetworkTemplate→RangeTemplate relationships, then "
+            "Template_Models for reusable shapes and Template_Grid_Matrix for local parameter values. "
+            "Detailed template evidence remains in hidden technical sheets.",
+        ])
+
     if any(key in RESERVATION_SHEETS for result in results for key in result.records):
         summary.extend(["", "## DHCP reservations and filters", "",
                         "Reservation/filter sheets contain typed RAW_CONFIGURATION evidence. "

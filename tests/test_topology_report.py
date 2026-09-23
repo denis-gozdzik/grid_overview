@@ -155,12 +155,15 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert {(row["grid"], row["stored_value"]) for row in options} == {("A", "43200"), ("B", "86400")}
     assert all(row["data_representation"] == "RAW_CONFIGURATION" and row["use_options"] is False for row in options)
     assert all("effective_value" not in row for row in options)
-    assert {"Template_Models", "Template_Grid_Matrix", "Template_Assignments",
-            "Template_Semantics"} <= set(workbook.sheetnames)
+    assert {"Template_Bundles", "Template_Models", "Template_Grid_Matrix",
+            "Template_Assignments", "Template_Semantics"} <= set(workbook.sheetnames)
     assert workbook["Template_Semantics"].sheet_state == "hidden"
     assert workbook["Overview"]["A9"].value == "Template models"
     assert workbook["Overview"]["B9"].value == 2
     assert workbook["Overview"]["B9"].hyperlink.location == "'Template_Models'!A1"
+    assert workbook["Overview"]["C9"].value == "Provisioning bundles"
+    assert workbook["Overview"]["D9"].value == 4
+    assert workbook["Overview"]["D9"].hyperlink.location == "'Template_Bundles'!A1"
     model_rows = rows(workbook["Template_Models"])
     assert len(model_rows) == 2  # one Network shape and one Range shape; Fixed Address is out of scope
     network_models = [row for row in model_rows if row["Template Type"] == "networktemplate"]
@@ -174,6 +177,26 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
         ("A", "networktemplate"), ("B", "networktemplate"),
         ("A", "rangetemplate"), ("B", "rangetemplate"),
     }
+    bundle_rows = rows(workbook["Template_Bundles"])
+    assert len(bundle_rows) == 4
+    assert {row["Bundle Status"] for row in bundle_rows} == {
+        "NETWORK_ONLY", "ORPHAN_RANGE_TEMPLATE"
+    }
+    visible = {sheet.title for sheet in workbook.worksheets if sheet.sheet_state == "visible"}
+    assert visible == {
+        "Overview", "Template_Bundles", "Template_Models", "Template_Grid_Matrix",
+        "Template_Assignments", "Standardization", "Decisions", "Exceptions",
+        "Grid_Summary", "Manual_Review", "Errors",
+    }
+    assert workbook["Network_Templates"].sheet_state == "hidden"
+    assert workbook["Profile_Dimensions"].sheet_state == "hidden"
+    model_headers = {cell.value: cell.column for cell in workbook["Template_Models"][1]}
+    assert workbook["Template_Models"].column_dimensions[
+        workbook["Template_Models"].cell(1, model_headers["Canonical Shape"]).column_letter
+    ].hidden
+    assert workbook["Template_Models"].column_dimensions[
+        workbook["Template_Models"].cell(1, model_headers["Full SHA256"]).column_letter
+    ].hidden
     matrix_rows = rows(workbook["Template_Grid_Matrix"])
     assert {"A", "B"} <= {cell.value for cell in workbook["Template_Grid_Matrix"][1]}
     assert all(json.loads(row["extra_fields"])["future_option"] == ["opaque"] for row in options)

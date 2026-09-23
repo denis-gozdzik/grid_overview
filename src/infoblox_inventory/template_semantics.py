@@ -239,15 +239,47 @@ def _cardinality(value: Any, list_like: bool) -> int:
     return 0 if value is None else 1
 
 
+def _reference_types(value: Any) -> list[str]:
+    found: set[str] = set()
+
+    def visit(item: Any) -> None:
+        if is_dataclass(item):
+            extra = getattr(item, "extra_fields", None)
+            raw = getattr(item, "raw", None)
+            if isinstance(extra, dict) and extra.get("_struct"):
+                found.add(str(extra["_struct"]))
+            elif isinstance(raw, dict) and raw.get("_struct"):
+                found.add(str(raw["_struct"]))
+            return
+        if isinstance(item, dict):
+            if item.get("_struct"):
+                found.add(str(item["_struct"]))
+            extra = item.get("extra_fields")
+            if isinstance(extra, dict) and extra.get("_struct"):
+                found.add(str(extra["_struct"]))
+            return
+        if isinstance(item, list):
+            for child in item:
+                visit(child)
+
+    visit(value)
+    return sorted(found)
+
+
 def _shape_value(role: str, state: str, value: Any, *, list_like: bool = False) -> Any:
     if state != ACTIVE:
         return None
     if role in ABSTRACT_ROLES:
-        return {
+        result = {
             "placeholder": role,
             "kind": _value_kind(value),
             "cardinality": _cardinality(value, list_like),
         }
+        if role == REFERENCE_LOCAL:
+            reference_types = _reference_types(value)
+            if reference_types:
+                result["reference_types"] = reference_types
+        return result
     return _plain(value)
 
 
@@ -522,6 +554,14 @@ def build_template_semantic_model(
     )
     for row in semantics:
         if row["Parameterization Role"] not in ABSTRACT_ROLES:
+            continue
+        # Human-facing Grid matrix should contain actual local values, not one
+        # row per absent parameter. Full absence/state evidence remains in the
+        # hidden Template_Semantics sheet.
+        if row["Activity State"] == NOT_CONFIGURED:
+            continue
+        stored_value = row.get("Stored Value")
+        if row["Activity State"] == INACTIVE and stored_value in (None, "", [], {}):
             continue
         index_key = (
             str(row["Model ID"]), str(row["Template Type"]), str(row["Dimension"]),
