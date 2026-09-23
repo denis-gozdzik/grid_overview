@@ -422,9 +422,11 @@ def test_report_puts_scoped_decision_support_first_and_links_overview_by_paramet
     assert validated["zip_crc_ok"] is True
     workbook = load_workbook(output / "current_state_inventory.xlsx")
     try:
-        assert workbook.sheetnames[:16] == [
+        assert workbook.sheetnames[:20] == [
             "Overview", "Profile_Readiness", "Profile_Populations", "Profile_Usefulness",
-            "Profile_Fingerprints", "Profile_Assignments", "Profile_KPIs", "Profile_Context",
+            "Profile_Fingerprints", "Profile_Assignments", "Profile_KPIs", "Profile_Dimensions",
+            "Profile_Dimension_Assignments", "Profile_Dimension_KPIs", "Profile_Compositions",
+            "Profile_Context",
             "Profile_Relationships", "Profile_Rel_Assignments", "Standardization",
             "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
         ]

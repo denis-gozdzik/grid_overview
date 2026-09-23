@@ -28,6 +28,11 @@ from .profile_context import (
     PROFILE_CONTEXT_HEADERS, PROFILE_RELATIONSHIP_ASSIGNMENT_HEADERS,
     PROFILE_RELATIONSHIP_HEADERS, build_profile_context, build_profile_relationships,
 )
+from .profile_dimensions import (
+    PROFILE_COMPOSITION_HEADERS, PROFILE_DIMENSION_ASSIGNMENT_HEADERS,
+    PROFILE_DIMENSION_HEADERS, PROFILE_DIMENSION_KPI_HEADERS,
+    build_profile_dimensions,
+)
 from .topology import (TOPOLOGY_SHEETS, normalize_topology, topology_coverage,
                        topology_excel_rows, topology_headers, topology_option_rows)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
@@ -567,6 +572,32 @@ def _style_decision_support(sheet, name: str) -> None:
                 cell = sheet.cell(row, status_column)
                 if str(cell.value) in fills:
                     cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
+    if name == 'Profile_Dimension_Assignments':
+        fills = {
+            'PROFILED': 'E2F0D9',
+            'UNRESOLVED_DIMENSION_INPUTS': 'FFF2CC',
+            'UNRESOLVED_ASSOCIATION': 'FFF2CC',
+            'NOT_APPLICABLE_TO_DHCP_PROFILE': 'E7E6E6',
+        }
+        status_column = header_map.get('Population Status')
+        if status_column:
+            for row in range(2, sheet.max_row + 1):
+                cell = sheet.cell(row, status_column)
+                if str(cell.value) in fills:
+                    cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
+    if name == 'Profile_Compositions':
+        fills = {
+            'COMPLETE': 'E2F0D9',
+            'PARTIAL': 'FFF2CC',
+            'UNRESOLVED_ASSOCIATION': 'FFF2CC',
+            'NOT_APPLICABLE_TO_DHCP_PROFILE': 'E7E6E6',
+        }
+        status_column = header_map.get('Composition Status')
+        if status_column:
+            for row in range(2, sheet.max_row + 1):
+                cell = sheet.cell(row, status_column)
+                if str(cell.value) in fills:
+                    cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
     if name == 'Profile_Usefulness':
         role_column = header_map.get('Fingerprint Role')
         role_fills = {'CORE': 'E2F0D9', 'DERIVED_CORE': 'D9EAF7', 'OVERLAY': 'FFF2CC', 'DEFERRED': 'E7E6E6'}
@@ -593,7 +624,9 @@ def _style_decision_support(sheet, name: str) -> None:
                     cell.fill = PatternFill('solid', fgColor=relationship_fills[str(cell.value)])
     if name in {
         'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
-        'Profile_Assignments', 'Profile_KPIs', 'Profile_Context', 'Profile_Relationships',
+        'Profile_Assignments', 'Profile_KPIs', 'Profile_Dimensions',
+        'Profile_Dimension_Assignments', 'Profile_Dimension_KPIs',
+        'Profile_Compositions', 'Profile_Context', 'Profile_Relationships',
         'Profile_Relationship_Assignments', 'Standardization', 'Decisions',
         'Exceptions', 'Grid_Comparison',
     }:
@@ -652,6 +685,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         build_profile_discovery(results, all_scalars, all_options, profile_readiness)
         if results else ([], [], [], [])
     )
+    profile_dimensions, profile_dimension_assignments, profile_dimension_kpis, profile_compositions = (
+        build_profile_dimensions(results, all_scalars, all_options)
+        if results else ([], [], [], [])
+    )
     profile_context = (
         build_profile_context(results, all_scalars, all_options, profile_assignments)
         if results else []
@@ -676,6 +713,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         "Profile_Fingerprints": profile_fingerprints,
         "Profile_Assignments": profile_assignments,
         "Profile_KPIs": profile_kpis,
+        "Profile_Dimensions": profile_dimensions,
+        "Profile_Dimension_Assignments": profile_dimension_assignments,
+        "Profile_Dimension_KPIs": profile_dimension_kpis,
+        "Profile_Compositions": profile_compositions,
         "Profile_Context": profile_context,
         "Profile_Relationships": profile_relationships,
         "Profile_Relationship_Assignments": profile_relationship_assignments,
@@ -721,6 +762,10 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         'Profile_Fingerprints': PROFILE_FINGERPRINT_HEADERS,
         'Profile_Assignments': PROFILE_ASSIGNMENT_HEADERS,
         'Profile_KPIs': PROFILE_KPI_HEADERS,
+        'Profile_Dimensions': PROFILE_DIMENSION_HEADERS,
+        'Profile_Dimension_Assignments': PROFILE_DIMENSION_ASSIGNMENT_HEADERS,
+        'Profile_Dimension_KPIs': PROFILE_DIMENSION_KPI_HEADERS,
+        'Profile_Compositions': PROFILE_COMPOSITION_HEADERS,
         'Profile_Context': PROFILE_CONTEXT_HEADERS,
         'Profile_Relationships': PROFILE_RELATIONSHIP_HEADERS,
         'Profile_Relationship_Assignments': PROFILE_RELATIONSHIP_ASSIGNMENT_HEADERS,
@@ -773,6 +818,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             preserve_order=name in {
                 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
                 'Profile_Fingerprints', 'Profile_Assignments', 'Profile_KPIs',
+                'Profile_Dimensions', 'Profile_Dimension_Assignments',
+                'Profile_Dimension_KPIs', 'Profile_Compositions',
                 'Profile_Context', 'Profile_Relationships',
                 'Profile_Relationship_Assignments',
             },
@@ -786,7 +833,9 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {
             'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
-            'Profile_Assignments', 'Profile_KPIs', 'Profile_Context', 'Profile_Relationships',
+            'Profile_Assignments', 'Profile_KPIs', 'Profile_Dimensions',
+            'Profile_Dimension_Assignments', 'Profile_Dimension_KPIs',
+            'Profile_Compositions', 'Profile_Context', 'Profile_Relationships',
             'Profile_Relationship_Assignments', 'Standardization', 'Decisions',
             'Exceptions', 'Grid_Comparison',
         }:
@@ -863,6 +912,25 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 f"{_markdown_value(item.get('Top-1 Share of Profiled %'))} | "
                 f"{_markdown_value(item.get('Top-3 Share of Profiled %'))} | "
                 f"{_markdown_value(item.get('Singleton Profiles'))} |"
+            )
+
+    if any((item.get("Applicable Objects") or 0) > 0 for item in profile_dimension_kpis):
+        summary.extend([
+            "", "## Observed profile dimensions", "",
+            "Dimension fingerprints separate DHCP Core, DNS/DDNS, PXE, Service and Range Association. "
+            "They are descriptive current-state evidence, not approved standards. "
+            "NOT_APPLICABLE is an explicit applicability state; deferred composite inputs are excluded from identity hashes.", "",
+            "| Profile | Dimension | Applicable | Profiled | Profiled % | Unresolved | Distinct fingerprints | Top-1 share of profiled % | Singletons |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ])
+        for item in profile_dimension_kpis:
+            summary.append(
+                f"| {_markdown_value(item.get('Profile'))} | {_markdown_value(item.get('Dimension'))} | "
+                f"{_markdown_value(item.get('Applicable Objects'))} | {_markdown_value(item.get('Profiled Objects'))} | "
+                f"{_markdown_value(item.get('Profiled %'))} | {_markdown_value(item.get('Unresolved Dimension Objects'))} | "
+                f"{_markdown_value(item.get('Distinct Fingerprints'))} | "
+                f"{_markdown_value(item.get('Top-1 Share of Profiled %'))} | "
+                f"{_markdown_value(item.get('Singleton Fingerprints'))} |"
             )
 
     if profile_relationships:
