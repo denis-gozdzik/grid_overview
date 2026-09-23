@@ -265,7 +265,7 @@ def build_profile_relationships(results: list[CollectionResult],
 
     associated = [
         row for row in detail
-        if row["Range Status"] in {"PROFILED", "UNRESOLVED_PROFILE_INPUTS", "UNRESOLVED_ASSOCIATION"}
+        if row["Range Status"] in {"PROFILED", "UNRESOLVED_PROFILE_INPUTS"}
     ]
     paired_profiled = [row for row in associated if row["Relationship Status"] == "PROFILE_PAIR"]
     associated_count = len(associated)
