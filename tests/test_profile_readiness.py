@@ -342,11 +342,11 @@ def test_normalized_range_evidence_distinguishes_explicit_absence_from_missing_r
 
 def test_network_profile_object_level_readiness_uses_only_dhcp_relevant_candidates():
     result = _collection(networks=4)
-    result.records["network"][0].update({"members": ["m1"], "network": "10.0.0.0/24", "network_view": "default"})
+    result.records["network"][0].update({"members": [{"_struct": "dhcpmember", "name": "m1"}], "network": "10.0.0.0/24", "network_view": "default"})
     result.records["network"][1].update({"network": "10.0.1.0/24", "network_view": "default"})
-    result.records["network"][2].update({"network": "10.0.2.0/24", "network_view": "default", "use_options": True})
+    result.records["network"][2].update({"network": "10.0.2.0/24", "network_view": "default", "use_enable_ddns": True})
     result.records["network"][3].update({"network": "10.0.3.0/24", "network_view": "default"})
-    result.records["range"] = [{"_ref": "range/LAB/0", "network": "10.0.1.0/24", "network_view": "default"}]
+    result.records["range"] = [{"_ref": "range/LAB/0", "network": "10.0.1.0/24", "network_view": "default", "server_association_type": "MEMBER"}]
     result.effective_records["network"] = deepcopy(result.records["network"])
     result.coverage.extend([_coverage("range", 1, "raw"), _coverage("range", 1)])
 
@@ -357,7 +357,7 @@ def test_network_profile_object_level_readiness_uses_only_dhcp_relevant_candidat
         results=[result], scalars=rows, options=[],
     ), "pxe.bootserver.network")
 
-    assert item["Population Basis"] == "DHCP_RELEVANT_NETWORK_CANDIDATES"
+    assert item["Population Basis"] == "DHCP_PROFILE_NETWORK_CANDIDATES"
     assert item["Source Population Objects"] == 4
     assert item["Population Objects"] == 3
     assert item["Query Evidence Objects"] == 3
@@ -368,7 +368,7 @@ def test_network_profile_object_level_readiness_uses_only_dhcp_relevant_candidat
 
 def test_functional_value_proof_accepts_same_value_from_different_sources():
     result = _collection(networks=1)
-    result.records["network"][0]["members"] = ["m1"]
+    result.records["network"][0]["members"] = [{"_struct": "dhcpmember", "name": "m1"}]
     first = _scalar("network", 0)
     second = deepcopy(first)
     second.update({
@@ -419,7 +419,7 @@ def test_functional_option_value_proof_accepts_same_value_from_different_sources
 
 def test_functional_value_proof_keeps_conflicting_values_unresolved():
     result = _collection(networks=1)
-    result.records["network"][0]["members"] = ["m1"]
+    result.records["network"][0]["members"] = [{"_struct": "dhcpmember", "name": "m1"}]
     first = _scalar("network", 0)
     second = deepcopy(first)
     second.update({"effective_value": "192.0.2.11", "source_level": "Network",
@@ -437,7 +437,7 @@ def test_functional_value_proof_keeps_conflicting_values_unresolved():
 
 def test_functional_value_proof_does_not_promote_multisource_observation():
     result = _collection(networks=1)
-    result.records["network"][0]["members"] = ["m1"]
+    result.records["network"][0]["members"] = [{"_struct": "dhcpmember", "name": "m1"}]
     first = _scalar("network", 0)
     second = deepcopy(first)
     second["multisource"] = True
@@ -626,7 +626,7 @@ def test_network_authoritative_option_absence_uses_dhcp_candidate_population():
         standardization, (_spec("dhcp.ntp_servers.network"),),
         results=[result], scalars=[], options=options,
     ), "dhcp.ntp_servers.network")
-    assert item["Population Basis"] == "DHCP_RELEVANT_NETWORK_CANDIDATES"
+    assert item["Population Basis"] == "DHCP_PROFILE_NETWORK_CANDIDATES"
     assert item["Source Population Objects"] == 1
     assert item["Population Objects"] == 1
     assert item["Explicit Not Configured"] == 1

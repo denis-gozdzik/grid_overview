@@ -15,7 +15,7 @@ from .models import CollectionResult
 from .profile_population import (
     NETWORK_POPULATION_BASIS, RANGE_DHCP_ASSOCIATED_BASIS,
     RANGE_INFOBLOX_MANAGED_BASIS,
-    dhcp_associated_range_keys, dhcp_relevant_networks, effective_network_keys,
+    dhcp_associated_range_keys, dhcp_profile_networks, effective_network_keys,
     effective_range_keys, effective_records_by_key, infoblox_managed_range_keys,
     ms_server_range_keys, normalized_object_key,
 )
@@ -315,7 +315,7 @@ def profile_population_for_spec(spec: ProfileInputSpec, results: list[Collection
     rows = profile_parameter_rows(spec, scalars, options)
     parameter = next(item for item in PARAMETER_SPECS if item.key == spec.source_parameter_id)
     if spec.scope == "Network":
-        return set(dhcp_relevant_networks(results)), effective_network_keys(results), NETWORK_POPULATION_BASIS
+        return set(dhcp_profile_networks(results)), effective_network_keys(results), NETWORK_POPULATION_BASIS
     if parameter.source == "option":
         return dhcp_associated_range_keys(results), effective_range_keys(results), RANGE_DHCP_ASSOCIATED_BASIS
 
