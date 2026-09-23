@@ -24,6 +24,7 @@ ACTIVE = "ACTIVE_VALUE"
 INACTIVE = "INACTIVE"
 NOT_CONFIGURED = "NOT_CONFIGURED"
 UNRESOLVED = "UNRESOLVED"
+SHAPE_DISABLED = "DISABLED"
 
 POLICY_LITERAL = "POLICY_LITERAL"
 GRID_LOCAL = "GRID_LOCAL"
@@ -105,7 +106,7 @@ NETWORK_FIELDS = COMMON_FIELDS + (
         "ddns.update_on_renewal", "DNS/DDNS", "update_dns_on_lease_renewal",
         POLICY_LITERAL, "use_update_dns_on_lease_renewal",
     ),
-    FieldSpec("structure.netmask", "Template Structure", "netmask", STRUCTURE_LITERAL),
+    FieldSpec("structure.netmask", "Template Structure", "netmask", TOPOLOGY_DERIVED),
     FieldSpec(
         "structure.allow_any_netmask", "Template Structure", "allow_any_netmask",
         STRUCTURE_LITERAL,
@@ -143,10 +144,10 @@ RANGE_FIELDS = COMMON_FIELDS + (
         "ddns.update_on_renewal", "DNS/DDNS", "update_dns_on_lease_renewal",
         POLICY_LITERAL, "use_update_dns_on_lease_renewal",
     ),
-    FieldSpec("structure.offset", "Template Structure", "offset", STRUCTURE_LITERAL),
+    FieldSpec("structure.offset", "Template Structure", "offset", TOPOLOGY_DERIVED),
     FieldSpec(
         "structure.number_of_addresses", "Template Structure",
-        "number_of_addresses", STRUCTURE_LITERAL,
+        "number_of_addresses", TOPOLOGY_DERIVED,
     ),
     FieldSpec(
         "association.family", "Association", "server_association_type", STRUCTURE_LITERAL,
@@ -159,7 +160,7 @@ RANGE_FIELDS = COMMON_FIELDS + (
     FieldSpec(
         "association.failover", "Association", "failover_association", REFERENCE_LOCAL,
     ),
-    FieldSpec("structure.exclusions", "Template Structure", "exclude", STRUCTURE_LITERAL),
+    FieldSpec("structure.exclusions", "Template Structure", "exclude", TOPOLOGY_DERIVED),
     FieldSpec(
         "lease.scavenge_time", "Lease Lifecycle", "lease_scavenge_time",
         POLICY_LITERAL, "use_lease_scavenge_time",
@@ -424,7 +425,7 @@ def template_semantic_rows(
 
         for key, dimension, options in _unknown_option_specs(record):
             state, value, use_flag = _option_state(record, options)
-            rows.append(_semantic_row(
+            row = _semantic_row(
                 record,
                 dimension=dimension,
                 key=key,
@@ -433,8 +434,20 @@ def template_semantic_rows(
                 state=state,
                 value=value,
                 use_flag=use_flag,
-            ))
+            )
+            # Unknown disabled stored options remain evidence but do not define a
+            # reusable shape. Active/ambiguous unknown options remain conservative.
+            if state == INACTIVE:
+                row["Included In Shape"] = False
+            rows.append(row)
     return rows
+
+
+def _shape_state(activity_state: str) -> str:
+    """Collapse inactive stored evidence and absence into one reusable-shape state."""
+    if activity_state in {INACTIVE, NOT_CONFIGURED}:
+        return SHAPE_DISABLED
+    return activity_state
 
 
 def _model_id(template_type: str, payload: dict[str, Any]) -> tuple[str, str]:
@@ -452,7 +465,7 @@ def _shape_payload(rows: list[dict[str, Any]]) -> dict[str, Any]:
             str(row["Parameter"]): {
                 "dimension": row["Dimension"],
                 "role": row["Parameterization Role"],
-                "state": row["Activity State"],
+                "state": _shape_state(str(row["Activity State"])),
                 "shape_value": row["Shape Value"],
             }
             for row in sorted(rows, key=lambda item: str(item["Parameter"]))

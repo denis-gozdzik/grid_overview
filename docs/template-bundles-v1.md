@@ -63,7 +63,13 @@ Examples:
 
 Exclusions are shown with offset, count and distance from broadcast where the parent prefix is known.
 
-V1 does not yet use geometry to approve or merge bundle families automatically. It exposes the comparable evidence needed for that later step.
+Bundle Model v1 additionally canonicalizes this geometry relative to the parent subnet:
+
+- start uses `FIRST_USABLE` or `HOST_OFFSET_N`;
+- end uses `LAST_USABLE` or a margin from broadcast;
+- exclusions are anchored to the nearest stable edge (start or end) with length preserved.
+
+This means, for example, a /24 and /27 template can share one Bundle Model when both start at host offset 4, end at last usable, and reserve the same three-address tail block relative to broadcast. Prefix length and absolute address count remain visible parameters instead of automatically creating separate provisioning families.
 
 ## DHCP options review
 
@@ -111,16 +117,16 @@ The intended default user path is:
 ```text
 Overview
    ↓
+Data_Index
+   ↓
+Template_Bundle_Models
+   ↓
 Template_Bundles
    ↓
-Template_Models
-   ↓
-Template_Grid_Matrix
-   ↓
-Template_Assignments
+Template_Models / Template_Grid_Matrix
 ```
 
-Detailed evidence remains in the same workbook but is hidden by default.
+Detailed evidence remains in the same workbook but is hidden by default. `Data_Index` inventories every sheet, shows row counts/visibility/purpose, links to visible analysis sheets and identifies hidden technical evidence for drill-down.
 
 Visible decision/catalog sheets are intentionally limited so the workbook remains usable when nine Grids are combined.
 
@@ -145,20 +151,30 @@ They combine:
 
 The next cross-Grid step can therefore search for common provisioning patterns without equating local IP addresses, DNS domains or member names.
 
-## Next step
+## Bundle Model identity
 
-After validating bundles on real Grids:
+Each bundle row receives a deterministic:
 
 ```text
-Template Bundles
+BNDL-SH1-<short sha256>
+```
+
+The canonical bundle shape includes provisioning family, Network/Range semantic model IDs, normalized relative Range geometry, fixed-address-template count and relationship status.
+
+`Template_Bundle_Models` aggregates identical bundle shapes across templates and Grids and reports bundle count, Grid count/coverage, participating semantic models and template names.
+
+This is still descriptive evidence, not an approved organizational standard.
+
+## Next step
+
+After validating bundle models on real Grids:
+
+```text
+Template Bundle Models
       ↓
-Bundle Shape / parameter candidates
-      ↓
-cross-Grid common provisioning models
+cross-Grid parameter/commonality analysis
       ↓
 Observed Profile Shape ↔ Bundle Shape Alignment
       ↓
 Candidate Review
 ```
-
-Bundle family discovery should treat prefix/range geometry as candidate parameters where appropriate rather than assuming every literal offset/count is a global standard.
