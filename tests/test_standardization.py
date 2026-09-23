@@ -425,7 +425,7 @@ def test_report_puts_scoped_decision_support_first_and_links_overview_by_paramet
         assert workbook.sheetnames[:16] == [
             "Overview", "Profile_Readiness", "Profile_Populations", "Profile_Usefulness",
             "Profile_Fingerprints", "Profile_Assignments", "Profile_KPIs", "Profile_Context",
-            "Profile_Relationships", "Profile_Relationship_Assignments", "Standardization",
+            "Profile_Relationships", "Profile_Rel_Assignments", "Standardization",
             "Decisions", "Exceptions", "Grid_Comparison", "Coverage", "Manual_Review"
         ]
         standardization = workbook["Standardization"]

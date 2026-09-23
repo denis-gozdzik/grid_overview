@@ -5,12 +5,13 @@ from xml.etree import ElementTree as ET
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.worksheet.hyperlink import Hyperlink
 from openpyxl.worksheet.table import Table
 import pytest
 import requests
 
 from infoblox_inventory.models import CollectionResult
-from infoblox_inventory.report import write_reports
+from infoblox_inventory.report import _write_inventory_sheet, write_reports
 from infoblox_inventory.xlsx_validation import MAIN, PACKAGE_REL, REL, XlsxValidationError, validate_xlsx
 
 
@@ -71,6 +72,46 @@ def test_generated_report_is_valid_ooxml_across_collector_families(tmp_path, mon
         assert any(row["raw_value"] == "43200" and row["effective_value"] == "28800" for row in rows)
     finally:
         workbook.close()
+
+
+def test_inventory_sheet_titles_are_excel_safe_and_collision_resistant(tmp_path):
+    workbook = Workbook()
+    workbook.remove(workbook.active)
+    logical_first = "A" * 40
+    logical_second = "A" * 39 + "B"
+
+    first = _write_inventory_sheet(
+        workbook, 1, logical_first, [{"Value": "first"}], ["Value"]
+    )
+    second = _write_inventory_sheet(
+        workbook, 2, logical_second, [{"Value": "second"}], ["Value"]
+    )
+    sanitized = _write_inventory_sheet(
+        workbook, 3, "Unsafe[]:*?/\\Name", [{"Value": "third"}], ["Value"]
+    )
+
+    assert first.title == "A" * 31
+    assert second.title == "A" * 29 + "_2"
+    assert first.title != second.title
+    assert sanitized.title == "Unsafe_______Name"
+    assert all(len(title) <= 31 for title in workbook.sheetnames)
+
+    first["A2"].hyperlink = Hyperlink(
+        ref="A2", location=f"'{second.title}'!A2"
+    )
+    path = tmp_path / "safe-sheet-titles.xlsx"
+    workbook.save(path)
+    workbook.close()
+
+    validate_xlsx(path)
+    reopened = load_workbook(path)
+    try:
+        assert reopened.sheetnames == ["A" * 31, "A" * 29 + "_2", "Unsafe_______Name"]
+        link = reopened[reopened.sheetnames[0]]["A2"].hyperlink
+        assert link.location == f"'{reopened.sheetnames[1]}'!A2"
+        assert link.target is None
+    finally:
+        reopened.close()
 
 
 def test_empty_report_contains_no_header_only_tables(tmp_path):
