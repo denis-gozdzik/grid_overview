@@ -178,6 +178,13 @@ def test_profile_matrix_preserves_literal_strings_and_escapes_control_characters
         workbook.close()
 
 
+def test_markdown_summary_includes_profile_discovery_kpis(report_path):
+    summary = report_path.with_name('current_state_summary.md').read_text(encoding='utf-8')
+    assert '## Observed profile discovery' in summary
+    assert '| Network Profile v1 | 1 | 1 | 100.0 | 0 | 1 | 100.0 | 100.0 | 1 |' in summary
+    assert 'most common fingerprint is not an approved standard' in summary
+
+
 def test_no_collection_results_keeps_unknown_evidence_visible(tmp_path):
     write_reports([], tmp_path)
     path = tmp_path / 'current_state_inventory.xlsx'
