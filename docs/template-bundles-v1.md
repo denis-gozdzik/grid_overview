@@ -138,7 +138,7 @@ Template_Models / Template_Grid_Matrix
 
 Detailed evidence remains in the same workbook but is hidden by default. `Data_Index` inventories every sheet, shows row counts/visibility/purpose, links to visible analysis sheets and identifies hidden technical evidence for drill-down.
 
-Visible decision/catalog sheets are intentionally limited so the workbook remains usable when nine Grids are combined.
+Visible catalog sheets are intentionally limited so the workbook remains usable when nine Grids are combined. Governance/manual-review and decision-workflow sheets remain available through `Data_Index` but do not occupy the primary template-discovery navigation surface.
 
 `Template_Models` keeps deterministic canonical payload/digest columns in the workbook but hides those technical columns by default.
 
@@ -173,8 +173,26 @@ The canonical bundle shape includes provisioning family, Network/Range semantic 
 
 `Template_Bundle_Models` aggregates identical bundle shapes across templates and Grids and reports bundle count, Grid count/coverage, participating semantic models and template names.
 
+For user-facing navigation it also exposes a deterministic human-readable `Model Signature`, for example:
+
+```text
+MS_SERVER | /24,/27 | +4→LAST_USABLE; excl3@tail-5
+```
+
+The signature is descriptive and intentionally compact. The canonical identity remains `BNDL-SH1-*`; the signature is not a semantic business name and need not be globally unique across future schema versions.
+
 This is still descriptive evidence, not an approved organizational standard.
 
+## Nine-Grid validation contract
+
+Synthetic validation covers the intended multi-Grid behavior directly:
+
+- nine Grids with different DNS servers, domain names, gateway literals, template names and Microsoft DHCP server references collapse to one Bundle Model when their semantic policy and normalized construction are equivalent;
+- `/24` and `/27` can share the same model when the relative Range geometry is equivalent;
+- one active policy difference such as lease time creates a separate model instead of being hidden as a local parameter;
+- Grid coverage is calculated from distinct participating Grids, not raw object count.
+
+This contract is designed to prevent a large Grid from dominating the cross-Grid interpretation and to keep local addressing/naming separate from reusable provisioning structure.
 ## Next step
 
 After validating bundle models on real Grids:

@@ -254,7 +254,7 @@ def _write_template_overview_dashboard(
 
     _section_title(sheet, 11, 1, 9, 'Provisioning model catalog')
     headers = [
-        'Bundle Model', 'Family', 'Bundles', 'Grids', 'Grid coverage %',
+        'Model Signature', 'Family', 'Bundles', 'Grids', 'Grid coverage %',
         'Prefixes', 'Construction pattern', 'Attention', 'Templates',
     ]
     for column, label in enumerate(headers, start=1):
@@ -274,7 +274,7 @@ def _write_template_overview_dashboard(
     for row_number, item in enumerate(ordered_models[:12], start=13):
         templates = item.get('Network Templates') or item.get('Range Templates') or ''
         values = [
-            item.get('Bundle Model ID'), item.get('Provisioning Family'),
+            item.get('Model Signature'), item.get('Provisioning Family'),
             item.get('Bundle Count'), item.get('Grid Count'), item.get('Grid Coverage %'),
             item.get('Network Prefixes'), item.get('Pattern Summary'), item.get('Attention'),
             templates,
@@ -1132,8 +1132,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             'Overview', 'Data_Index', 'Template_Bundle_Models', 'Template_Bundles',
             'Template_Models', 'Template_Grid_Matrix', 'Grid_Summary',
         }
-        if sheets.get('Manual_Review'):
-            user_facing_sheets.add('Manual_Review')
+        # Governance/manual-review evidence stays accessible through Data_Index
+        # without occupying the template-discovery navigation surface.
         if any(result.errors for result in results):
             user_facing_sheets.add('Errors')
     else:
