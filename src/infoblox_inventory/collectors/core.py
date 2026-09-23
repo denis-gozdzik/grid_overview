@@ -36,6 +36,14 @@ OBJECTS: dict[str, tuple[str, str, list[str]]] = {
 }
 
 INHERITANCE_OBJECTS = {"member:dhcpproperties", "network", "range", "fixedaddress"}
+
+# Optional creation-origin relationships are collected when runtime WAPI makes
+# them readable. Their absence must not downgrade unrelated DHCP collection.
+OPTIONAL_ORIGIN_FIELDS = {
+    **RESERVATION_RELATIONSHIP_FIELDS,
+    "network": ("template",),
+    "range": ("template",),
+}
 COLLECTOR_ALIASES = {
     "topology": set(TOPOLOGY_OBJECTS),
     "reservations_filters": set(RESERVATION_OBJECTS),
@@ -87,7 +95,8 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
             if store:
                 store.save_schema(object_type, schema)
             fields = index_fields(schema)
-            for name in RESERVATION_RELATIONSHIP_FIELDS.get(object_type, ()):
+            optional_origin = OPTIONAL_ORIGIN_FIELDS.get(object_type, ())
+            for name in optional_origin:
                 if name not in fields or "r" not in fields[name].get("supports", "r"):
                     _coverage(result, area, object_type, "schema", "NOT_EXPOSED_BY_WAPI",
                               note="Template relationship is absent or not readable; origin is not reconstructed",
@@ -95,9 +104,13 @@ def collect_grid(client: InfobloxClient, raw_dir: str | None = None, only: str |
             readable = {name for name, metadata in fields.items()
                         if "supports" not in metadata or "r" in metadata["supports"]}
             relationships = override_relationships(schema)
-            wanted = list(dict.fromkeys([*requested, *(relationships[name] for name in requested if name in relationships)]))
+            required_wanted = list(dict.fromkeys(
+                [*requested, *(relationships[name] for name in requested if name in relationships)]
+            ))
+            optional_readable = [name for name in optional_origin if name in readable]
+            wanted = list(dict.fromkeys([*required_wanted, *optional_readable]))
             selected_fields = [name for name in wanted if name in readable]
-            missing = [name for name in wanted if name not in readable]
+            missing = [name for name in required_wanted if name not in readable]
             for name in missing:
                 _coverage(result, area, object_type, "schema", "NOT_EXPOSED_BY_WAPI",
                           note="Field absent or not readable in returned schema", field=name)

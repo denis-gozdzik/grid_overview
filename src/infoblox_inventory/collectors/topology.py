@@ -9,6 +9,20 @@ TEMPLATE_FIELDS = [
     "enable_pxe_lease_time", "pxe_lease_time", "ignore_dhcp_option_list_request",
 ]
 
+# Keep template evidence aligned with the scalar DDNS semantics already assessed
+# for live Network/Range objects. Runtime schema still decides which fields and
+# overridden_by use flags are readable for each template object type.
+NETWORK_TEMPLATE_DDNS_FIELDS = [
+    "enable_ddns", "ddns_domainname", "ddns_generate_hostname", "ddns_ttl",
+    "ddns_update_fixed_addresses", "ddns_use_option81", "update_dns_on_lease_renewal",
+]
+RANGE_TEMPLATE_DDNS_FIELDS = [
+    "enable_ddns", "ddns_domainname", "ddns_generate_hostname", "update_dns_on_lease_renewal",
+]
+FIXED_ADDRESS_TEMPLATE_DDNS_FIELDS = [
+    "enable_ddns", "ddns_domainname", "ddns_hostname",
+]
+
 TOPOLOGY_OBJECTS: dict[str, tuple[str, str, list[str]]] = {
     "dhcpfailover": (
         "DHCP failover associations and/or Grid Members", "DHCP Failover", [
@@ -23,19 +37,22 @@ TOPOLOGY_OBJECTS: dict[str, tuple[str, str, list[str]]] = {
     ),
     "networktemplate": (
         "Existing network templates", "Network Templates", [
-            *TEMPLATE_FIELDS, "netmask", "allow_any_netmask", "members", "delegated_member",
+            *TEMPLATE_FIELDS, *NETWORK_TEMPLATE_DDNS_FIELDS,
+            "netmask", "allow_any_netmask", "members", "delegated_member",
             "range_templates", "fixed_address_templates", "authority", "lease_scavenge_time", "recycle_leases",
         ],
     ),
     "rangetemplate": (
         "Existing range templates", "Range Templates", [
-            *TEMPLATE_FIELDS, "offset", "number_of_addresses", "server_association_type", "member",
+            *TEMPLATE_FIELDS, *RANGE_TEMPLATE_DDNS_FIELDS,
+            "offset", "number_of_addresses", "server_association_type", "member",
             "ms_server", "delegated_member", "failover_association", "exclude", "lease_scavenge_time", "recycle_leases",
         ],
     ),
     "fixedaddresstemplate": (
         "Existing fixed address templates", "Fixed Address Templates", [
-            *TEMPLATE_FIELDS, "offset", "number_of_addresses",
+            *TEMPLATE_FIELDS, *FIXED_ADDRESS_TEMPLATE_DDNS_FIELDS,
+            "offset", "number_of_addresses",
         ],
     ),
     "dhcpoptionspace": (

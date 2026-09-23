@@ -99,10 +99,31 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
                                  "bootfile": "=boot.efi", "use_bootfile": False,
                                  "options": [{"num": 51, "value": stored, "use_option": True,
                                               "future_option": ["opaque"]}],
-                                 "use_options": False, "future_field": {"unknown": True}}],
+                                 "use_options": False,
+                                 "enable_ddns": True, "use_enable_ddns": False,
+                                 "ddns_domainname": "corp.example", "use_ddns_domainname": True,
+                                 "ddns_generate_hostname": False, "use_ddns_generate_hostname": True,
+                                 "ddns_ttl": 3600, "use_ddns_ttl": True,
+                                 "ddns_update_fixed_addresses": True,
+                                 "use_ddns_update_fixed_addresses": False,
+                                 "ddns_use_option81": True, "use_ddns_use_option81": True,
+                                 "update_dns_on_lease_renewal": True,
+                                 "use_update_dns_on_lease_renewal": True,
+                                 "future_field": {"unknown": True}}],
+            "rangetemplate": [{"_ref": "rangetemplate/synthetic:clients", "name": "clients",
+                               "offset": 10, "number_of_addresses": 50,
+                               "server_association_type": "MEMBER",
+                               "enable_ddns": True, "use_enable_ddns": True,
+                               "ddns_domainname": "ranges.example", "use_ddns_domainname": False,
+                               "ddns_generate_hostname": True, "use_ddns_generate_hostname": True,
+                               "update_dns_on_lease_renewal": False,
+                               "use_update_dns_on_lease_renewal": True}],
             "member": [{"_ref": "member/synthetic", "name": "member"}],
             "dhcpfailover": [{"name": "pair", "primary": "primary", "secondary": "secondary"}],
-            "fixedaddresstemplate": [{"name": "fixed-template", "number_of_addresses": "invalid"}],
+            "fixedaddresstemplate": [{"name": "fixed-template", "number_of_addresses": "invalid",
+                                      "enable_ddns": True, "use_enable_ddns": True,
+                                      "ddns_domainname": "fixed.example", "use_ddns_domainname": True,
+                                      "ddns_hostname": "host.example"}],
         }, schemas={"networktemplate": live_result().schemas["networktemplate"]},
             coverage=[{"Grid": grid, "Area": "Existing network templates", "Object": "networktemplate",
                        "Query": "raw", "Collection Status": "PARTIAL", "Objects Found": 1,
@@ -116,6 +137,20 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert {row["grid"] for row in templates} == {"A", "B"}
     assert all(row["name"] == "=1+1" and row["use_bootfile"] is False for row in templates)
     assert all(json.loads(row["extra_fields"])["future_field"] == {"unknown": True} for row in templates)
+    assert all(row["enable_ddns"] is True and row["use_enable_ddns"] is False for row in templates)
+    assert all(row["ddns_domainname"] == "corp.example" and row["use_ddns_domainname"] is True
+               for row in templates)
+    assert all(row["ddns_ttl"] == 3600 and row["use_ddns_ttl"] is True for row in templates)
+    assert all(row["ddns_use_option81"] is True and row["use_ddns_use_option81"] is True
+               for row in templates)
+    range_templates = rows(workbook["Range_Templates"])
+    assert all(row["enable_ddns"] is True and row["use_enable_ddns"] is True
+               for row in range_templates)
+    assert all(row["ddns_domainname"] == "ranges.example" and row["use_ddns_domainname"] is False
+               for row in range_templates)
+    fixed_templates = rows(workbook["Fixed_Address_Templates"])
+    assert all(row["enable_ddns"] is True and row["ddns_hostname"] == "host.example"
+               for row in fixed_templates)
     options = rows(workbook["Template_Options"])
     assert {(row["grid"], row["stored_value"]) for row in options} == {("A", "43200"), ("B", "86400")}
     assert all(row["data_representation"] == "RAW_CONFIGURATION" and row["use_options"] is False for row in options)

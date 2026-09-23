@@ -146,6 +146,20 @@ class DHCPTemplateRecord(TopologyRecord):
 @dataclass(kw_only=True)
 class NetworkTemplateRecord(DHCPTemplateRecord):
     object_type: ClassVar[str] = "networktemplate"
+    enable_ddns: bool | None = None
+    use_enable_ddns: bool | None = None
+    ddns_domainname: str | None = None
+    use_ddns_domainname: bool | None = None
+    ddns_generate_hostname: bool | None = None
+    use_ddns_generate_hostname: bool | None = None
+    ddns_ttl: int | None = None
+    use_ddns_ttl: bool | None = None
+    ddns_update_fixed_addresses: bool | None = None
+    use_ddns_update_fixed_addresses: bool | None = None
+    ddns_use_option81: bool | None = None
+    use_ddns_use_option81: bool | None = None
+    update_dns_on_lease_renewal: bool | None = None
+    use_update_dns_on_lease_renewal: bool | None = None
     netmask: int | None = None
     allow_any_netmask: bool | None = None
     members: list[MemberAssociation] | None = None
@@ -163,6 +177,14 @@ class NetworkTemplateRecord(DHCPTemplateRecord):
 @dataclass(kw_only=True)
 class RangeTemplateRecord(DHCPTemplateRecord):
     object_type: ClassVar[str] = "rangetemplate"
+    enable_ddns: bool | None = None
+    use_enable_ddns: bool | None = None
+    ddns_domainname: str | None = None
+    use_ddns_domainname: bool | None = None
+    ddns_generate_hostname: bool | None = None
+    use_ddns_generate_hostname: bool | None = None
+    update_dns_on_lease_renewal: bool | None = None
+    use_update_dns_on_lease_renewal: bool | None = None
     offset: int | None = None
     number_of_addresses: int | None = None
     server_association_type: str | None = None
@@ -180,6 +202,11 @@ class RangeTemplateRecord(DHCPTemplateRecord):
 @dataclass(kw_only=True)
 class FixedAddressTemplateRecord(DHCPTemplateRecord):
     object_type: ClassVar[str] = "fixedaddresstemplate"
+    enable_ddns: bool | None = None
+    use_enable_ddns: bool | None = None
+    ddns_domainname: str | None = None
+    use_ddns_domainname: bool | None = None
+    ddns_hostname: str | None = None
     offset: int | None = None
     number_of_addresses: int | None = None
 
@@ -212,7 +239,7 @@ _RECORD_CLASSES = {record.object_type: record for record in (
 # These types were observed in the runtime schemas, including signed lease
 # scavenge times. Class annotations alone cannot distinguish uint from int.
 _UINT_FIELDS = {
-    "num", "code", "netmask", "offset", "number_of_addresses", "pxe_lease_time",
+    "num", "code", "netmask", "offset", "number_of_addresses", "pxe_lease_time", "ddns_ttl",
     "failover_port", "load_balance_split", "max_client_lead_time",
     "max_load_balance_delay", "max_response_delay", "max_unacked_updates",
     "ms_switchover_interval",
@@ -224,7 +251,12 @@ _BOOL_FIELDS = {
     "allow_any_netmask", "authority", "use_authority", "use_lease_scavenge_time",
     "recycle_leases", "use_recycle_leases", "use_failover_port",
     "ms_enable_authentication", "ms_enable_switchover_interval", "ms_is_conflict",
-    "use_ms_switchover_interval",
+    "use_ms_switchover_interval", "enable_ddns", "use_enable_ddns",
+    "ddns_generate_hostname", "use_ddns_generate_hostname",
+    "ddns_update_fixed_addresses", "use_ddns_update_fixed_addresses",
+    "ddns_use_option81", "use_ddns_use_option81",
+    "update_dns_on_lease_renewal", "use_update_dns_on_lease_renewal",
+    "use_ddns_domainname", "use_ddns_ttl",
 }
 _STRING_ARRAY_FIELDS = {"range_templates", "fixed_address_templates", "option_definitions"}
 _STRUCT_FIELDS = {

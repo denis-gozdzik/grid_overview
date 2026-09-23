@@ -104,7 +104,11 @@ def test_topology_pages_use_live_schema_fields_and_preserve_raw_offline(tmp_path
     assert all("r" in metadata[name]["supports"] for name in requested)
     assert not requested & {"extattrs", "ms_shared_secret", "set_dhcp_failover_partner_down",
                             "set_dhcp_failover_secondary_recovery"}
-    assert not any("ddns" in name or "filter" in name for name in requested)
+    if object_type in {"networktemplate", "rangetemplate", "fixedaddresstemplate"}:
+        assert any("ddns" in name for name in requested)
+        assert not any("filter" in name for name in requested)
+    else:
+        assert not any("ddns" in name or "filter" in name for name in requested)
     assert parse_qs(urlsplit(responses.calls[3].request.url).query)["_page_id"] == ["opaque:page/2"]
     archive = tmp_path / "LAB-GRID"
     for number, expected in enumerate(expected_pages, 1):
