@@ -155,15 +155,16 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert {(row["grid"], row["stored_value"]) for row in options} == {("A", "43200"), ("B", "86400")}
     assert all(row["data_representation"] == "RAW_CONFIGURATION" and row["use_options"] is False for row in options)
     assert all("effective_value" not in row for row in options)
-    assert {"Data_Index", "Template_Bundle_Models", "Template_Bundles",
+    assert {"Data_Index", "Template_Archetypes", "Template_Grid_Map",
+            "Template_Variants", "Template_Instances", "Template_Review",
+            "Template_Bundle_Models", "Template_Bundles",
             "Template_Models", "Template_Grid_Matrix",
             "Template_Assignments", "Template_Semantics"} <= set(workbook.sheetnames)
     assert workbook["Template_Semantics"].sheet_state == "hidden"
     assert workbook["Overview"]["A1"].value == "Infoblox DHCP Template & Current-State Assessment"
-    assert workbook["Overview"]["A9"].value == "Bundle models"
-    assert workbook["Overview"]["B9"].value == 2
-    assert workbook["Overview"]["B9"].hyperlink.location == "'Template_Bundle_Models'!A1"
-    assert workbook["Overview"]["A11"].value == "Provisioning model catalog"
+    assert workbook["Overview"]["A8"].value == "Archetypes"
+    assert workbook["Overview"]["B8"].hyperlink.location == "'Template_Archetypes'!A1"
+    assert workbook["Overview"]["A11"].value == "Provisioning archetypes"
     model_rows = rows(workbook["Template_Models"])
     assert len(model_rows) == 2  # one Network shape and one Range shape; Fixed Address is out of scope
     network_models = [row for row in model_rows if row["Template Type"] == "networktemplate"]
@@ -183,10 +184,14 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
         "NETWORK_ONLY", "ORPHAN_RANGE_TEMPLATE"
     }
     visible = {sheet.title for sheet in workbook.worksheets if sheet.sheet_state == "visible"}
-    assert {
-        "Overview", "Data_Index", "Template_Bundle_Models", "Template_Bundles",
-        "Template_Models", "Template_Grid_Matrix", "Grid_Summary",
-    } <= visible
+    assert visible == {
+        "Overview", "Data_Index", "Template_Archetypes", "Template_Grid_Map",
+        "Template_Variants", "Template_Instances", "Template_Review",
+    }
+    assert "Template_Bundle_Models" not in visible
+    assert "Template_Bundles" not in visible
+    assert "Template_Models" not in visible
+    assert "Template_Grid_Matrix" not in visible
     assert "Template_Assignments" not in visible
     assert "Standardization" not in visible
     assert "Decisions" not in visible
@@ -197,12 +202,13 @@ def test_synthetic_multigrid_templates_are_stored_rows_not_effective_claims(tmp_
     assert workbook["Profile_Dimensions"].sheet_state == "hidden"
     index_rows = rows(workbook["Data_Index"])
     index_by_sheet = {row["Sheet"]: row for row in index_rows}
-    assert index_by_sheet["Template_Bundle_Models"]["Visibility"] == "VISIBLE"
+    assert index_by_sheet["Template_Archetypes"]["Visibility"] == "VISIBLE"
+    assert index_by_sheet["Template_Bundle_Models"]["Visibility"] == "HIDDEN"
     assert index_by_sheet["DHCP_Raw"]["Visibility"] == "HIDDEN"
     assert index_by_sheet["DHCP_Raw"]["Open"] == "Unhide for drill-down"
     assert index_by_sheet["Standardization"]["Category"] == "Decision workflow"
     assert index_by_sheet["Standardization"]["Open"] == "Unhide for decisions"
-    assert workbook["Overview"]["A12"].value == "Model Signature"
+    assert workbook["Overview"]["A12"].value == "Archetype"
     assert "Model Signature" in {
         cell.value for cell in workbook["Template_Bundle_Models"][1]
     }

@@ -43,6 +43,11 @@ from .template_bundles import (
     TEMPLATE_BUNDLE_HEADERS, TEMPLATE_BUNDLE_MODEL_HEADERS,
     build_template_bundle_models, build_template_bundles,
 )
+from .template_archetypes import (
+    TEMPLATE_ARCHETYPE_HEADERS, TEMPLATE_GRID_MAP_HEADERS,
+    TEMPLATE_INSTANCE_HEADERS, TEMPLATE_REVIEW_HEADERS, TEMPLATE_VARIANT_HEADERS,
+    build_template_archetype_catalog,
+)
 from .reservations import (RESERVATION_SHEETS, normalize_reservations, reservation_coverage,
                            reservation_excel_rows, reservation_headers, reservation_option_rows,
                            reservation_relationship_rows)
@@ -176,6 +181,9 @@ def _write_template_overview_dashboard(
     template_models: list[dict[str, Any]],
     template_bundles: list[dict[str, Any]],
     template_bundle_models: list[dict[str, Any]],
+    template_archetypes: list[dict[str, Any]],
+    template_variants: list[dict[str, Any]],
+    template_review: list[dict[str, Any]],
 ) -> dict[int, str]:
     """Template-first landing page for discovery across multiple Grids."""
     sheet = workbook.create_sheet('Overview')
@@ -209,6 +217,7 @@ def _write_template_overview_dashboard(
     bundle_family = Counter(str(row.get('Provisioning Family') or '') for row in template_bundles)
     model_attention = Counter(str(row.get('Attention') or '') for row in template_bundle_models)
     bundle_attention = Counter(str(row.get('Attention') or '') for row in template_bundles)
+    commonality = Counter(str(row.get('Commonality') or '') for row in template_archetypes)
 
     _section_title(sheet, 4, 1, 4, 'Environment')
     _section_title(sheet, 4, 5, 9, 'Template discovery')
@@ -218,19 +227,22 @@ def _write_template_overview_dashboard(
          'Ranges', object_count('range')),
         ('Network Templates', object_count('networktemplate'),
          'Range Templates', object_count('rangetemplate')),
-        ('Template semantic models', len(template_models),
-         'Provisioning bundles', len(template_bundles)),
-        ('Bundle models', len(template_bundle_models),
+        ('Archetypes', len(template_archetypes),
+         'Template instances', sum(int(row.get('Instance Count') or 0) for row in template_archetypes)),
+        ('Variants', len(template_variants),
          'Network Views', object_count('networkview')),
     ]
     discovery = [
-        ('Linked bundles', bundle_status['LINKED'], 'Orphan ranges', bundle_status['ORPHAN_RANGE_TEMPLATE']),
-        ('Models needing review', model_attention['REVIEW'], 'Bundles needing review', bundle_attention['REVIEW']),
-        ('MS_SERVER bundles', bundle_family['MS_SERVER'], 'INFOBLOX bundles', bundle_family['INFOBLOX']),
-        ('Cross-Grid models', sum((row.get('Grid Count') or 0) > 1 for row in template_bundle_models),
-         'Collected Grids', len(results)),
-        ('Missing linked ranges', bundle_status['MISSING_RANGE_TEMPLATE'],
-         'Network-only bundles', bundle_status['NETWORK_ONLY']),
+        ('Across all collected Grids', commonality['ALL_COLLECTED_GRIDS'],
+         'Multi-Grid archetypes', commonality['MULTI_GRID']),
+        ('Grid-specific archetypes', commonality['GRID_SPECIFIC'],
+         'Review items', len(template_review)),
+        ('Linked pairs', bundle_status['LINKED'],
+         'Network-only templates', bundle_status['NETWORK_ONLY']),
+        ('Orphan RangeTemplates', bundle_status['ORPHAN_RANGE_TEMPLATE'],
+         'Missing linked ranges', bundle_status['MISSING_RANGE_TEMPLATE']),
+        ('Collected Grids', len(results),
+         'Exact technical variants', len(template_bundle_models)),
     ]
     for offset, row_values in enumerate(environment, start=5):
         for col, value in zip((1, 2, 3, 4), row_values):
@@ -249,13 +261,13 @@ def _write_template_overview_dashboard(
             if col in {6, 8}:
                 cell.fill = PatternFill('solid', fgColor='EAF2F8')
 
-    sheet['B9'].hyperlink = Hyperlink(ref='B9', location="'Template_Bundle_Models'!A1")
-    sheet['B9'].font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
+    sheet['B8'].hyperlink = Hyperlink(ref='B8', location="'Template_Archetypes'!A1")
+    sheet['B8'].font = Font(name='Calibri', size=11, bold=True, color='0563C1', underline='single')
 
-    _section_title(sheet, 11, 1, 9, 'Provisioning model catalog')
+    _section_title(sheet, 11, 1, 9, 'Provisioning archetypes')
     headers = [
-        'Model Signature', 'Family', 'Bundles', 'Grids', 'Grid coverage %',
-        'Prefixes', 'Construction pattern', 'Attention', 'Templates',
+        'Archetype', 'Structure', 'Instances', 'Grids', 'Grid coverage %',
+        'Variants', 'Prefixes', 'Commonality', 'Templates',
     ]
     for column, label in enumerate(headers, start=1):
         cell = sheet.cell(12, column, label)
@@ -264,19 +276,19 @@ def _write_template_overview_dashboard(
         cell.alignment = Alignment(wrap_text=True, vertical='center')
 
     ordered_models = sorted(
-        template_bundle_models,
+        template_archetypes,
         key=lambda row: (
             -int(row.get('Grid Count') or 0),
-            -int(row.get('Bundle Count') or 0),
-            str(row.get('Bundle Model ID') or ''),
+            -int(row.get('Instance Count') or 0),
+            str(row.get('Archetype') or ''),
         ),
     )
     for row_number, item in enumerate(ordered_models[:12], start=13):
         templates = item.get('Network Templates') or item.get('Range Templates') or ''
         values = [
-            item.get('Model Signature'), item.get('Provisioning Family'),
-            item.get('Bundle Count'), item.get('Grid Count'), item.get('Grid Coverage %'),
-            item.get('Network Prefixes'), item.get('Pattern Summary'), item.get('Attention'),
+            item.get('Archetype'), item.get('Structure'),
+            item.get('Instance Count'), item.get('Grid Count'), item.get('Grid Coverage %'),
+            item.get('Variant Count'), item.get('Prefixes'), item.get('Commonality'),
             templates,
         ]
         for column, value in enumerate(values, start=1):
@@ -286,30 +298,31 @@ def _write_template_overview_dashboard(
             cell.alignment = Alignment(wrap_text=True, vertical='top')
             cell.border = Border(bottom=Side(style='hair', color='E7E6E6'))
         sheet.cell(row_number, 1).hyperlink = Hyperlink(
-            ref=sheet.cell(row_number, 1).coordinate, location="'Template_Bundle_Models'!A1"
+            ref=sheet.cell(row_number, 1).coordinate, location="'Template_Archetypes'!A1"
         )
         sheet.cell(row_number, 1).font = Font(name='Calibri', size=10, color='0563C1', underline='single')
         sheet.cell(row_number, 5).number_format = '0.0"%"'
-        attention_cell = sheet.cell(row_number, 8)
-        if attention_cell.value == 'REVIEW':
-            attention_cell.fill = PatternFill('solid', fgColor='FFF2CC')
-            attention_cell.font = Font(name='Calibri', size=10, bold=True, color='9C6500')
-        elif attention_cell.value == 'OK':
-            attention_cell.fill = PatternFill('solid', fgColor='E2F0D9')
+        commonality_cell = sheet.cell(row_number, 8)
+        if commonality_cell.value == 'ALL_COLLECTED_GRIDS':
+            commonality_cell.fill = PatternFill('solid', fgColor='E2F0D9')
+        elif commonality_cell.value == 'MULTI_GRID':
+            commonality_cell.fill = PatternFill('solid', fgColor='D9EAF7')
 
     catalog_end = 12 + min(len(ordered_models), 12)
     if ordered_models:
-        table = Table(displayName='OverviewBundleModels', ref=f'A12:I{catalog_end}')
+        table = Table(displayName='OverviewArchetypes', ref=f'A12:I{catalog_end}')
         table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium2', showRowStripes=True)
         sheet.add_table(table)
 
     nav_row = catalog_end + 2
     _section_title(sheet, nav_row, 1, 9, 'Navigate')
     navigation = [
-        ('Bundle model catalog', "'Template_Bundle_Models'!A1"),
-        ('Bundle assignments', "'Template_Bundles'!A1"),
-        ('Grid-local parameters', "'Template_Grid_Matrix'!A1"),
-        ('All sheets / evidence index', "'Data_Index'!A1"),
+        ('Archetype catalog', "'Template_Archetypes'!A1"),
+        ('Grid → archetype map', "'Template_Grid_Map'!A1"),
+        ('Variants', "'Template_Variants'!A1"),
+        ('Template instances', "'Template_Instances'!A1"),
+        ('Review only', "'Template_Review'!A1"),
+        ('All evidence', "'Data_Index'!A1"),
     ]
     for offset, (label, location) in enumerate(navigation, start=nav_row + 1):
         cell = sheet.cell(offset, 1, label)
@@ -335,9 +348,9 @@ def _write_template_overview_dashboard(
     sheet.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=9)
     sheet.cell(
         note_row, 1,
-        'Model prevalence is descriptive evidence, not an approved standard. Review flags identify '
-        'construction inconsistencies or unresolved relationships; disabled option containers remain '
-        'visible as option state, not as automatic defects.'
+        'Archetypes group reusable provisioning construction. Variants retain exact policy/geometry '
+        'differences. Orphans, missing links and inconsistent relationships are excluded from the '
+        'catalog and shown only in Template_Review.'
     )
     sheet.cell(note_row, 1).fill = PatternFill('solid', fgColor='EAF2F8')
     sheet.cell(note_row, 1).font = Font(name='Calibri', size=10, italic=True, color='17365D')
@@ -358,12 +371,16 @@ def _write_overview_dashboard(workbook: Workbook, results: list[CollectionResult
                               exceptions: list[dict[str, Any]],
                               template_models: list[dict[str, Any]] | None = None,
                               template_bundles: list[dict[str, Any]] | None = None,
-                              template_bundle_models: list[dict[str, Any]] | None = None) -> dict[int, str]:
+                              template_bundle_models: list[dict[str, Any]] | None = None,
+                              template_archetypes: list[dict[str, Any]] | None = None,
+                              template_variants: list[dict[str, Any]] | None = None,
+                              template_review: list[dict[str, Any]] | None = None) -> dict[int, str]:
     """Create a workshop-oriented landing page; technical evidence stays on later sheets."""
-    if template_bundle_models:
+    if template_archetypes:
         return _write_template_overview_dashboard(
             workbook, results, coverage, template_models or [],
-            template_bundles or [], template_bundle_models,
+            template_bundles or [], template_bundle_models or [],
+            template_archetypes, template_variants or [], template_review or [],
         )
     sheet = workbook.create_sheet('Overview')
     sheet.sheet_view.showGridLines = False
@@ -920,6 +937,18 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         build_template_bundle_models(template_bundles, [result.grid for result in results])
         if template_bundles else []
     )
+    (
+        template_archetypes,
+        template_variants,
+        template_instances,
+        template_grid_map_v2,
+        template_review,
+    ) = (
+        build_template_archetype_catalog(
+            template_bundles, template_bundle_models, [result.grid for result in results]
+        )
+        if template_bundles else ([], [], [], [], [])
+    )
     standardization_excel = workbook_standardization_rows(standardization)
     decisions_excel = decision_rows(standardization)
     exceptions_excel = exception_rows(standardization)
@@ -931,6 +960,11 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     # Decision-support sheets intentionally precede technical evidence sheets.
     sheets = {
         **({
+            "Template_Archetypes": template_archetypes,
+            "Template_Grid_Map": template_grid_map_v2,
+            "Template_Variants": template_variants,
+            "Template_Instances": template_instances,
+            "Template_Review": template_review,
             "Template_Bundle_Models": template_bundle_models,
             "Template_Bundles": template_bundles,
             "Template_Models": template_models,
@@ -987,6 +1021,11 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row in rows)
     topology_rows = topology_excel_rows(topology_records)
     sheet_headers = {
+        'Template_Archetypes': TEMPLATE_ARCHETYPE_HEADERS,
+        'Template_Grid_Map': TEMPLATE_GRID_MAP_HEADERS,
+        'Template_Variants': TEMPLATE_VARIANT_HEADERS,
+        'Template_Instances': TEMPLATE_INSTANCE_HEADERS,
+        'Template_Review': TEMPLATE_REVIEW_HEADERS,
         'Template_Bundle_Models': TEMPLATE_BUNDLE_MODEL_HEADERS,
         'Template_Bundles': TEMPLATE_BUNDLE_HEADERS,
         'Template_Models': TEMPLATE_MODEL_HEADERS,
@@ -1048,7 +1087,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
     if results:
         overview_links = _write_overview_dashboard(
             workbook, results, coverage, standardization, exceptions_excel,
-            template_models, template_bundles, template_bundle_models
+            template_models, template_bundles, template_bundle_models,
+            template_archetypes, template_variants, template_review,
         )
     table_index = 2 if results else 1
     for index, (name, rows) in enumerate(sheets.items(), start=table_index):
@@ -1056,6 +1096,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
         inventory_sheet = _write_inventory_sheet(
             workbook, index, name, rows, headers,
             preserve_order=name in {
+                'Template_Archetypes', 'Template_Grid_Map', 'Template_Variants',
+                'Template_Instances', 'Template_Review',
                 'Template_Bundle_Models', 'Template_Bundles', 'Template_Models',
                 'Template_Grid_Matrix', 'Template_Assignments',
                 'Template_Semantics', 'Profile_Readiness', 'Profile_Populations', 'Profile_Usefulness',
@@ -1066,6 +1108,34 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 'Profile_Relationship_Assignments',
             },
         )
+        if name in {'Template_Archetypes', 'Template_Grid_Map', 'Template_Variants', 'Template_Instances'}:
+            human_headers = {cell.value: cell.column for cell in inventory_sheet[1]}
+            technical_headers = ['Archetype ID']
+            if name in {'Template_Variants', 'Template_Instances'}:
+                technical_headers.append('Variant ID')
+            for technical_header in technical_headers:
+                technical_column = human_headers.get(technical_header)
+                if technical_column:
+                    inventory_sheet.column_dimensions[
+                        inventory_sheet.cell(1, technical_column).column_letter
+                    ].hidden = True
+        if name == 'Template_Archetypes':
+            headers_map = {cell.value: cell.column for cell in inventory_sheet[1]}
+            commonality_column = headers_map.get('Commonality')
+            if commonality_column:
+                fills = {
+                    'ALL_COLLECTED_GRIDS': 'E2F0D9',
+                    'MULTI_GRID': 'D9EAF7',
+                    'GRID_SPECIFIC': 'FFF2CC',
+                }
+                for row_number in range(2, inventory_sheet.max_row + 1):
+                    cell = inventory_sheet.cell(row_number, commonality_column)
+                    if str(cell.value) in fills:
+                        cell.fill = PatternFill('solid', fgColor=fills[str(cell.value)])
+        if name == 'Template_Review':
+            for row_number in range(2, inventory_sheet.max_row + 1):
+                for cell in inventory_sheet[row_number]:
+                    cell.fill = PatternFill('solid', fgColor='FFF2CC')
         if name in {'Template_Models', 'Template_Bundle_Models'}:
             template_header_map = {cell.value: cell.column for cell in inventory_sheet[1]}
             technical_headers = ['Canonical Shape', 'Full SHA256']
@@ -1115,6 +1185,8 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
                 for row_number in range(2, population_sheet.max_row + 1):
                     population_sheet.cell(row_number, share_column).number_format = '0.0"%"'
         if name in {
+            'Template_Archetypes', 'Template_Grid_Map', 'Template_Variants',
+            'Template_Instances', 'Template_Review',
             'Template_Bundle_Models', 'Template_Bundles', 'Template_Models',
             'Template_Grid_Matrix', 'Template_Assignments',
             'Profile_Readiness', 'Profile_Usefulness', 'Profile_Fingerprints',
@@ -1127,13 +1199,12 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             _style_decision_support(inventory_sheet, name)
     # Keep the workbook navigable at nine-Grid scale: decision/catalog views stay
     # visible, while detailed evidence remains in the same workbook as drill-down.
-    if template_bundle_models:
+    if template_archetypes:
         user_facing_sheets = {
-            'Overview', 'Data_Index', 'Template_Bundle_Models', 'Template_Bundles',
-            'Template_Models', 'Template_Grid_Matrix', 'Grid_Summary',
+            'Overview', 'Template_Archetypes', 'Template_Grid_Map',
+            'Template_Variants', 'Template_Instances', 'Template_Review',
+            'Data_Index',
         }
-        # Governance/manual-review evidence stays accessible through Data_Index
-        # without occupying the template-discovery navigation surface.
         if any(result.errors for result in results):
             user_facing_sheets.add('Errors')
     else:
@@ -1156,7 +1227,12 @@ def write_reports(results: list[CollectionResult], output_dir: str | Path, *, de
             cell.font = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
             cell.alignment = Alignment(wrap_text=True, vertical='center')
         purposes = {
-            'Template_Bundle_Models': 'Cross-Grid catalog of normalized provisioning bundle shapes.',
+            'Template_Archetypes': 'Primary catalog of reusable provisioning constructions across Grids.',
+            'Template_Grid_Map': 'Which archetypes and variants exist on each Grid.',
+            'Template_Variants': 'Exact policy/geometry variants inside each archetype.',
+            'Template_Instances': 'Concrete NetworkTemplate/RangeTemplate pairs assigned to archetypes.',
+            'Template_Review': 'Only orphan, missing-link and inconsistent template relationships.',
+            'Template_Bundle_Models': 'Technical exact-shape variant catalog.',
             'Template_Bundles': 'NetworkTemplate→RangeTemplate assignments, geometry and review flags.',
             'Template_Models': 'Reusable Network/Range template semantic shapes.',
             'Template_Grid_Matrix': 'Grid-local values behind reusable template models.',
